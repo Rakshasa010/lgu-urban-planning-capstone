@@ -5,9 +5,9 @@
 
 return [
     'host' => 'localhost',
-    'dbname' => 'lgu_urban_planning',
-    'username' => 'root',
-    'password' => '',
+    'dbname' => 'upad_lgu_urban_planning',
+    'username' => 'upad_lgu_urban_planning',
+    'password' => 'lgu_urban_planning',
     'charset' => 'utf8',
     'options' => [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
