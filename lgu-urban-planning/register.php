@@ -2,6 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+date_default_timezone_set('Asia/Manila');
 require 'vendor/autoload.php';
 require_once __DIR__ . '/core/Database.php';
 require_once __DIR__ . '/core/Auth.php';
@@ -65,10 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($existing) {
                 $error = 'Username or email already exists';
             } else {
-                // OTP Generation
-                $otp = rand(100000, 999999);
-                $expiry = date("Y-m-d H:i:s", strtotime("+5 minutes")); 
-                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+// OTP Generation
+$otp = rand(100000, 999999);
+$expiry = date("Y-m-d H:i:s", strtotime("+1 minute"));
+$passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
                 // File Uploads
                 $uploadDir = 'uploads/ids/';
@@ -118,8 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <h1 style='letter-spacing: 12px; color: #333333; font-size: 42px; margin: 0; padding-left: 12px;'>$otp</h1>
                                 </div>
                                 
-                                <p style='color: #777777; font-size: 14px; margin-bottom: 10px;'>This code is valid for <strong style='color: #333;'>5 minutes</strong> only.</p>
-                                
+                                <p style='color: #777777; font-size: 14px; margin-bottom: 10px;'>This code is valid for <strong style='color: #333;'>1 minute</strong> only.</p>
+
                                 <p style='color: #999999; font-size: 12px; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 20px;'>
                                     If you did not request this, please ignore this email.
                                 </p>

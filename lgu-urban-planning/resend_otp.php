@@ -2,6 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+date_default_timezone_set('Asia/Manila');
 require 'vendor/autoload.php';
 require_once __DIR__ . '/core/Database.php';
 
@@ -19,8 +20,8 @@ $user = $db->fetchOne("SELECT id FROM users WHERE email = ? AND is_verified = 0"
 if ($user) {
     // 2. Generate new OTP and Expiry
     $new_otp = rand(100000, 999999);
-    $new_expiry = date("Y-m-d H:i:s", strtotime("+5 minutes"));
-
+    $new_expiry = date("Y-m-d H:i:s", strtotime("+1 minute"));
+    
     // 3. Update Database
     $db->query("UPDATE users SET otp_code = ?, otp_expiry = ? WHERE email = ?", [$new_otp, $new_expiry, $email]);
 
@@ -48,7 +49,7 @@ if ($user) {
                     <div style='background-color: #f4f7ff; border-radius: 10px; padding: 20px; margin: 0 auto 30px auto; width: fit-content;'>
                         <h1 style='letter-spacing: 12px; color: #333333; font-size: 42px; margin: 0; padding-left: 12px;'>$new_otp</h1>
                     </div>
-                    <p style='color: #777777; font-size: 14px; margin-bottom: 10px;'>This code is valid for <strong style='color: #333;'>5 minutes</strong> only.</p>
+                    <p style='color: #777777; font-size: 14px; margin-bottom: 10px;'>This code is valid for <strong style='color: #333;'>1 minute</strong> only.</p>
                     <p style='color: #999999; font-size: 12px; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 20px;'>
                         If you did not request this, please ignore this email.
                     </p>
