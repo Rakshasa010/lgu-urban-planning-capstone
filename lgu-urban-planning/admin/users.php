@@ -256,8 +256,9 @@ include __DIR__ . '/header.php';
                 <div class="col-md-2">
                     <select class="form-select" name="role">
                         <option value="">All Roles</option>
-                        <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>>Administrator</option>
                         <option value="applicant" <?= $filters['role'] === 'applicant' ? 'selected' : '' ?>>Applicant</option>
+                        <option value="inspector" <?= $filters['role'] === 'inspector' ? 'selected' : '' ?>>Inspector</option>
+                        <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>>Administrator</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -267,7 +268,15 @@ include __DIR__ . '/header.php';
                         <option value="0" <?= $filters['is_active'] === '0' ? 'selected' : '' ?>>Inactive</option>
                     </select>
                 </div>
-                <div class="col-md-3"><button type="submit" class="btn btn-dark w-100">Apply Filter</button></div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark w-100">Apply Filter</button>
+                        
+                        <a href="users.php" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" title="Reset Filters">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -334,11 +343,14 @@ include __DIR__ . '/header.php';
                                 <td><span class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;"><?= htmlspecialchars($user['role']) ?></span></td>
                                 <td><span class="badge px-3 <?= $user['is_active'] ? 'status-active' : 'status-inactive' ?>"><?= $user['is_active'] ? 'Active' : 'Inactive' ?></span></td>
                                 <td>
-                                    <?php if ($user['role'] === 'admin'): ?>
+                                    <?php 
+                                    $staffRoles = ['admin', 'zoning_officer', 'building_official', 'assessor', 'inspector'];
+                                    if (in_array(strtolower($user['role']), $staffRoles)): 
+                                    ?>
                                         <span class="text-muted small">Staff Member</span>
                                     <?php else: ?>
                                         <span class="small fw-bold cursor-pointer <?= $user['is_verified'] ? 'text-success' : 'text-warning' ?>" 
-                                              onclick="openVerificationModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'].' '.$user['last_name']) ?>')">
+                                            onclick="openVerificationModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'].' '.$user['last_name']) ?>')">
                                             <i class="bi <?= $user['is_verified'] ? 'bi-check-circle-fill' : 'bi-clock-history' ?>"></i> 
                                             <?= $user['is_verified'] ? 'VERIFIED' : 'PENDING / UNVERIFIED' ?>
                                         </span>
@@ -485,7 +497,14 @@ include __DIR__ . '/header.php';
                 </div>
                 <div class="col-md-6">
                     <label class="small fw-bold">Role</label>
-                    <select name="role" class="form-select"><option value="applicant">Applicant</option><option value="admin">Admin</option></select>
+                    <select name="role" class="form-select">
+                        <option value="applicant">Applicant</option>
+                        <option value="inspector">Inspector</option>
+                        <option value="zoning_officer">Zoning Officer</option>
+                        <option value="building_official">Building Official</option>
+                        <option value="assessor">Assessor</option>
+                        <option value="admin">Admin</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100 py-2 shadow-sm">Create Account</button></div>
@@ -506,7 +525,14 @@ include __DIR__ . '/header.php';
                 <div class="col-12"><label class="small fw-bold">Phone</label><input type="text" name="phone" id="e_phone" class="form-control"></div>
                 <div class="col-md-6">
                     <label class="small fw-bold">Role</label>
-                    <select name="role" id="e_role" class="form-select"><option value="applicant">Applicant</option><option value="admin">Admin</option></select>
+                    <select name="role" id="e_role" class="form-select">
+                        <option value="applicant">Applicant</option>
+                        <option value="inspector">Inspector</option>
+                        <option value="zoning_officer">Zoning Officer</option>
+                        <option value="building_official">Building Official</option>
+                        <option value="assessor">Assessor</option>
+                        <option value="admin">Admin</option>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label class="small fw-bold">New Password (Optional)</label>

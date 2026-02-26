@@ -102,3 +102,78 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * Pinahusay na updateNotifications para sa auto-catch functionality.
+ */
+function updateNotifications() {
+    // Siguraduhing tama ang path. Kung ang admin.js ay nasa /assets/js/, 
+    // ang relative path ay dapat lumabas muna ng folder.
+    fetch('/lgu-urban-planning/get_notifications.php')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            const bell = document.getElementById('notifBell');
+            const listContainer = document.querySelector('.notif-dropdown .dropdown-menu div[style*="max-height"]');
+            
+            if (!bell || !listContainer) return;
+
+            // 1. UPDATE BADGE COUNT
+            let badge = bell.querySelector('.badge');
+            const count = parseInt(data.count) || 0;
+
+            if (count > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                    badge.style.cssText = 'font-size: 0.6rem; padding: 0.25em 0.4em;';
+                    bell.appendChild(badge);
+                }
+                badge.innerText = count;
+            } else if (badge) {
+                badge.remove();
+            }
+
+            // 2. UPDATE LIST CONTENT
+            // I-check kung nakabukas ang dropdown para hindi mag-flicker sa harap ng user
+            const dropdownToggle = document.getElementById('notifBell');
+            const isDropdownOpen = dropdownToggle && dropdownToggle.classList.contains('show');
+
+            if (!isDropdownOpen) {
+                if (!data.messages || data.messages.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="p-4 text-center">
+                            <i class="bi bi-chat-dots text-dark" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <div class="text-dark fw-bold mt-2">No notifications yet.</div>
+                            <small class="text-dark" style="opacity: 0.6;">You're all caught up!</small>
+                        </div>`;
+                } else {
+                    let html = '';
+                    data.messages.forEach(n => {
+                        const unreadClass = (n.is_read == 0) ? 'unread' : '';
+                        html += `
+                            <a href="/lgu-urban-planning/admin/messages.php" class="notif-item ${unreadClass}">
+                                <div class="fw-bold small text-dark">${n.subject}</div>
+                                <div class="text-dark truncate-text small">${n.message}</div>
+                                <small class="text-primary" style="font-size: 0.7rem; font-weight: 500;">
+                                    ${n.formatted_date}
+                                </small>
+                            </a>`;
+                    });
+                    listContainer.innerHTML = html;
+                }
+            }
+        })
+        .catch(err => console.error('Notification Auto-Catch Error:', err));
+}
+
+// Siguraduhing naka-initialize pagkapasok ng page
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial run
+    updateNotifications();
+    
+    // I-store ang interval sa variable para pwedeng i-clear kung kailangan
+    const notifInterval = setInterval(updateNotifications, 5000); 
+});

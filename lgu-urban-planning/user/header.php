@@ -375,17 +375,19 @@
                         </a>
                     </li>
                     <li>
-                        <a class="nav-link" href="/lgu-urban-planning/applicant/messages.php">
-                            <i class="bi bi-envelope"></i> <span class="sidebar-text">Messages</span>
-                            <?php
-                            require_once __DIR__ . '/../modules/ApplicantSelfService/ApplicantController.php';
-                            $appController = new ApplicantController();
-                            $unread = $appController->getUnreadMessageCount();
-                            if ($unread > 0): ?>
-                                <span class="badge bg-danger ms-auto sidebar-text"><?php echo $unread; ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
+    <a class="nav-link" href="/lgu-urban-planning/applicant/messages.php">
+        <i class="bi bi-envelope"></i> <span class="sidebar-text">Messages</span>
+        <?php
+            require_once __DIR__ . '/../modules/ApplicantSelfService/ApplicantController.php';
+            $appController = new ApplicantController();
+            $unread = $appController->getUnreadMessageCount();
+        ?>
+        <span id="sidebarNotifBadge" class="badge bg-danger ms-auto sidebar-text" 
+              style="<?php echo ($unread > 0) ? '' : 'display: none;'; ?>">
+            <?php echo ($unread > 0) ? $unread : ''; ?>
+        </span>
+    </a>
+</li>
                 </ul>
             </div>
 

@@ -242,6 +242,45 @@ $current_path = $_SERVER['PHP_SELF'];
             transform: rotate(180deg);
         }
 
+        /* --- NOTIFICATION BELL STYLES --- */
+.notif-dropdown .dropdown-menu {
+    width: 320px;
+    border: none;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 0;
+    margin-top: 10px !important;
+}
+.notif-header {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.notif-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f8f8f8;
+    display: block;
+    text-decoration: none;
+    color: #333;
+    transition: 0.2s;
+}
+.notif-item:hover { background: #f0f4ff; }
+.notif-item.unread { background: #edf2ff; border-left: 3px solid #3762c8; }
+.notif-footer {
+    padding: 10px;
+    text-align: center;
+    border-top: 1px solid #eee;
+}
+.truncate {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
         /* --- DARK MODE UI --- */
         [data-bs-theme="dark"] body { color: #ced4da !important; }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, 
@@ -337,16 +376,52 @@ $current_path = $_SERVER['PHP_SELF'];
                         <i id="themeIcon" class="bi bi-moon-stars" style="font-size: 1.2rem;"></i>
                     </button>
 
-                    <div class="me-3 position-relative">
-                        <a href="/lgu-urban-planning/admin/messages.php" class="text-white" title="Messages">
-                            <i class="bi bi-bell" style="font-size: 1.4rem;"></i>
-                            <?php if ($unreadMessages > 0): ?>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
-                                    <?php echo $unreadMessages > 99 ? '99+' : $unreadMessages; ?>
-                                </span>
-                            <?php endif; ?>
-                        </a>
-                    </div>
+<div class="ms-auto d-flex align-items-center gap-3">
+    <?php
+    // Gagamitin ang existing variable na $dbHeader mula sa Line 5 ng iyong file
+    $uId = $_SESSION['user_id'] ?? 0;
+    $latestNotifs = $dbHeader->fetchAll("SELECT * FROM messages WHERE receiver_id = ? ORDER BY created_at DESC LIMIT 5", [$uId]);
+    ?>
+
+    <div class="dropdown notif-dropdown">
+        <button class="btn btn-link text-white p-0 position-relative" id="notifBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
+            <i class="bi bi-bell" style="font-size: 1.2rem;"></i>
+            <?php if ($unreadMessages > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                    <?php echo $unreadMessages; ?>
+                </span>
+            <?php endif; ?>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notifBell">
+            <div class="notif-header">Notifications</div>
+            <div style="max-height: 300px; overflow-y: auto;">
+    <?php if (empty($latestNotifs)): ?>
+        <div class="p-4 text-center">
+            <i class="bi bi-chat-dots text-dark" style="font-size: 2rem; opacity: 0.3;"></i>
+            <div class="text-dark fw-bold mt-2">No notifications yet.</div>
+            <small class="text-dark" style="opacity: 0.6;">You're all caught up!</small>
+        </div>
+    <?php else: ?>
+        <?php foreach ($latestNotifs as $n): ?>
+            <a href="/lgu-urban-planning/admin/messages.php" class="notif-item <?php echo $n['is_read'] == 0 ? 'unread' : ''; ?>">
+                <div class="fw-bold small text-dark"><?php echo htmlspecialchars($n['subject']); ?></div>
+                
+                <div class="text-dark truncate-text small">
+                    <?php echo htmlspecialchars($n['message']); ?>
+                </div>
+                
+                <small class="text-primary" style="font-size: 0.7rem; font-weight: 500;">
+                    <?php echo date('M d, h:i A', strtotime($n['created_at'])); ?>
+                </small>
+            </a>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
+            <div class="notif-footer">
+                <a href="/lgu-urban-planning/admin/messages.php" class="small text-decoration-none fw-bold text-primary">View All Messages</a>
+            </div>
+        </div>
+    </div>
 
                     <div class="text-end d-none d-md-block text-white me-3">
                         <div style="font-weight: 600; font-size: 0.9rem; line-height: 1.2;">

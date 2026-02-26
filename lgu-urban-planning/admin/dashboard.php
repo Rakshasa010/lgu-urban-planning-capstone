@@ -213,6 +213,7 @@ $sys_settings = $stmt->fetch(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
+    
 
         <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
         <div class="card-header py-3 border-0 custom-card-header">
@@ -245,7 +246,7 @@ $sys_settings = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 <?php if($filters['status'] || $filters['search']): ?>
                 <div class="col-auto">
-                    <a href="dashboard.php" class="btn btn-sm btn-link text-muted text-decoration-none">Reset</a>
+                    <a href="index.php" class="btn btn-sm btn-link text-muted text-decoration-none">Reset</a>
                 </div>
                 <?php endif; ?>
             </form>
@@ -319,6 +320,18 @@ $sys_settings = $stmt->fetch(PDO::FETCH_ASSOC);
 </div>
 <?php endif; ?>
 
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060;">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i> 
+                <span id="toastMessage">System settings updated successfully.</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
@@ -364,10 +377,46 @@ new Chart(document.getElementById('trendChart'), {
 });
 
 // Announcement Logic
-function saveAnnouncementText() { updateData(document.getElementById('announcementText').value, document.getElementById('updateStatus').checked ? 1 : 0); }
-function updateAnnouncementStatus(status) { updateData(document.getElementById('announcementText').value, status ? 1 : 0); }
-function updateData(t, a) {
-    const fd = new FormData(); fd.append('setting_value', t); fd.append('is_active', a);
-    fetch('update_settings.php', { method: 'POST', body: fd }).then(r => r.json()).then(d => { if(d.success) alert('Success!'); });
+function saveAnnouncementText() { 
+    updateData(
+        document.getElementById('announcementText').value, 
+        document.getElementById('updateStatus').checked ? 1 : 0,
+        'Announcement text updated successfully.'
+    ); 
+}
+
+function updateAnnouncementStatus(status) { 
+    updateData(
+        document.getElementById('announcementText').value, 
+        status ? 1 : 0,
+        status ? 'Announcement banner is now LIVE.' : 'Announcement banner has been disabled.'
+    ); 
+}
+
+function updateData(t, a, successMsg) {
+    const fd = new FormData(); 
+    fd.append('setting_value', t); 
+    fd.append('is_active', a);
+    
+    fetch('update_settings.php', { 
+        method: 'POST', 
+        body: fd 
+    })
+    .then(r => r.json())
+    .then(d => { 
+        if(d.success) {
+            // Update the toast message text
+            document.getElementById('toastMessage').innerText = successMsg;
+            
+            // Show Bootstrap Toast
+            const toastEl = document.getElementById('successToast');
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        } else {
+            // Optional: Error handling
+            console.error('Update failed');
+        }
+    })
+    .catch(err => console.error('Error:', err));
 }
 </script>

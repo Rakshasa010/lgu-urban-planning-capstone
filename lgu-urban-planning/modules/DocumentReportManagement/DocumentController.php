@@ -84,46 +84,68 @@ class DocumentController {
     }
 
     // --- Zoning Compliance List ---
-    private function generateZoningComplianceReport($filters) {
-        $sql = "SELECT a.id as application_id, a.project_name, a.barangay, a.status 
-                FROM applications a 
-                WHERE a.status IN ('approved', 'rejected')";
-        return ['name' => 'Zoning Compliance List', 'data' => $this->db->fetchAll($sql)];
-    }
+private function generateZoningComplianceReport($filters) {
+    $year = $filters['year'] ?? date('Y');
+    
+    // Gagamitin natin ang mga columns na binigay mo: 
+    // zoning_type, compliance_status, technical_analysis
+    $sql = "SELECT 
+                a.application_number AS 'App #', 
+                a.project_name AS 'Project Name', 
+                a.barangay AS 'Barangay', 
+                zcc.zoning_type AS 'Zoning Classification', 
+                zcc.compliance_status AS 'Compliance Result',
+                zcc.checked_at AS 'Date Checked'
+            FROM applications a
+            INNER JOIN zoning_compliance_checks zcc ON a.id = zcc.application_id
+            WHERE YEAR(zcc.checked_at) = ?
+            ORDER BY zcc.checked_at DESC";
+            
+    $data = $this->db->fetchAll($sql, [$year]);
+    
+    return [
+        'name' => "Zoning Compliance Report ($year)", 
+        'data' => $data ?: []
+    ];
+}
 
     // --- Inspector Performance ---
-    private function generateInspectorPerformance($filters) {
-        $sql = "SELECT 
-                    u.first_name, 
-                    u.last_name, 
-                    u.role,
-                    COUNT(i.Id) as total_inspections, 
-                    MAX(i.scheduled_at) as last_inspection_date
-                FROM users u
-                INNER JOIN inspections i ON u.id = i.inspector_id
-                GROUP BY u.id, u.first_name, u.last_name, u.role";
-        
-        $data = $this->db->fetchAll($sql);
-        
-        return [
-            'name' => 'Inspector Performance Report', 
-            'data' => $data ?: []
-        ];
-    }
+private function generateInspectorPerformance($filters) {
+    $year = $filters['year'] ?? date('Y');
+    
+    // Gagamitin ang 'inspections' table at i-join sa 'users' para sa pangalan
+    $sql = "SELECT 
+                CONCAT(u.first_name, ' ', u.last_name) AS 'Inspector Name',
+                COUNT(i.id) AS 'Total Tasks',
+                SUM(CASE WHEN i.status = 'completed' THEN 1 ELSE 0 END) AS 'Completed',
+                SUM(CASE WHEN i.status = 'scheduled' THEN 1 ELSE 0 END) AS 'Pending/Scheduled',
+                MAX(i.scheduled_at) AS 'Last Inspection'
+            FROM users u
+            INNER JOIN inspections i ON u.id = i.inspector_id
+            WHERE YEAR(i.scheduled_at) = ?
+            GROUP BY u.id, u.first_name, u.last_name
+            ORDER BY COUNT(i.id) DESC";
+            
+    $data = $this->db->fetchAll($sql, [$year]);
+    
+    return [
+        'name' => "Inspector Workload Summary ($year)", 
+        'data' => $data ?: []
+    ];
+}
 
     // --- Audit Summary ---
-    private function generateAuditSummary($filters) {
-        $sql = "SELECT user_id, action, entity_type, created_at 
-                FROM audit_logs 
-                ORDER BY created_at DESC LIMIT 50";
-        
-        $data = $this->db->fetchAll($sql);
-        
-        return [
-            'name' => 'System Audit Summary', 
-            'data' => $data ?: []
-        ];
-    }
+private function generateAuditSummary($filters) {
+    $sql = "SELECT u.username, a.action, a.entity_type, a.created_at 
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id 
+            ORDER BY a.created_at DESC LIMIT 100";
+    
+    return [
+        'name' => 'System Audit Summary (Latest 100)', 
+        'data' => $this->db->fetchAll($sql)
+    ];
+}
     
     // --- User Growth ---
     private function generateUserGrowth($filters) {
@@ -134,16 +156,37 @@ class DocumentController {
         return ['name' => "User Growth Report ($year)", 'data' => $this->db->fetchAll($sql, [$year])];
     }
 
-    private function generateApplicationsSummary($filters) {
-        $sql = "SELECT project_name, status, barangay, created_at FROM applications";
-        return ['name' => 'Applications Summary', 'data' => $this->db->fetchAll($sql)];
-    }
+private function generateApplicationsSummary($filters) {
+    $year = $filters['year'] ?? date('Y');
+    $sql = "SELECT application_number, project_name, status, barangay, created_at 
+            FROM applications WHERE YEAR(created_at) = ?";
+    return [
+        'name' => "Applications Summary ($year)", 
+        'data' => $this->db->fetchAll($sql, [$year])
+    ];
+}
 
-    private function generatePermitsIssuedReport($filters) {
-        $sql = "SELECT id as permit_id, project_name, barangay, updated_at as date_issued 
-                FROM applications WHERE status = 'approved'";
-        return ['name' => 'Permits Issued Report', 'data' => $this->db->fetchAll($sql)];
-    }
+private function generatePermitsIssuedReport($filters) {
+    $year = $filters['year'] ?? date('Y');
+    
+    // Ginawa nating dynamic ang YEAR para sumunod sa filter sa sidebar
+    $sql = "SELECT 
+                application_number as permit_id, 
+                project_name, 
+                barangay, 
+                updated_at as date_issued,
+                status
+            FROM applications 
+            WHERE status = 'approved' 
+            AND YEAR(updated_at) = ?";
+            
+    $data = $this->db->fetchAll($sql, [$year]);
+    
+    return [
+        'name' => "Permits Issued Report ($year)", 
+        'data' => $data ?: [] 
+    ];
+}
 
     private function generateMonthlyAnalytics($filters) {
         $year = $filters['year'] ?? date('Y');

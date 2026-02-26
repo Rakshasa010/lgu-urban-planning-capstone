@@ -35,7 +35,7 @@ if (!$application) {
 // --- STEP 2: HANDLE POST ACTIONS ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
-//  ADMIN ACTION: Assign Inspector
+// 1. ADMIN ACTION: Assign Inspector
 if ($_POST['action'] === 'assign_inspection' && $auth->hasRole(['admin', 'zoning_officer'])) {
     $ins_id = $_POST['inspector_id'];
     $sched = $_POST['scheduled_at'];
@@ -46,7 +46,54 @@ if ($_POST['action'] === 'assign_inspection' && $auth->hasRole(['admin', 'zoning
     }
 }
 
-//  INSPECTOR ACTION: Submit Field Report
+// 2. DUMMY INSPECTION: Roads & Utilities Simulation
+if ($_POST['action'] === 'request_inspection') {
+    $officerId = $_SESSION['user_id'] ?? 0;
+
+    // Dummy data strings
+    $trafficNotes = "AUTOMATED SIMULATION: Traffic impact study completed. Proposed project entrance meets road safety standards. No major congestion expected.";
+    $energyNotes = "AUTOMATED SIMULATION: Grid capacity verified. Local transformer can handle the projected electrical load of the new development.";
+
+    /**
+     * Ginagamit natin ang '?' para maiwasan ang 'Invalid parameter number' 
+     * dahil sa pag-uulit ng placeholders sa ON DUPLICATE KEY UPDATE.
+     */
+    $sqlImpact = "INSERT INTO impact_assessments 
+                    (application_id, traffic_flag, traffic_notes, energy_flag, energy_notes, checked_at) 
+                  VALUES (?, 'ok', ?, 'ok', ?, NOW())
+                  ON DUPLICATE KEY UPDATE 
+                    traffic_flag = 'ok', 
+                    traffic_notes = ?, 
+                    energy_flag = 'ok', 
+                    energy_notes = ?, 
+                    checked_at = NOW()";
+    
+    try {
+        $stmt = $dbConn->prepare($sqlImpact);
+        
+        // Dapat magtugma ang bilang ng '?' (lima lahat) sa bilang ng array elements sa ibaba
+        $stmt->execute([
+            $applicationId, // 1st ? (application_id)
+            $trafficNotes,  // 2nd ? (traffic_notes sa VALUES)
+            $energyNotes,   // 3rd ? (energy_notes sa VALUES)
+            $trafficNotes,  // 4th ? (traffic_notes sa UPDATE)
+            $energyNotes    // 5th ? (energy_notes sa UPDATE)
+        ]);
+
+        // Mag-dagdag sa history
+        $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)")
+               ->execute([$applicationId, $application['status'], "Departmental simulations triggered for Roads & Energy.", $officerId]);
+
+        $success = "Departmental simulation successful! Roads and Energy data generated.";
+        
+        // Refresh variable para lumabas agad sa UI
+        $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ?", [$applicationId]);
+    } catch (Exception $e) {
+        $error = "Simulation failed: " . $e->getMessage();
+    }
+}
+
+//  3. INSPECTOR ACTION
 if ($_POST['action'] === 'submit_inspection' && $auth->hasRole('inspector')) {
     $notes = $_POST['notes'];
     $status = $_POST['status']; // e.g., 'completed' or 'violation_found'
@@ -57,25 +104,20 @@ if ($_POST['action'] === 'submit_inspection' && $auth->hasRole('inspector')) {
     }
 }
     
-// ZONING COMPLIANCE UPDATE (From Map)
-    if ($_POST['action'] === 'update_compliance') {
-        $zoningType = $_POST['zoning_type'] ?? 'Unknown';
-        $complianceResult = strtolower(trim($_POST['compliance_status'] ?? 'non_compliant'));
-        $proposedProject = $application['project_type'] ?? ''; 
-        $parcelIdFromMap = $_POST['parcel_id'] ?? null;
-        $officerId = $_SESSION['user_id'] ?? 0;
+// 4. ZONING COMPLIANCE UPDATE
+if ($_POST['action'] === 'update_compliance') {
+    $zoningType = $_POST['zoning_type'] ?? 'Unknown';
+    $complianceResult = strtolower(trim($_POST['compliance_status'] ?? 'non_compliant'));
+    $parcelIdFromMap = $_POST['parcel_id'] ?? 'N/A';
+    $officerId = $_SESSION['user_id'] ?? 0;
+    $finalAnalysis = $_POST['technical_analysis'] ?? '';
 
-        // Automation Check for the analysis text only
-        $stmtCheck = $dbConn->prepare("SELECT * FROM permitted_uses WHERE ? LIKE CONCAT('%', zone_code, '%') AND project_type = ? LIMIT 1");
-        $stmtCheck->execute([$zoningType, $proposedProject]);
-        $isAllowed = $stmtCheck->fetch();
+    // BINUKSAN ANG TRY BLOCK DITO
+    try {
+        // Simulan ang transaction para siguradong sabay ma-save ang zoning at history
+        $dbConn->beginTransaction();
 
-        $analysis = ($isAllowed) 
-            ? "AUTOMATED VERIFICATION: Project type '$proposedProject' is permitted in zone $zoningType. " 
-            : "AUTOMATED WARNING: Project type '$proposedProject' is NOT listed as a permitted use in $zoningType. ";
-        $analysis .= ($_POST['technical_analysis'] ?? '');
-
-        // UPSERT - Logic remains the same
+        // 1. I-save ang spatial analysis sa zoning table
         $sqlMain = "INSERT INTO zoning_compliance_checks 
                 (application_id, parcel_id, zoning_type, compliance_status, technical_analysis, checked_by, checked_at) 
             VALUES (:app_id, :parcel_id, :zoning_type, :status, :analysis, :officer_id, NOW())
@@ -87,25 +129,44 @@ if ($_POST['action'] === 'submit_inspection' && $auth->hasRole('inspector')) {
                 checked_at = NOW()";
         
         $stmtComp = $dbConn->prepare($sqlMain);
-            $stmtComp->execute([
-                ':app_id' => $applicationId, ':parcel_id' => $parcelIdFromMap, ':zoning_type' => $zoningType, ':status' => $complianceResult, ':analysis' => $analysis, ':officer_id' => $officerId ]);
+        $stmtComp->execute([
+            ':app_id' => $applicationId, 
+            ':parcel_id' => $parcelIdFromMap, 
+            ':zoning_type' => $zoningType, 
+            ':status' => $complianceResult, 
+            ':analysis' => $finalAnalysis, 
+            ':officer_id' => $officerId 
+        ]);
 
-            $stmtLock = $dbConn->prepare("UPDATE zoning_compliance_checks 
-                SET parcel_id = ? 
-                WHERE application_id = ? 
-                AND (parcel_id IS NULL OR parcel_id = '' OR parcel_id = '0')
-            ");
-            $stmtLock->execute([$parcelIdFromMap, $applicationId]);
+        // 2. I-save sa Movement History (application_status_history)
+        $historyComment = "GIS Verification: " . strtoupper($complianceResult) . " (Zone: $zoningType)";
+        
+        $stmtHistory = $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by, created_at) VALUES (?, ?, ?, ?, NOW())");
+        $stmtHistory->execute([
+            $applicationId, 
+            $application['status'], 
+            $historyComment, 
+            $officerId
+        ]);
 
-        $historyRemarks = "GIS Verification: " . strtoupper($complianceResult) . " (Zone: $zoningType)";
-        $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, 'zoning_verified', ?, ?)")
-               ->execute([$applicationId, $historyRemarks, $officerId]);
+        // I-COMMIT ANG TRANSACTION
+        $dbConn->commit();
 
+        // Refresh variable para lumitaw agad sa UI
+        $zoningCheck = $db->fetchOne("SELECT * FROM zoning_compliance_checks WHERE application_id = ?", [$applicationId]);
         $success = 'Spatial verification updated successfully.';
-    }
 
-    // --- NEW: HANDLE STATUS UPDATES & AUTOMATED MESSAGE ---
-    if ($_POST['action'] === 'update_status') {
+    } catch (Exception $e) {
+        // Kung may error, i-undo lahat ng pagbabago (Rollback)
+        if ($dbConn->inTransaction()) {
+            $dbConn->rollBack();
+        }
+        $error = "Update failed: " . $e->getMessage();
+    }
+}
+
+// 5. STATUS UPDATES & MESSAGING
+        if ($_POST['action'] === 'update_status') {
         $newStatus = $_POST['status'];
         $remarks = $_POST['remarks'] ?? 'Your application is currently being processed.';
         $officerId = $_SESSION['user_id'];
@@ -122,9 +183,34 @@ if ($_POST['action'] === 'submit_inspection' && $auth->hasRole('inspector')) {
             $stmtHistory = $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)");
             $stmtHistory->execute([$applicationId, $newStatus, $remarks, $officerId]);
 
-            // 3. SEND THE PROFESSIONAL AUTOMATED MESSAGE
+            // 3. Inspections
+            if ($newStatus === 'approved') {
+                $exists = $db->fetchOne("SELECT id FROM inspections WHERE application_id = ?", [$applicationId]);
+                if (!$exists) {
+                    // Siguraduhing 'inspection' ang status dito
+                    $stmtIns = $dbConn->prepare("INSERT INTO inspections (application_id, status, created_at) VALUES (?, 'inspection', NOW())");
+                    $stmtIns->execute([$applicationId]);
+                }
+            }
+
+// 3. SET DYNAMIC SUBJECT & MESSAGE BODY
+        $statusLabel = strtoupper(str_replace('_', ' ', $newStatus));
+        
+        if ($newStatus === 'approved') {
+            // SPECIFIC MESSAGE FOR FINAL APPROVAL
+            $subject = "CONGRATULATIONS: Approved Locational Clearance / Permit #" . $application['application_number'];
+            
+            $messageBody = "Dear Applicant,\n\n";
+            $messageBody .= "We are pleased to inform you that your application for '" . $application['project_name'] . "' has been officially APPROVED.\n\n";
+            $messageBody .= "Your Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the 'Documents' section of your applicant portal.\n\n";
+            $messageBody .= "Permit Details:\n";
+            $messageBody .= "- Permit No: " . $application['application_number'] . "\n";
+            $messageBody .= "- Location: Barangay " . $application['barangay'] . "\n\n";
+            $messageBody .= "Office Remarks:\n\"" . $remarks . "\"\n\n";
+            $messageBody .= "Thank you for your cooperation.\n\n";
+        } else {
+            // STANDARD MESSAGE FOR OTHER STATUSES
             $subject = "Official Update: Application #" . $application['application_number'];
-            $statusLabel = strtoupper(str_replace('_', ' ', $newStatus));
             
             $messageBody = "Dear Applicant,\n\n";
             $messageBody .= "This is an official notification regarding your application: " . $application['project_name'] . ".\n\n";
@@ -132,25 +218,27 @@ if ($_POST['action'] === 'submit_inspection' && $auth->hasRole('inspector')) {
             $messageBody .= "Location: Barangay " . $application['barangay'] . ", Block " . ($application['block'] ?? 'N/A') . ", Street " . ($application['street'] ?? 'N/A') . "\n\n";
             $messageBody .= "Remarks from Office:\n\"" . $remarks . "\"\n\n";
             $messageBody .= "You may monitor further progress through your portal.\n\n";
-            $messageBody .= "Quezon City Urban Planning Department";
-
-            $stmtMsg = $dbConn->prepare("INSERT INTO messages (application_id, sender_id, receiver_id, subject, message, message_type, created_at) VALUES (?, ?, ?, ?, ?, 'system_notification', NOW())");
-            $stmtMsg->execute([$applicationId, $officerId, $applicantId, $subject, $messageBody]);
-
-            $dbConn->commit();
-            $success = 'Application status updated and notification sent.';
-            
-            // Sync the local variable so the badge updates on the page immediately
-            $application['status'] = $newStatus; 
-
-        } catch (Exception $e) {
-            $dbConn->rollBack();
-            $error = "Update failed: " . $e->getMessage();
         }
+        
+        $messageBody .= "Quezon City Urban Planning Department";
+
+        $stmtMsg = $dbConn->prepare("INSERT INTO messages (application_id, sender_id, receiver_id, subject, message, message_type, created_at) VALUES (?, ?, ?, ?, ?, 'system_notification', NOW())");
+        $stmtMsg->execute([$applicationId, $officerId, $applicantId, $subject, $messageBody]);
+
+        $dbConn->commit();
+        $success = 'Application status updated and notification sent.';
+        
+        // Sync the local variable so the badge updates on the page immediately
+        $application['status'] = $newStatus; 
+
+    } catch (Exception $e) {
+        $dbConn->rollBack();
+        $error = "Update failed: " . $e->getMessage();
     }
 }
+}
 
-// --- ADD THIS PAGINATION LOGIC HERE ---
+// --- Pagination ---
 $limit = 10; 
 $currentPage = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($currentPage - 1) * $limit;
@@ -177,9 +265,14 @@ if (!$application) {
     exit;
 }
 
-// Pagination & Officers list (unchanged)
-$officers = $db->fetchAll("SELECT id, first_name, last_name, role FROM users WHERE is_active = 1");
-$historyRecords = $db->fetchAll("SELECT h.*, u.first_name, u.last_name FROM application_status_history h LEFT JOIN users u ON h.changed_by = u.id WHERE h.application_id = ? ORDER BY h.created_at DESC LIMIT 10", [$applicationId]);
+// Officers list
+$officers = $db->fetchAll(
+    "SELECT id, first_name, last_name, role 
+     FROM users 
+     WHERE is_active = 1 
+     AND role IN ('admin', 'zoning_officer', 'assessor') 
+     ORDER BY last_name ASC"
+);
 
 $pageTitle = 'Application Details';
 include __DIR__ . '/../admin/header.php';
@@ -358,72 +451,78 @@ include __DIR__ . '/../admin/header.php';
                     </div>
                 </div>
 
-                    <div class="tab-pane fade" id="impact" role="tabpanel">
-                        <?php if ($_SESSION['role'] === 'inspector'): ?>
-                            <div class="alert alert-secondary py-2 small mb-3">
-                                <i class="bi bi-info-circle me-2"></i> You are viewing departmental assessments. To submit your field report, please go to the <b>Zoning & Actions</b> tab.
-                            </div>
-                        <?php endif; ?>
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="tab-pane fade" id="impact" role="tabpanel">
+    <?php if ($_SESSION['role'] === 'inspector'): ?>
+        <div class="alert alert-secondary py-2 small mb-3">
+            <i class="bi bi-info-circle me-2"></i> You are viewing departmental assessments. To submit your field report, please go to the <b>Zoning & Actions</b> tab.
+        </div>
+    <?php endif; ?>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h6 class="fw-bold mb-0">Departmental Inspection Results</h6>
+            <small class="text-muted">Assessment data provided by Roads and Energy departments.</small>
+        </div>
+        <?php if ($_SESSION['role'] !== 'inspector'): ?>
+            <form method="POST">
+                <input type="hidden" name="action" value="request_inspection">
+                <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                    <i class="bi bi-megaphone-fill me-1"></i> Request New Inspection (Simulate)
+                </button>
+            </form>
+        <?php endif; ?>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100 border-0 bg-light shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                            <h6 class="fw-bold mb-0">Departmental Inspection Results</h6>
-                            <small class="text-muted">Assessment data provided by Roads and Energy departments.</small>
+                            <h6 class="text-primary fw-bold mb-0"><i class="bi bi-road-front-fill me-2"></i>Roads & Traffic</h6>
+                            <small class="text-muted">Infrastructure Impact</small>
                         </div>
-                        <?php if ($_SESSION['role'] !== 'inspector'): ?>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="request_inspection">
-                                <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
-                                    <i class="bi bi-megaphone-fill me-1"></i> Request New Inspection
-                                </button>
-                            </form>
+                        <?php if ($impactAssessment && !empty($impactAssessment['traffic_flag'])): ?>
+                            <span class="badge bg-<?php echo ($impactAssessment['traffic_flag'] === 'ok' || $impactAssessment['traffic_flag'] === 'approved') ? 'success' : 'danger'; ?>"><?php echo strtoupper($impactAssessment['traffic_flag']); ?></span>
+                        <?php else: ?>
+                            <span class="badge bg-secondary">AWAITING INSPECTION</span>
                         <?php endif; ?>
                     </div>
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <div class="card h-100 border-0 bg-light shadow-sm">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <h6 class="text-primary fw-bold mb-0"><i class="bi bi-road-front-fill me-2"></i>Roads & Traffic</h6>
-                                            <small class="text-muted">Infrastructure Impact</small>
-                                        </div>
-                                        <?php if ($impactAssessment && !empty($impactAssessment['traffic_flag'])): ?>
-                                            <span class="badge bg-<?php echo ($impactAssessment['traffic_flag'] === 'ok' || $impactAssessment['traffic_flag'] === 'approved') ? 'success' : 'danger'; ?>"><?php echo strtoupper($impactAssessment['traffic_flag']); ?></span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">AWAITING INSPECTION</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="bg-white p-3 rounded border">
-                                        <p class="mb-1 small fw-bold text-muted">Assessment Data:</p>
-                                        <p class="small mb-0 text-dark italic"><?php echo htmlspecialchars($impactAssessment['traffic_notes'] ?? $impactAssessment['notes'] ?? 'No data submitted yet by the Roads department inspector.'); ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card h-100 border-0 bg-light shadow-sm">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <h6 class="text-warning fw-bold mb-0"><i class="bi bi-lightning-charge-fill me-2"></i>Energy & Utilities</h6>
-                                            <small class="text-muted">Grid Capacity Load</small>
-                                        </div>
-                                        <?php if ($impactAssessment && !empty($impactAssessment['energy_flag'])): ?>
-                                            <span class="badge bg-<?php echo ($impactAssessment['energy_flag'] === 'ok' || $impactAssessment['energy_flag'] === 'approved') ? 'success' : 'danger'; ?>"><?php echo strtoupper($impactAssessment['energy_flag']); ?></span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">AWAITING INSPECTION</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="bg-white p-3 rounded border">
-                                        <p class="mb-1 small fw-bold text-muted">Assessment Data:</p>
-                                        <p class="small mb-0 text-dark italic"><?php echo htmlspecialchars($impactAssessment['energy_notes'] ?? $impactAssessment['notes'] ?? 'No data submitted yet by the Energy/Utilities department.'); ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="bg-white p-3 rounded border">
+                        <p class="mb-1 small fw-bold text-muted">Assessment Data:</p>
+                        <p class="small mb-0 text-dark italic">
+                            <?php echo htmlspecialchars($impactAssessment['traffic_notes'] ?? 'No data submitted yet by the Roads department inspector.'); ?>
+                        </p>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <div class="col-md-6">
+            <div class="card h-100 border-0 bg-light shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h6 class="text-warning fw-bold mb-0"><i class="bi bi-lightning-charge-fill me-2"></i>Utilities</h6>
+                            <small class="text-muted">Grid Capacity Load</small>
+                        </div>
+                        <?php if ($impactAssessment && !empty($impactAssessment['energy_flag'])): ?>
+                            <span class="badge bg-<?php echo ($impactAssessment['energy_flag'] === 'ok' || $impactAssessment['energy_flag'] === 'approved') ? 'success' : 'danger'; ?>"><?php echo strtoupper($impactAssessment['energy_flag']); ?></span>
+                        <?php else: ?>
+                            <span class="badge bg-secondary">AWAITING INSPECTION</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="bg-white p-3 rounded border">
+                        <p class="mb-1 small fw-bold text-muted">Assessment Data:</p>
+                        <p class="small mb-0 text-dark italic">
+                            <?php echo htmlspecialchars($impactAssessment['energy_notes'] ?? 'No data submitted yet by the Energy/Utilities department.'); ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                 <div class="tab-pane fade" id="docs" role="tabpanel">
                     <h6 class="fw-bold mb-3">Submitted Requirements</h6>
                     <?php if (empty($application['documents'])): ?>
@@ -481,6 +580,7 @@ include __DIR__ . '/../admin/header.php';
                                     </select>
                                     <div class="form-text x-small text-danger"><i class="bi bi-info-circle me-1"></i> Final Approval requires all technical assessments to be 'OK'.</div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <label class="small fw-bold mb-1">Assign to Officer</label>
                                     <select class="form-select" name="assign_officer_id">
@@ -491,6 +591,7 @@ include __DIR__ . '/../admin/header.php';
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
+
                                 <div class="mb-3">
                                     <label class="small fw-bold mb-1">Official Remarks</label>
                                     <textarea class="form-control" name="remarks" placeholder="Provide reason for status update or instructions..." rows="4" required></textarea>
@@ -507,7 +608,6 @@ include __DIR__ . '/../admin/header.php';
                             </h6>
                             
                             <?php 
-                                // Logic para sa dynamic colors
                                 $containerClass = 'bg-white border-light'; 
                                 if ($zoningCheck) {
                                     $status = strtolower($zoningCheck['compliance_status']);

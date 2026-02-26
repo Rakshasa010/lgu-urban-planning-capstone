@@ -155,6 +155,46 @@ include __DIR__ . '/../admin/header.php';
                     </div>
                 </div>
             </div>
+
+            <?php
+// In-update nating function para kasama ang Color Name at Hex
+function getZoneDetails($code) {
+    $code = strtoupper($code);
+    if (in_array($code, ['R1', 'R2', 'R-3'])) 
+        return ['color' => '#ffff00', 'label' => 'Yellow - Residential'];
+    if (in_array($code, ['C1', 'C2', 'C-3'])) 
+        return ['color' => '#ff0000', 'label' => 'Red - Commercial'];
+    if (in_array($code, ['I1', 'I-2'])) 
+        return ['color' => '#9c27b0', 'label' => 'Purple - Industrial'];
+    if ($code === 'INST') 
+        return ['color' => '#0000ff', 'label' => 'Blue - Institutional'];
+    if ($code === 'PRK') 
+        return ['color' => '#4caf50', 'label' => 'Green - Parks'];
+    if ($code === 'S-CZ') 
+        return ['color' => '#795548', 'label' => 'Brown - Special Control'];
+    
+    return ['color' => '#6c757d', 'label' => 'Gray - Other'];
+}
+?>
+
+<div class="search-panel mt-3">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <?php foreach ($zoningClassifications as $z): 
+                // Kunin ang details (hex at color name) base sa code
+                $details = getZoneDetails($z['code']); 
+            ?>
+                <div class="d-flex align-items-center" title="<?= $details['label'] ?>">
+                    <div style="width: 25px; height: 10px; background-color: <?= $details['color'] ?>; border-radius: 2px; margin-right: 8px; border: 1px solid rgba(0,0,0,0.1);"></div>
+                    <span class="small text-secondary fw-bold" style="font-size: 0.7rem;">
+                        <?= htmlspecialchars($z['code']) ?>
+                    </span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+    
         </div>
 
         <div class="col-md-8">
@@ -210,6 +250,8 @@ include __DIR__ . '/../admin/header.php';
     const targetAppId = "<?= $targetAppId ?>";
     const appLat = parseFloat("<?= $appLat ?>");
     const appLng = parseFloat("<?= $appLng ?>");
+    const dbLot = "<?= htmlspecialchars($urlLot) ?>";
+    const dbBlock = "<?= htmlspecialchars($urlBlock) ?>";
     let complianceMarker = null;
     const activeOverlays = {}; 
 
@@ -272,69 +314,70 @@ include __DIR__ . '/../admin/header.php';
 
     // --- CORE FUNCTIONS ---
 
-    function checkSpatialCompliance(lat, lng, clickedFeature) {
-        if (complianceMarker) map.removeLayer(complianceMarker);
-        complianceMarker = L.marker([lat, lng]).addTo(map);
+function checkSpatialCompliance(lat, lng, clickedFeature) {
+    if (complianceMarker) map.removeLayer(complianceMarker);
+    complianceMarker = L.marker([lat, lng]).addTo(map);
 
-        let foundParcel = clickedFeature;
-        
-        // Point-in-Polygon detection
-        if (!foundParcel) {
-            const point = turf.point([lng, lat]);
-            parcelLayer.eachLayer(layer => {
-                try {
-                    if (turf.booleanPointInPolygon(point, layer.toGeoJSON())) {
-                        foundParcel = layer.feature;
-                    }
-                } catch(err) { console.error("Turf Error:", err); }
-            });
-        }
-
-        const card = document.getElementById('zoningComplianceCard');
-        const text = document.getElementById('complianceStatusText');
-        const btnArea = document.getElementById('complianceActionBtn');
-        if(card) card.style.display = 'block';
-
-        let zoneName = "Unknown/Outside Boundary";
-        if (foundParcel) {
-            const props = foundParcel.properties;
-            zoneName = props.zone || props.zone_code || props.ZONE_CODE || props.zoning_name || props.classification || props.NAME || "Unknown/Outside Boundary";
-        }
-
-        const isCompliant = (zoneName !== "Unknown/Outside Boundary") ? "compliant" : "non_compliant";
-        const badgeClass = (isCompliant === "compliant") ? "bg-success" : "bg-danger";
-        
-        let analysisText = `Spatial verification performed on coordinates [${lat.toFixed(6)}, ${lng.toFixed(6)}]. `;
-        if (zoneName !== "Unknown/Outside Boundary") {
-            analysisText += `The project site is verified to be within the ${zoneName} zone. `;
-            if (foundParcel && foundParcel.properties.lot) {
-                analysisText += `Matched cadastral record Lot ${foundParcel.properties.lot}, Block ${foundParcel.properties.blk}. `;
-            }
-            analysisText += `Automated spatial check indicates the location is consistent with LGU land use mapping.`;
-        } else {
-            analysisText += `CRITICAL: The project coordinates fall outside the established zoning map or parcels. Manual verification of boundaries is required.`;
-        }
-
-        if(text) text.innerHTML = `<span class="badge ${badgeClass} mb-1">${isCompliant.toUpperCase()}</span><br>Point is <b>${zoneName}</b>.`;
-
-        if (targetAppId && targetAppId !== "" && targetAppId !== "null" && btnArea) {
-            const parcelDatabaseId = foundParcel ? (foundParcel.properties.id || "") : ""; 
-
-            btnArea.innerHTML = `
-                <form action="../permit/view.php?id=${targetAppId}" method="POST">
-                    <input type="hidden" name="action" value="update_compliance">
-                    <input type="hidden" name="compliance_status" value="${isCompliant.toLowerCase()}">
-                    <input type="hidden" name="zoning_type" value="${zoneName}">
-                    <input type="hidden" name="parcel_id" value="${parcelDatabaseId}"> 
-                    <input type="hidden" name="technical_analysis" value="${analysisText}">
-                    <button type="submit" class="btn ${isCompliant === 'compliant' ? 'btn-success' : 'btn-danger'} fw-bold px-4 shadow-sm">
-                        CONFIRM & SEND TO APPLICATION
-                    </button>
-                </form>`;
-        } else if(btnArea) {
-            btnArea.innerHTML = `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> No Application ID Linked</span>`;
-        }
+    let foundParcel = clickedFeature;
+    
+    // 1. Point-in-Polygon detection
+    if (!foundParcel) {
+        const point = turf.point([lng, lat]);
+        parcelLayer.eachLayer(layer => {
+            try {
+                if (turf.booleanPointInPolygon(point, layer.toGeoJSON())) {
+                    foundParcel = layer.feature;
+                }
+            } catch(err) { console.error("Turf Error:", err); }
+        });
     }
+
+    const card = document.getElementById('zoningComplianceCard');
+    const text = document.getElementById('complianceStatusText');
+    const btnArea = document.getElementById('complianceActionBtn');
+    if(card) card.style.display = 'block';
+
+    // 2. Zone Name Extraction
+    let zoneName = "Unknown/Outside Boundary";
+    if (foundParcel) {
+        const props = foundParcel.properties;
+        zoneName = props.zone || props.zone_code || props.ZONE_CODE || props.zoning_name || props.classification || props.NAME || "Unknown/Outside Boundary";
+    }
+
+    const isCompliant = (zoneName !== "Unknown/Outside Boundary") ? "compliant" : "non_compliant";
+    const badgeClass = (isCompliant === "compliant") ? "bg-success" : "bg-danger";
+    
+    // 3. PROFESSIONAL DATA POINTS (Line-by-line format)
+    const finalLot = dbLot || (foundParcel && foundParcel.properties.lot ? foundParcel.properties.lot : 'N/A');
+    const finalBlock = dbBlock || (foundParcel && foundParcel.properties.block ? foundParcel.properties.block : 'N/A');
+    
+    let analysisText = `Coordinates: [${lat.toFixed(6)}, ${lng.toFixed(6)}]\n`;
+    analysisText += `Zoning Zone: ${zoneName}\n`;
+    analysisText += `Land Record: Lot ${finalLot}, Block ${finalBlock}\n`;
+    analysisText += `Status Check: Consistent with LGU Land Use Mapping.`;
+
+    // 4. Update UI Badge
+    if(text) text.innerHTML = `<span class="badge ${badgeClass} mb-1">${isCompliant.toUpperCase()}</span><br>Point is <b>${zoneName}</b>.`;
+
+    // 5. Form Submission Logic
+    if (targetAppId && targetAppId !== "" && targetAppId !== "null" && btnArea) {
+        const parcelDatabaseId = foundParcel ? (foundParcel.properties.id || "") : ""; 
+
+        btnArea.innerHTML = `
+            <form action="../permit/view.php?id=${targetAppId}" method="POST">
+                <input type="hidden" name="action" value="update_compliance">
+                <input type="hidden" name="compliance_status" value="${isCompliant.toLowerCase()}">
+                <input type="hidden" name="zoning_type" value="${zoneName}">
+                <input type="hidden" name="parcel_id" value="${parcelDatabaseId}"> 
+                <input type="hidden" name="technical_analysis" value="${analysisText}">
+                <button type="submit" class="btn ${isCompliant === 'compliant' ? 'btn-success' : 'btn-danger'} fw-bold px-4 shadow-sm">
+                    CONFIRM & SEND TO APPLICATION
+                </button>
+            </form>`;
+    } else if(btnArea) {
+        btnArea.innerHTML = `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> No Application ID Linked</span>`;
+    }
+}
 
     window.generateBuffer = function(lat, lng, meters) {
         if (window.currentBufferLayer) map.removeLayer(window.currentBufferLayer);
@@ -383,9 +426,8 @@ include __DIR__ . '/../admin/header.php';
                     geo.properties = { 
                         id: p.id, 
                         lot: p.lot_number, 
-                        blk: p.block, 
+                        block: p.block, 
                         zone: p.zoning_name, 
-                        // Ensure zone_code uses the short code (R1, C1) for the DB lookup
                         zone_code: p.zoning_code || p.zoning_id, 
                         brgy: p.barangay, 
                         street: p.street_name
@@ -404,7 +446,7 @@ include __DIR__ . '/../admin/header.php';
             if (p.geom_json && (val === "" || p.zoning_id == val)) {
                 let geo = JSON.parse(p.geom_json);
                 geo.properties = { 
-                    id: p.id, lot: p.lot_number, blk: p.block, 
+                    id: p.id, lot: p.lot_number, block: p.block, 
                     zone: p.zoning_name, zone_code: (geo.properties && geo.properties.zone_code) ? geo.properties.zone_code : p.zoning_id,
                     brgy: p.barangay, street: p.street_name 
                 };
@@ -441,7 +483,7 @@ include __DIR__ . '/../admin/header.php';
         const sGeo = JSON.parse(<?= json_encode($selectedParcel['geom_json']) ?>);
         L.geoJSON(sGeo, { style: { color: '#ffd600', weight: 5, fillOpacity: 0.6 } }).addTo(map);
         map.fitBounds(L.geoJSON(sGeo).getBounds());
-        checkSpatialCompliance(turf.center(sGeo).geometry.coordinates[1], turf.center(sGeo).geometry.coordinates[0], {properties: {id: '<?= $selectedParcel['id'] ?>', zone: '<?= $selectedParcel['zoning_name'] ?>', lot: '<?= $selectedParcel['lot_number'] ?>', blk: '<?= $selectedParcel['block'] ?>'}});
+        checkSpatialCompliance(turf.center(sGeo).geometry.coordinates[1], turf.center(sGeo).geometry.coordinates[0], {properties: {id: '<?= $selectedParcel['id'] ?>', zone: '<?= $selectedParcel['zoning_name'] ?>', lot: '<?= $selectedParcel['lot_number'] ?>', block: '<?= $selectedParcel['block'] ?>'}});
     <?php elseif ($appLat && $appLng): ?>
         map.setView([appLat, appLng], 18);
         checkSpatialCompliance(appLat, appLng, null);

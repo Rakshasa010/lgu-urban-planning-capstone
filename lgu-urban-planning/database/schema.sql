@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 22, 2026 at 09:28 PM
+-- Generation Time: Feb 26, 2026 at 04:29 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -57,10 +57,10 @@ CREATE TABLE `applications` (
 --
 
 INSERT INTO `applications` (`id`, `application_number`, `applicant_id`, `parcel_id`, `project_name`, `project_type`, `project_description`, `lot_number`, `barangay`, `street`, `block`, `latitude`, `longitude`, `status`, `assigned_officer_id`, `submitted_at`, `created_at`, `updated_at`, `record_type`, `verified_latitude`, `verified_longitude`, `parcel_details`) VALUES
-(3, 'DP-2026-2903', 15, NULL, 'Testing', 'Residential', 'test', '6835', '177', NULL, NULL, 44.00000000, 999.99999999, 'under_review', 1, '2026-02-08 13:15:33', '2026-02-08 13:15:33', '2026-02-20 01:30:09', 'online', NULL, NULL, NULL),
+(3, 'DP-2026-2903', 15, NULL, 'Testing', 'Residential', 'test', '6835', '177', NULL, NULL, 44.00000000, 999.99999999, 'under_review', 1, '2026-02-08 13:15:33', '2026-02-08 13:15:33', '2026-02-25 11:34:40', 'online', NULL, NULL, NULL),
 (4, 'DP-2026-9253', 15, NULL, 'blah', 'Commercial', 'blah', '7216', '178', NULL, NULL, 99.99999999, 999.99999999, 'submitted', NULL, '2026-02-11 17:45:26', '2026-02-11 17:45:26', '2026-02-11 17:45:26', 'online', NULL, NULL, NULL),
-(35, 'DP-2026-2180', 15, '114-05-002-01-001', 'Small Retail Convenience Store', 'Commercial', 'test', '1', 'Bagong Pag-asa', 'North Avenue', '2', 14.65330000, 121.03330000, 'submitted', NULL, '2026-02-19 20:46:44', '2026-02-19 20:46:44', '2026-02-20 14:34:30', 'walk-in', NULL, NULL, NULL),
-(36, 'DP-2026-2687', 15, '114-14-001-05-005', 'Proposed 2-Storey Residence', 'Residential', 'online entry', '5', 'South Triangle', 'Sgt. Esguerra Ave', '10', 14.63940000, 21.03470000, 'submitted', NULL, '2026-02-20 22:05:13', '2026-02-20 22:05:13', '2026-02-20 22:29:10', 'online', NULL, NULL, NULL);
+(35, 'DP-2026-2180', 15, '114-05-002-01-001', 'Small Retail Convenience Store', 'Commercial', 'test', '1', 'Bagong Pag-asa', 'North Avenue', '2', 14.65330000, 121.03330000, 'approved', NULL, '2026-02-19 20:46:44', '2026-02-19 20:46:44', '2026-02-26 03:26:33', 'walk-in', NULL, NULL, NULL),
+(37, 'DP-2026-4364', 15, '114-14-001-05-005', 'Proposed 2-Storey Residence', 'Residential', 'try', '5', 'South Triangle', 'Sgt. Esguerra Ave', '10', 14.63940000, 121.03470000, 'approved', NULL, '2026-02-24 02:42:40', '2026-02-24 02:42:40', '2026-02-26 03:19:18', 'online', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -88,7 +88,7 @@ CREATE TABLE `application_documents` (
 INSERT INTO `application_documents` (`id`, `application_id`, `document_type`, `file_name`, `file_path`, `file_size`, `mime_type`, `version`, `uploaded_by`, `created_at`) VALUES
 (3, 3, 'ownership_proof', 'thumb-1920-1355194.jpeg', 'documents/69888c758d19c_1770556533.jpeg', 302872, 'image/jpeg', 1, 15, '2026-02-08 13:15:33'),
 (4, 4, 'lot_plan', '#kenma#haikyuu#anime#pfp#icon.jpg', 'documents/698cc036a73d8_1770831926.jpg', 86486, 'image/jpeg', 1, 15, '2026-02-11 17:45:26'),
-(5, 36, 'lot_plan', '6107256810323512967.jpg', 'documents/6998da99bf059_1771625113.jpg', 107063, 'image/jpeg', 1, 15, '2026-02-20 22:05:13');
+(6, 37, 'site_plan', 'residential-plan.jpg', 'documents/699d102051d3a_1771900960.jpg', 8873, 'image/jpeg', 1, 15, '2026-02-24 02:42:40');
 
 -- --------------------------------------------------------
 
@@ -111,7 +111,35 @@ CREATE TABLE `application_status_history` (
 --
 
 INSERT INTO `application_status_history` (`id`, `application_id`, `status`, `remarks`, `changed_by`, `created_at`, `created_by`) VALUES
-(107, 36, 'submitted', 'Application submitted by applicant', 15, '2026-02-20 22:05:13', NULL);
+(108, 35, 'zoning_verified', 'GIS Verification: COMPLIANT (Zone: Major Commercial (C-2))', 1, '2026-02-23 05:19:32', NULL),
+(109, 37, 'submitted', 'Application submitted by applicant', 15, '2026-02-24 02:42:40', NULL),
+(112, 37, 'under_review', 'test1', 1, '2026-02-24 03:47:59', NULL),
+(113, 37, 'for_revision', 'test2', 1, '2026-02-24 03:48:36', NULL),
+(114, 37, 'zoning_verified', 'GIS Verification: COMPLIANT (Zone: Major Commercial (C-2))', 1, '2026-02-25 05:11:33', NULL),
+(115, 3, 'submitted', '.', 1, '2026-02-25 10:18:37', NULL),
+(116, 3, 'under_review', '.', 1, '2026-02-25 11:07:42', NULL),
+(117, 3, 'for_revision', 'test', 1, '2026-02-25 11:29:29', NULL),
+(118, 3, 'under_review', 'testt', 1, '2026-02-25 11:34:40', NULL),
+(119, 37, 'for_revision', 'Departmental simulations triggered for Roads & Energy.', 1, '2026-02-25 11:53:45', NULL),
+(120, 35, 'zoning_verified', 'GIS Verification: COMPLIANT (Zone: Major Commercial (C-2))', 1, '2026-02-25 11:55:38', NULL),
+(121, 37, 'for_revision', 'GIS Verification: COMPLIANT (Zone: Major Commercial (C-2))', 1, '2026-02-25 14:52:00', NULL),
+(122, 37, 'approved', 'Monitoring Test', 1, '2026-02-26 00:05:34', NULL),
+(123, 37, 'approved', 'test1', 1, '2026-02-26 01:18:48', NULL),
+(124, 35, 'approved', 'test101', 1, '2026-02-26 02:07:44', NULL),
+(125, 37, 'approved', 'test102', 1, '2026-02-26 02:10:58', NULL),
+(126, 35, 'approved', 'test103', 1, '2026-02-26 02:14:19', NULL),
+(127, 37, 'approved', 'test104', 1, '2026-02-26 02:22:32', NULL),
+(128, 35, 'approved', 'test105', 1, '2026-02-26 02:24:38', NULL),
+(129, 37, 'approved', 'test106', 1, '2026-02-26 02:31:00', NULL),
+(130, 37, 'approved', '107', 1, '2026-02-26 02:33:44', NULL),
+(131, 37, 'approved', '107', 1, '2026-02-26 02:41:18', NULL),
+(132, 35, 'approved', '108', 1, '2026-02-26 02:51:13', NULL),
+(133, 37, 'approved', '123', 1, '2026-02-26 02:58:03', NULL),
+(134, 37, 'approved', '124', 1, '2026-02-26 03:04:55', NULL),
+(135, 37, 'approved', '125', 1, '2026-02-26 03:09:30', NULL),
+(136, 37, 'approved', '126', 1, '2026-02-26 03:15:24', NULL),
+(137, 37, 'approved', '127', 1, '2026-02-26 03:19:18', NULL),
+(138, 35, 'approved', '15685', 1, '2026-02-26 03:26:33', NULL);
 
 -- --------------------------------------------------------
 
@@ -480,7 +508,73 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `entity_type`, `entity_id`,
 (341, NULL, 'logout', 'user', 16, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 20:01:11'),
 (342, NULL, 'login', 'user', 16, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 20:01:29'),
 (343, NULL, 'logout', 'user', 16, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 20:24:53'),
-(344, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 20:26:47');
+(344, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 20:26:47'),
+(345, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:26:52'),
+(346, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:28:23'),
+(347, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:28:29'),
+(348, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:28:53'),
+(349, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:29:01'),
+(350, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:35:21'),
+(351, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:35:31'),
+(352, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:37:23'),
+(353, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:37:33'),
+(354, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:40:30'),
+(355, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:40:37'),
+(356, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:40:37'),
+(357, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:40:40'),
+(358, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:40:48'),
+(359, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:43:35'),
+(360, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 21:43:47'),
+(361, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 22:05:13'),
+(362, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 22:16:41'),
+(363, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 22:16:57'),
+(364, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 22:26:07'),
+(365, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-22 22:26:38'),
+(366, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 02:33:57'),
+(367, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:11:44'),
+(368, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:12:35'),
+(369, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:12:43'),
+(370, NULL, 'login', 'user', 18, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:16:10'),
+(371, NULL, 'logout', 'user', 18, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:18:25'),
+(372, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:18:37'),
+(373, 15, 'logout', 'user', 15, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 04:43:37'),
+(374, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 05:10:56'),
+(375, 15, 'logout', 'user', 15, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 05:14:26'),
+(376, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 05:14:30'),
+(377, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 02:03:00'),
+(378, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 02:13:10'),
+(379, 15, 'submit_application', 'applications', 37, 'Submitted application #DP-2026-4364', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 02:42:40'),
+(380, 15, 'upload_document', 'application', 37, 'Uploaded document: site_plan', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 02:42:40'),
+(381, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 13:25:18'),
+(382, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 03:33:38'),
+(383, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 03:34:02'),
+(384, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 03:34:11'),
+(385, 15, 'logout', 'user', 15, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 03:37:02'),
+(386, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 03:37:07'),
+(387, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:06:37'),
+(388, 19, 'login', 'user', 19, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:16:47'),
+(389, 19, 'logout', 'user', 19, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:24:28'),
+(390, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:24:39'),
+(391, 15, 'logout', 'user', 15, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:31:58'),
+(392, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:32:29'),
+(393, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:33:06'),
+(394, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:33:17'),
+(395, 15, 'logout', 'user', 15, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:38:27'),
+(396, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 04:38:36'),
+(397, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 05:01:42'),
+(398, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 10:13:42'),
+(399, 15, 'login', 'user', 15, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 10:44:30'),
+(400, 15, 'send_message', 'message', 34, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 10:57:07'),
+(401, 15, 'send_message', 'message', 35, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:03:36'),
+(402, 15, 'send_message', 'message', 37, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:14:35'),
+(403, 15, 'send_message', 'message', 38, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:14:55'),
+(404, 15, 'send_message', 'message', 39, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:22:52'),
+(405, 15, 'send_message', 'message', 40, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:24:07'),
+(406, 15, 'send_message', 'message', 41, 'Sent message to user ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 11:25:22'),
+(407, 1, 'logout', 'user', 1, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 18:04:08'),
+(408, 17, 'login', 'user', 17, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 18:04:18'),
+(409, 17, 'logout', 'user', 17, 'User logged out', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 18:05:21'),
+(410, 1, 'login', 'user', 1, 'User logged in', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 19:07:38');
 
 -- --------------------------------------------------------
 
@@ -510,21 +604,25 @@ CREATE TABLE `impact_assessments` (
   `application_id` int(11) NOT NULL,
   `traffic_score` decimal(10,2) DEFAULT NULL,
   `traffic_flag` enum('ok','high') DEFAULT 'ok',
+  `traffic_notes` text DEFAULT NULL,
   `energy_score` decimal(10,2) DEFAULT NULL,
   `energy_flag` enum('ok','high') DEFAULT 'ok',
+  `energy_notes` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `assessed_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `checked_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `impact_assessments`
 --
 
-INSERT INTO `impact_assessments` (`id`, `application_id`, `traffic_score`, `traffic_flag`, `energy_score`, `energy_flag`, `notes`, `assessed_by`, `created_at`) VALUES
-(5, 3, 90.00, 'high', 78.00, 'high', 'Auto assessment (mock): Traffic 90, Energy 78', 1, '2026-02-10 15:44:17'),
-(6, 3, NULL, '', NULL, '', 'Inspection requested. Waiting for departmental reports.', 1, '2026-02-10 16:20:35'),
-(7, 3, NULL, '', NULL, '', 'Inspection requested. Waiting for departmental reports.', 1, '2026-02-10 16:20:42');
+INSERT INTO `impact_assessments` (`id`, `application_id`, `traffic_score`, `traffic_flag`, `traffic_notes`, `energy_score`, `energy_flag`, `energy_notes`, `notes`, `assessed_by`, `created_at`, `checked_at`) VALUES
+(5, 3, 90.00, 'high', NULL, 78.00, 'high', NULL, 'Auto assessment (mock): Traffic 90, Energy 78', 1, '2026-02-10 15:44:17', NULL),
+(6, 3, NULL, '', NULL, NULL, '', NULL, 'Inspection requested. Waiting for departmental reports.', 1, '2026-02-10 16:20:35', NULL),
+(7, 3, NULL, '', NULL, NULL, '', NULL, 'Inspection requested. Waiting for departmental reports.', 1, '2026-02-10 16:20:42', NULL),
+(9, 37, NULL, 'ok', 'AUTOMATED SIMULATION: Traffic impact study completed. Proposed project entrance meets road safety standards. No major congestion expected.', NULL, 'ok', 'AUTOMATED SIMULATION: Grid capacity verified. Local transformer can handle the projected electrical load of the new development.', NULL, NULL, '2026-02-25 11:53:45', '2026-02-25 19:53:45');
 
 -- --------------------------------------------------------
 
@@ -547,8 +645,8 @@ CREATE TABLE `inspections` (
 --
 
 INSERT INTO `inspections` (`id`, `application_id`, `scheduled_at`, `inspector_id`, `status`, `notes`, `created_at`) VALUES
-(37, 4, '2026-02-24 02:50:00', 1, 'scheduled', NULL, '2026-02-12 18:51:02'),
-(39, 4, '2026-02-13 02:53:00', 1, 'scheduled', NULL, '2026-02-12 18:53:31');
+(59, 37, '2026-02-26 11:19:00', 1, 'completed', '\nChecklist Completed: Compliant with all requirements.\nChecklist Completed: Compliant with all requirements.\nChecklist Completed: Compliant with all requirements.', '2026-02-26 03:19:18'),
+(60, 35, '2026-02-26 11:26:00', 1, 'completed', '\nChecklist Completed: Compliant with all requirements.', '2026-02-26 03:26:33');
 
 -- --------------------------------------------------------
 
@@ -573,10 +671,14 @@ CREATE TABLE `messages` (
 --
 
 INSERT INTO `messages` (`id`, `application_id`, `sender_id`, `receiver_id`, `subject`, `message`, `is_read`, `message_type`, `created_at`) VALUES
-(26, 4, 1, 15, 'OFFICIAL NOTICE: Inspection Schedule for App #4', 'Dear Applicant,\n\nThis is an official notification from the Building Official\'s Office. An onsite inspection for your application (#4) has been scheduled on February 24, 2026, 2:50 AM.\n\nRemarks: No specific instructions provided.\n\nPlease ensure that the project site is accessible and a representative is present during the visit. Thank you.', 0, 'message', '2026-02-12 18:51:02'),
-(28, 4, 1, 15, 'OFFICIAL NOTICE: Inspection Schedule for App #4', 'Dear Applicant,\n\nThis is an official notification from the Building Official\'s Office. An onsite inspection for your application (#4) has been scheduled on February 13, 2026, 2:53 AM.\n\nRemarks: s\n\nPlease ensure that the project site is accessible and a representative is present during the visit. Thank you.', 0, 'message', '2026-02-12 18:53:31'),
-(29, 3, 1, 15, 'Application Status Updated', 'Your application status has been updated to: Under review', 0, 'notification', '2026-02-19 21:27:34'),
-(30, 3, 1, 15, 'Application Status Updated', 'Your application status has been updated to: Under review', 0, 'notification', '2026-02-20 01:30:09');
+(72, 37, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-4364', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Proposed 2-Storey Residence\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-4364\n- Location: Barangay South Triangle\n\nOffice Remarks:\n\"123\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 02:58:03'),
+(74, 37, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-4364', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Proposed 2-Storey Residence\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-4364\n- Location: Barangay South Triangle\n\nOffice Remarks:\n\"124\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 03:04:55'),
+(76, 37, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-4364', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Proposed 2-Storey Residence\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-4364\n- Location: Barangay South Triangle\n\nOffice Remarks:\n\"125\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 03:09:30'),
+(78, 37, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-4364', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Proposed 2-Storey Residence\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-4364\n- Location: Barangay South Triangle\n\nOffice Remarks:\n\"126\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 03:15:24'),
+(80, 37, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-4364', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Proposed 2-Storey Residence\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-4364\n- Location: Barangay South Triangle\n\nOffice Remarks:\n\"127\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 03:19:18'),
+(81, 37, 1, 15, 'OFFICIAL NOTICE: Inspection Schedule for App #37', 'Dear Applicant,\n\nThis is an official notification from the Building Official\'s Office. An onsite inspection for your application (#37) has been scheduled on February 26, 2026, 11:19 AM.\n\nRemarks: No specific instructions provided.\n\nPlease ensure that the project site is accessible and a representative is present during the visit. Thank you.', 0, 'message', '2026-02-26 03:19:40'),
+(82, 35, 1, 15, 'CONGRATULATIONS: Approved Locational Clearance / Permit #DP-2026-2180', 'Dear Applicant,\n\nWe are pleased to inform you that your application for \'Small Retail Convenience Store\' has been officially APPROVED.\n\nYour Locational Clearance / Permit is now attached to this record. You may download and print the official document directly from the \'Documents\' section of your applicant portal.\n\nPermit Details:\n- Permit No: DP-2026-2180\n- Location: Barangay Bagong Pag-asa\n\nOffice Remarks:\n\"15685\"\n\nThank you for your cooperation.\n\nQuezon City Urban Planning Department', 0, '', '2026-02-26 03:26:33'),
+(83, 35, 1, 15, 'OFFICIAL NOTICE: Inspection Schedule for App #35', 'Dear Applicant,\n\nThis is an official notification from the Building Official\'s Office. An onsite inspection for your application (#35) has been scheduled on February 26, 2026, 11:26 AM.\n\nRemarks: No specific instructions provided.\n\nPlease ensure that the project site is accessible and a representative is present during the visit. Thank you.', 0, 'message', '2026-02-26 03:26:51');
 
 -- --------------------------------------------------------
 
@@ -821,7 +923,21 @@ INSERT INTO `reports` (`id`, `report_type`, `report_name`, `generated_by`, `file
 (133, 'audit_summary', 'System Audit Summary', 1, NULL, '{\"year\":2026}', '2026-01-01 18:19:58'),
 (134, 'audit_summary', 'System Audit Summary', 1, NULL, '{\"year\":2025}', '2026-01-01 18:19:58'),
 (135, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2026}', '2026-02-20 21:33:05'),
-(136, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2025}', '2026-02-20 21:33:05');
+(136, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2025}', '2026-02-20 21:33:05'),
+(137, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2026}', '2026-02-23 05:25:14'),
+(138, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2025}', '2026-02-23 05:25:14'),
+(139, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2026}', '2026-02-25 05:28:39'),
+(140, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2025}', '2026-02-25 05:28:39'),
+(141, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2026}', '2026-02-25 05:30:49'),
+(142, 'applications_summary', 'Applications Summary', 1, NULL, '{\"year\":2025}', '2026-02-25 05:30:49'),
+(143, 'applications_summary', 'Applications Summary (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 17:50:14'),
+(144, 'audit_summary', 'System Audit Summary (Latest 100)', 1, NULL, '{\"year\":2026}', '2026-02-25 17:53:43'),
+(145, 'audit_summary', 'System Audit Summary (Latest 100)', 1, NULL, '{\"year\":2025}', '2026-02-25 17:53:43'),
+(146, 'user_growth', 'User Growth Report (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 17:54:02'),
+(147, 'user_growth', 'User Growth Report (2025)', 1, NULL, '{\"year\":2025}', '2026-02-25 17:54:02'),
+(148, 'monthly_analytics', 'Monthly Analytics (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 17:54:10'),
+(149, 'zoning_compliance', 'Zoning Compliance Report (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 18:02:00'),
+(150, 'inspector_performance', 'Inspector Workload Summary (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 18:03:40');
 
 -- --------------------------------------------------------
 
@@ -874,7 +990,7 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `is_active`) VALUES
-(1, 'system_announcement', 'Welcome!!', 0);
+(1, 'system_announcement', 'We are currently performing system updates. You may encounter issues with registration or submissions; please save your drafts and try again later.', 0);
 
 -- --------------------------------------------------------
 
@@ -913,9 +1029,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `role`, `id_front_path`, `id_back_path`, `phone`, `birth_date`, `street`, `barangay`, `city`, `verification_token`, `is_verified`, `rejection_reason`, `is_active`, `created_at`, `updated_at`, `last_activity`, `otp_code`, `otp_expiry`) VALUES
-(1, 'admin', 'admin@lgu.gov.ph', '$2y$10$glP2wdrg2PXTtNH0Nd6tX.m9ondcehIPhsJk70mfoZRiCy1icD36W', 'System', 'Administrator', 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, '2025-12-21 19:07:31', '2026-02-22 20:13:30', '2026-02-23 04:13:30', NULL, NULL),
-(15, 'aelousssn', 'yumiedalagan01@gmail.com', '$2y$10$FV8qOqX2TsYa1/lF5E6NBeDdZMbt9WplyWxo21lcTWJsxAr8MVsuG', 'Aelous', 'Nexus', 'applicant', 'uploads/ids/aelousssn_FRONT_1770468733.jpg', 'uploads/ids/aelousssn_BACK_1770468733.jpg', '9207249702', '2003-11-07', '6835 Sto Nino St.', '177', 'Caloocan City', NULL, 1, NULL, 1, '2026-02-07 12:52:13', '2026-02-21 16:06:30', '2026-02-22 00:06:30', NULL, NULL),
-(17, 'inspector', 'inspector@lgu.gov.ph', '$2y$10$y6S0D3FpaYF/bvns.DtE5uyG/qcEvUOLUiZzxKg5kvL4Mt3vwS8r2', 'Inspector', 'Juan', 'inspector', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, '2026-02-22 20:26:07', '2026-02-22 20:26:47', '2026-02-23 04:26:47', NULL, NULL);
+(1, 'admin', 'admin@lgu.gov.ph', '$2y$10$glP2wdrg2PXTtNH0Nd6tX.m9ondcehIPhsJk70mfoZRiCy1icD36W', 'System', 'Administrator', 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, '2025-12-21 19:07:31', '2026-02-26 03:26:52', '2026-02-26 11:26:52', NULL, NULL),
+(15, 'aelousssn', 'yumiedalagan01@gmail.com', '$2y$10$FV8qOqX2TsYa1/lF5E6NBeDdZMbt9WplyWxo21lcTWJsxAr8MVsuG', 'Aelous', 'Nexus', 'applicant', 'uploads/ids/aelousssn_FRONT_1770468733.jpg', 'uploads/ids/aelousssn_BACK_1770468733.jpg', '9207249702', '2003-11-07', '6835 Sto Nino St.', '177', 'Caloocan City', NULL, 1, NULL, 1, '2026-02-07 12:52:13', '2026-02-26 03:10:24', '2026-02-26 11:10:24', NULL, NULL),
+(17, 'inspector', 'inspector@lgu.gov.ph', '$2y$10$y6S0D3FpaYF/bvns.DtE5uyG/qcEvUOLUiZzxKg5kvL4Mt3vwS8r2', 'Inspector', 'Juan', 'inspector', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, '2026-02-22 20:26:07', '2026-02-25 18:05:21', '2026-02-26 02:05:21', NULL, NULL),
+(19, 'your.fallensky', 'unknownfire01@gmail.com', '$2y$10$ewgGzoHy46/XxQxzXunDO.qq02I0wZgUYst52/8Jokanb70FGKDf6', 'Skyler', 'Rush', 'applicant', 'uploads/ids/your.fallensky_FRONT_1771992940.jpg', 'uploads/ids/your.fallensky_BACK_1771992940.jpg', '9207249702', '2003-11-07', '6835 Sto Nino St.', '177', 'Caloocan City', NULL, 1, NULL, 1, '2026-02-25 04:15:40', '2026-02-25 04:24:28', '2026-02-25 12:24:28', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -998,7 +1115,8 @@ CREATE TABLE `zoning_compliance_checks` (
 --
 
 INSERT INTO `zoning_compliance_checks` (`id`, `application_id`, `parcel_id`, `zoning_type`, `compliance_status`, `technical_analysis`, `checked_by`, `checked_at`) VALUES
-(56, 35, '', 'Major Commercial (C-2)', 'compliant', 'AUTOMATED WARNING: Project type \'Commercial\' is NOT listed as a permitted use in Major Commercial (C-2). Spatial verification performed on coordinates [14.653300, 121.033300]. The project site is verified to be within the Major Commercial (C-2) zone. Matched cadastral record Lot C2-01, Block undefined. Automated spatial check indicates the location is consistent with LGU land use mapping.', 1, '2026-02-21 04:54:53');
+(56, 35, '10', 'Major Commercial (C-2)', 'compliant', 'AUTOMATED WARNING: Project type \'Commercial\' is NOT listed as a permitted use in Major Commercial (C-2). Spatial verification performed on coordinates [14.653300, 121.033300]. The project site is verified to be within the Major Commercial (C-2) zone. Matched cadastral record Lot C2-01, Block undefined. Automated spatial check indicates the location is consistent with LGU land use mapping.', 1, '2026-02-25 19:55:38'),
+(59, 37, '10', 'Major Commercial (C-2)', 'compliant', 'Coordinates: [14.639400, 121.034700]\r\nZoning Zone: Major Commercial (C-2)\r\nLand Record: Lot 5, Block 10\r\nStatus Check: Consistent with LGU Land Use Mapping.', 1, '2026-02-25 22:52:00');
 
 --
 -- Indexes for dumped tables
@@ -1156,25 +1274,25 @@ ALTER TABLE `zoning_compliance_checks`
 -- AUTO_INCREMENT for table `applications`
 --
 ALTER TABLE `applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `application_documents`
 --
 ALTER TABLE `application_documents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `application_status_history`
 --
 ALTER TABLE `application_status_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=139;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=345;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=411;
 
 --
 -- AUTO_INCREMENT for table `gis_layers`
@@ -1186,19 +1304,19 @@ ALTER TABLE `gis_layers`
 -- AUTO_INCREMENT for table `impact_assessments`
 --
 ALTER TABLE `impact_assessments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `inspections`
 --
 ALTER TABLE `inspections`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
 
 --
 -- AUTO_INCREMENT for table `parcels`
@@ -1216,7 +1334,7 @@ ALTER TABLE `permitted_uses`
 -- AUTO_INCREMENT for table `reports`
 --
 ALTER TABLE `reports`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
@@ -1234,7 +1352,7 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `violations`
@@ -1252,7 +1370,7 @@ ALTER TABLE `zoning_classifications`
 -- AUTO_INCREMENT for table `zoning_compliance_checks`
 --
 ALTER TABLE `zoning_compliance_checks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
 
 --
 -- Constraints for dumped tables

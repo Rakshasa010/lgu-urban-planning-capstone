@@ -9,53 +9,28 @@
     <script src="/lgu-urban-planning/assets/js/main.js"></script>
 
     <style>
-/* GLASSMORPHISM FOOTER */
-.page-footer {
-    width: 100%;
-    padding: 12px 45px;
-    background: rgba(var(--bs-body-bg-rgb), 0.15);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-top: 1px solid rgba(var(--bs-border-color-rgb), 0.25);
-    box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 1000;
-    animation: fadeUp 0.6s ease-out;
-}
+.page-footer { width: 100%; padding: 12px 45px; background: rgba(var(--bs-body-bg-rgb), 0.15); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid rgba(var(--bs-border-color-rgb), 0.25); box-shadow: 0 -4px 25px rgba(0,0,0,0.15); position: fixed; bottom: 0; left: 0; z-index: 1000; animation: fadeUp 0.6s ease-out; }
+.footer-container { display: flex; justify-content: center; align-items: center; gap: 15px; color: #ffffff; font-size: 0.85rem; }
+.footer-container a { color: #ffffff; text-decoration: none; opacity: 0.8; font-weight: 500; transition: 0.3s; }
+.footer-container a:hover { opacity: 1; color: var(--bs-primary); text-shadow: 0 0 10px rgba(var(--bs-primary-rgb), 0.3); }
+.footer-container .separator { opacity: 0.6; color: #ffffff; }
+body { padding-bottom: 70px; }
 
-.footer-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    color: #ffffff; 
-    font-size: 0.85rem;
-}
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) { .page-footer { padding: 12px 20px; } }
+@media (max-width: 768px) { .footer-container { gap: 12px; font-size: 0.8rem; } }
+@media (max-width: 768px) { .modal-dialog { max-width: 90%; margin: 1.75rem auto; } }
 
-.footer-container a {
-    color: #ffffff;
-    text-decoration: none;
-    opacity: 0.8;
-    font-weight: 500;
-    transition: 0.3s;
-}
+@media (max-width: 480px) { .page-footer { padding: 10px 5px; height: auto; } }
+@media (max-width: 480px) { .footer-container { flex-wrap: wrap; gap: 5px 10px; justify-content: center; font-size: 0.75rem; } }
+@media (max-width: 480px) { .footer-container .separator { display: none; } }
+@media (max-width: 480px) { body { padding-bottom: 90px; } }
 
-.footer-container a:hover {
-    opacity: 1;
-    color: var(--bs-primary);
-    text-shadow: 0 0 10px rgba(var(--bs-primary-rgb), 0.3);
-}
-
-.footer-container .separator {
-    opacity: 0.6;
-    color: #ffffff;
-}
-
-body {
-    padding-bottom: 70px; 
-}         
+@media (max-width: 320px) { .footer-container { flex-direction: column; gap: 2px; text-align: center; } }
+@media (max-width: 320px) { .footer-container a { font-size: 0.7rem; display: block; padding: 2px 0; } }
+@media (max-width: 320px) { body { padding-bottom: 110px; } }
+@media (max-width: 320px) { .modal-body { padding: 15px !important; font-size: 0.8rem !important; } }
+@media (max-width: 320px) { .modal-header h5 { font-size: 0.9rem; } }
 </style>
 
     <footer class="page-footer">
