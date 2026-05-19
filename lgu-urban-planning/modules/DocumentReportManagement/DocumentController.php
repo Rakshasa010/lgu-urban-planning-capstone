@@ -25,9 +25,7 @@ class DocumentController {
         
         if (!$application) return [];
         
-        $hasAccess = ($_SESSION['role'] === 'admin' || 
-                      $_SESSION['role'] === 'zoning_officer' || 
-                      $_SESSION['role'] === 'building_official' ||
+        $hasAccess = (in_array($_SESSION['role'], ['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor']) ||
                       $application['applicant_id'] == $_SESSION['user_id'] ||
                       $application['assigned_officer_id'] == $_SESSION['user_id']);
         
@@ -45,6 +43,13 @@ class DocumentController {
     
     public function generateReport($reportType, $filters = []) {
         $this->auth->requirePermission('generate_reports');
+
+        // Restrict sensitive report types to admin/super_admin only
+        $adminOnlyReports = ['audit_summary', 'user_growth', 'inspector_performance'];
+        if (in_array($reportType, $adminOnlyReports) && !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
+            return ['success' => false, 'error' => 'You do not have permission to generate this report.'];
+        }
+
         $report = null;
         
         switch ($reportType) {
@@ -213,9 +218,7 @@ private function generatePermitsIssuedReport($filters) {
         }
 
         // Security Check
-        $hasAccess = ($_SESSION['role'] === 'admin' || 
-                      $_SESSION['role'] === 'zoning_officer' || 
-                      $_SESSION['role'] === 'building_official' ||
+        $hasAccess = (in_array($_SESSION['role'], ['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor']) ||
                       $document['applicant_id'] == $_SESSION['user_id'] ||
                       $document['assigned_officer_id'] == $_SESSION['user_id']);
 
@@ -255,4 +258,4 @@ private function generatePermitsIssuedReport($filters) {
             die("Error: File not found on server.");
         }
     }
-} 
+}

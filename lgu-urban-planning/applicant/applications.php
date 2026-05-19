@@ -14,35 +14,388 @@ $auth->requireRole('applicant');
 $applicantController = new ApplicantController();
 $applications = $applicantController->getMyApplications();
 
-$pageTitle = 'My Applications';
+// ── i18n — reads language saved by settings.php ──────────────────────────────
+$_aLang = $_SESSION['locale_language'] ?? 'en_PH';
+
+$_aT = [
+    'en_PH' => [
+        'page_title'       => 'My Applications',
+        'heading'          => 'My Applications',
+        'btn_submit_new'   => 'Submit New Application',
+        'col_app_num'      => 'Application #',
+        'col_project'      => 'Project Name',
+        'col_status'       => 'Status',
+        'col_documents'    => 'Documents',
+        'col_submitted'    => 'Submitted',
+        'col_action'       => 'Action',
+        'empty_table'      => 'No applications yet.',
+        'empty_link'       => 'Submit your first application',
+        'doc_count'        => 'doc(s)',
+        'tap_to_view'      => 'Tap to view details',
+        'btn_view'         => 'View',
+    ],
+    'fil' => [
+        'page_title'       => 'Aking mga Aplikasyon',
+        'heading'          => 'Aking mga Aplikasyon',
+        'btn_submit_new'   => 'Magsumite ng Bagong Aplikasyon',
+        'col_app_num'      => 'Aplikasyon #',
+        'col_project'      => 'Pangalan ng Proyekto',
+        'col_status'       => 'Katayuan',
+        'col_documents'    => 'Mga Dokumento',
+        'col_submitted'    => 'Isinumite',
+        'col_action'       => 'Aksyon',
+        'empty_table'      => 'Wala pang mga aplikasyon.',
+        'empty_link'       => 'Isumite ang iyong unang aplikasyon',
+        'doc_count'        => 'dok.',
+        'tap_to_view'      => 'I-tap upang makita ang mga detalye',
+        'btn_view'         => 'Tingnan',
+    ],
+];
+
+function _at(string $key): string {
+    global $_aT, $_aLang;
+    return $_aT[$_aLang][$key] ?? $_aT['en_PH'][$key] ?? $key;
+}
+
+$pageTitle = _at('page_title');
+$isAuthPage = true;
 include __DIR__ . '/../user/header.php';
 ?>
 
-<div class="p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>My Applications</h2>
+<style>
+/* =============================================
+   MY APPLICATIONS PAGE — FULLY RESPONSIVE
+   Breakpoints: 768px | 480px | 320px
+   No extra wrapper padding — main-content in
+   header.php already handles outer spacing.
+   ============================================= */
+
+.apps-page {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.apps-page *,
+.apps-page *::before,
+.apps-page *::after {
+    box-sizing: border-box;
+}
+
+/* --- Page header row (title + button) --- */
+.apps-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.apps-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.apps-header .btn {
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* --- Card --- */
+.apps-page .card {
+    width: 100%;
+    border: 1px solid rgba(0,0,0,.1);
+    border-radius: 0.5rem;
+    overflow: hidden;  /* clip table edges on mobile */
+}
+
+.apps-page .card-body {
+    padding: 0;        /* table fills the card edge-to-edge */
+    overflow-x: auto;  /* horizontal scroll if table overflows */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* --- Table (desktop) --- */
+.apps-table {
+    width: 100%;
+    min-width: 600px;  /* enforce minimum so columns don't crush */
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.apps-table thead th {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.apps-table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.apps-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.apps-table tbody tr:hover {
+    background: #f8f9fb;
+}
+
+/* --- Empty state --- */
+.apps-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* --- Status badge --- */
+.apps-table .badge {
+    font-size: 0.72rem;
+    padding: 0.3em 0.65em;
+    border-radius: 999px;
+}
+
+/* --- View button --- */
+.apps-table .btn-sm {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.75rem;
+    white-space: nowrap;
+}
+
+/* =============================================
+   768px — Tablet
+   ============================================= */
+@media (max-width: 768px) {
+
+    .apps-header h2 { font-size: 1.3rem; }
+
+    .apps-header .btn {
+        font-size: 0.82rem;
+        padding: 0.4rem 0.875rem;
+    }
+
+    .apps-table {
+        font-size: 0.82rem;
+        min-width: 520px;
+    }
+
+    .apps-table thead th {
+        font-size: 0.72rem;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .apps-table tbody td {
+        padding: 0.6rem 0.75rem;
+    }
+}
+
+/* =============================================
+   480px — Large Mobile
+   Swap the table for stacked cards per row
+   ============================================= */
+@media (max-width: 480px) {
+
+    .apps-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .apps-header h2 { font-size: 1.15rem; }
+
+    .apps-header .btn {
+        width: 100%;
+        text-align: center;
+        font-size: 0.85rem;
+    }
+
+    /* Hide the scrollable table wrapper */
+    .apps-page .card {
+        border: none;
+        background: transparent;
+        box-shadow: none !important;
+    }
+
+    .apps-page .card-body {
+        padding: 0;
+        overflow-x: visible;
+    }
+
+    /* Hide the real <table> */
+    .apps-table { display: none; }
+
+    /* Show card-style rows rendered via data-* attributes */
+    .app-card-row {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 0.5rem;
+        padding: 0.875rem 1rem;
+        margin-bottom: 0.65rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .app-card-row .app-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .app-card-row .app-num {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #0d6efd;
+        letter-spacing: 0.03em;
+        font-family: monospace;
+    }
+
+    .app-card-row .app-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1a1a2e;
+        margin-bottom: 0.35rem;
+        word-break: break-word;
+    }
+
+    .app-card-row .app-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .app-card-row .app-meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .app-card-row .app-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f0f0f0;
+        gap: 0.5rem;
+    }
+
+    .app-card-row .app-footer .badge {
+        font-size: 0.7rem;
+        padding: 0.3em 0.7em;
+        border-radius: 999px;
+    }
+
+    .app-card-row .app-footer .btn {
+        font-size: 0.78rem;
+        padding: 0.3rem 0.875rem;
+    }
+
+    /* Empty state in card mode */
+    .apps-empty-card {
+        text-align: center;
+        padding: 2rem 1rem;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 0.5rem;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+}
+
+/* =============================================
+   320px — Small Mobile
+   ============================================= */
+@media (max-width: 320px) {
+
+    .apps-header h2 { font-size: 1rem; }
+
+    .apps-header .btn {
+        font-size: 0.78rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .app-card-row {
+        padding: 0.7rem 0.75rem;
+        margin-bottom: 0.55rem;
+        border-radius: 0.375rem;
+    }
+
+    .app-card-row .app-num {
+        font-size: 0.68rem;
+    }
+
+    .app-card-row .app-name {
+        font-size: 0.82rem;
+    }
+
+    .app-card-row .app-meta {
+        font-size: 0.7rem;
+        gap: 0.35rem 0.75rem;
+    }
+
+    .app-card-row .app-footer .badge {
+        font-size: 0.65rem;
+    }
+
+    .app-card-row .app-footer .btn {
+        font-size: 0.72rem;
+        padding: 0.28rem 0.65rem;
+    }
+
+    .apps-empty-card {
+        font-size: 0.8rem;
+        padding: 1.5rem 0.75rem;
+    }
+}
+</style>
+
+<div class="apps-page">
+
+    <!-- Page header -->
+    <div class="apps-header">
+        <h2><?php echo _at('heading'); ?></h2>
         <a href="/lgu-urban-planning/applicant/apply.php" class="btn btn-primary">
-            <i class="bi bi-plus"></i> Submit New Application
+            <i class="bi bi-plus me-1"></i> <?php echo _at('btn_submit_new'); ?>
         </a>
     </div>
-    
-    <div class="card">
+
+    <!-- ── Desktop / Tablet: scrollable table ── -->
+    <div class="card shadow-sm">
         <div class="card-body">
-            <table class="table">
+            <table class="table apps-table mb-0">
                 <thead>
                     <tr>
-                        <th>Application #</th>
-                        <th>Project Name</th>
-                        <th>Status</th>
-                        <th>Documents</th>
-                        <th>Submitted</th>
-                        <th>Action</th>
+                        <th><?php echo _at('col_app_num'); ?></th>
+                        <th><?php echo _at('col_project'); ?></th>
+                        <th><?php echo _at('col_status'); ?></th>
+                        <th><?php echo _at('col_documents'); ?></th>
+                        <th><?php echo _at('col_submitted'); ?></th>
+                        <th><?php echo _at('col_action'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($applications)): ?>
                         <tr>
-                            <td colspan="6" class="text-center">No applications yet. <a href="/lgu-urban-planning/applicant/apply.php">Submit your first application</a></td>
+                            <td colspan="6" class="apps-empty">
+                                <?php echo _at('empty_table'); ?>
+                                <a href="/lgu-urban-planning/applicant/apply.php"><?php echo _at('empty_link'); ?></a>
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($applications as $app): ?>
@@ -54,10 +407,11 @@ include __DIR__ . '/../user/header.php';
                                     <?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?>
                                 </span>
                             </td>
-                            <td><?php echo $app['document_count']; ?> document(s)</td>
+                            <td><?php echo $app['document_count']; ?> <?php echo _at('doc_count'); ?></td>
                             <td><?php echo Helper::formatDate($app['submitted_at'] ?? $app['created_at']); ?></td>
                             <td>
-                                <a href="/lgu-urban-planning/applicant/view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-primary">View</a>
+                                <a href="/lgu-urban-planning/applicant/view.php?id=<?php echo $app['id']; ?>"
+                                   class="btn btn-sm btn-primary"><?php echo _at('btn_view'); ?></a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -66,7 +420,61 @@ include __DIR__ . '/../user/header.php';
             </table>
         </div>
     </div>
+
+    <!-- ── Mobile (≤480px): stacked card rows ── -->
+    <div class="d-none" id="app-cards-mobile">
+        <?php if (empty($applications)): ?>
+            <div class="apps-empty-card">
+                <?php echo _at('empty_table'); ?>
+                <a href="/lgu-urban-planning/applicant/apply.php"><?php echo _at('empty_link'); ?></a>
+            </div>
+        <?php else: ?>
+            <?php foreach ($applications as $app): ?>
+            <div class="app-card-row">
+                <div class="app-row-top">
+                    <span class="app-num"><?php echo htmlspecialchars($app['application_number']); ?></span>
+                    <span class="badge bg-<?php echo Helper::getStatusBadge($app['status']); ?>">
+                        <?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?>
+                    </span>
+                </div>
+                <div class="app-name"><?php echo htmlspecialchars($app['project_name']); ?></div>
+                <div class="app-meta">
+                    <span><i class="bi bi-file-earmark"></i> <?php echo $app['document_count']; ?> <?php echo _at('doc_count'); ?></span>
+                    <span><i class="bi bi-calendar3"></i> <?php echo Helper::formatDate($app['submitted_at'] ?? $app['created_at']); ?></span>
+                </div>
+                <div class="app-footer">
+                    <span class="text-muted" style="font-size:0.72rem;"><?php echo _at('tap_to_view'); ?></span>
+                    <a href="/lgu-urban-planning/applicant/view.php?id=<?php echo $app['id']; ?>"
+                       class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye me-1"></i><?php echo _at('btn_view'); ?>
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
 </div>
 
-<?php include __DIR__ . '/../user/footer.php'; ?>
+<script>
+/* Switch between table and card layout based on viewport width */
+(function () {
+    const tableCard   = document.querySelector('.apps-page > .card');
+    const mobileCards = document.getElementById('app-cards-mobile');
 
+    function applyLayout() {
+        if (window.innerWidth <= 480) {
+            if (tableCard)   tableCard.classList.add('d-none');
+            if (mobileCards) mobileCards.classList.remove('d-none');
+        } else {
+            if (tableCard)   tableCard.classList.remove('d-none');
+            if (mobileCards) mobileCards.classList.add('d-none');
+        }
+    }
+
+    applyLayout();
+    window.addEventListener('resize', applyLayout);
+})();
+</script>
+
+<?php include __DIR__ . '/../user/footer.php'; ?>

@@ -153,10 +153,15 @@ function updateNotifications() {
                     let html = '';
                     data.messages.forEach(n => {
                         const unreadClass = (n.is_read == 0) ? 'unread' : '';
+                        const preview = (n.message || '')
+                            .replace(/<[^>]*>/g, '')   // strip HTML tags
+                            .substring(0, 80)
+                            .trim()
+                            + ((n.message || '').replace(/<[^>]*>/g, '').length > 80 ? '…' : '');
                         html += `
                             <a href="/lgu-urban-planning/admin/messages.php" class="notif-item ${unreadClass}">
                                 <div class="fw-bold small text-dark">${n.subject}</div>
-                                <div class="text-dark truncate-text small">${n.message}</div>
+                                <div class="text-dark truncate-text small">${preview}</div>
                                 <small class="text-primary" style="font-size: 0.7rem; font-weight: 500;">
                                     ${n.formatted_date}
                                 </small>
@@ -176,4 +181,72 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // I-store ang interval sa variable para pwedeng i-clear kung kailangan
     const notifInterval = setInterval(updateNotifications, 5000); 
+});
+// =============================================================================
+// SESSION TIMEOUT
+// =============================================================================
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.body.dataset.authPage !== 'true') return;
+    if (window._sessionTimeoutInitialized) return;
+    window._sessionTimeoutInitialized = true;
+
+    const SESSION_DURATION  = 120 * 1000; // 2 minutes total idle before logout
+    const WARNING_THRESHOLD =  90 * 1000; // Show warning after 90s of inactivity
+    const LOGOUT_URL        = '/lgu-urban-planning/logout.php';
+
+    let warningTimer = null;
+    let logoutTimer  = null;
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="sessionTimeoutModal" style="
+            display:none; position:fixed; inset:0; z-index:99999;
+            background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+            <div style="
+                background:#fff; border-radius:12px; padding:32px 28px;
+                max-width:380px; width:90%; text-align:center;
+                box-shadow:0 8px 32px rgba(0,0,0,.2);">
+                <div style="font-size:2rem; margin-bottom:8px;">⚠️</div>
+                <h5 style="margin:0 0 8px; font-weight:700; color:#111;">Session Expiring</h5>
+                <p style="margin:0 0 20px; color:#555; font-size:.95rem;">
+                    Your session will expire in 30 seconds due to inactivity.
+                    Click OK to stay logged in.
+                </p>
+                <button onclick="window.dismissTimeoutWarning()"
+                    style="background:#6366f1;color:#fff;border:none;border-radius:8px;
+                           padding:8px 24px;font-weight:600;cursor:pointer;">OK</button>
+            </div>
+        </div>`);
+
+    function resetSessionTimers() {
+        clearTimeout(warningTimer);
+        clearTimeout(logoutTimer);
+
+        // Hide the warning if it was visible (user activity dismissed it implicitly)
+        document.getElementById('sessionTimeoutModal').style.display = 'none';
+
+        warningTimer = setTimeout(() => {
+            document.getElementById('sessionTimeoutModal').style.display = 'flex';
+        }, WARNING_THRESHOLD);
+
+        // Redirect to logout.php — properly destroys the PHP session server-side
+        logoutTimer = setTimeout(() => {
+            window.location.href = LOGOUT_URL;
+        }, SESSION_DURATION);
+    }
+
+    window.dismissTimeoutWarning = function () {
+        fetch('/lgu-urban-planning/core/keep_alive.php', { method: 'POST', credentials: 'same-origin' })
+            .catch(() => {});
+        resetSessionTimers();
+    };
+
+    // Any user activity resets timers — including while the warning modal is visible.
+    // This means an active user is NEVER incorrectly logged out.
+    ['keydown', 'mousedown', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, resetSessionTimers, { passive: true });
+    });
+
+    // Kick off on page load
+    resetSessionTimers();
 });

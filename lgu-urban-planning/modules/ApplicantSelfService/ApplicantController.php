@@ -142,49 +142,67 @@ class ApplicantController {
         return $application;
     }
 
-    public function getMessagesPaginated($applicationId = null, $filter = 'all', $limit = 5, $offset = 0) {
+    public function getMessagesPaginated($applicationId = null, $filter = 'all', $limit = 5, $offset = 0, $search = '') {
         $this->auth->requireRole('applicant');
         $userId = $_SESSION['user_id'];
-        
+
         if ($filter === 'sent') {
             $where = "WHERE m.sender_id = ?";
             $params = [$userId];
         } else {
             $where = "WHERE m.receiver_id = ?";
             $params = [$userId];
-            
+
             if ($filter === 'unread') {
                 $where .= " AND m.is_read = 0";
             } elseif ($filter === 'read') {
                 $where .= " AND m.is_read = 1";
             }
         }
-        
+
         if ($applicationId) {
             $where .= " AND m.application_id = ?";
             $params[] = $applicationId;
         }
-        
-        $totalResult = $this->db->fetchOne("SELECT COUNT(*) as count FROM messages m $where", $params);
+
+        // Search: only match subject, message body, and sender full name
+        if (!empty($search)) {
+            $like = '%' . $search . '%';
+            $where .= " AND (
+                m.subject LIKE ?
+                OR m.message LIKE ?
+                OR CONCAT(sender.first_name, ' ', sender.last_name) LIKE ?
+            )";
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        // Count needs the same JOIN as main query so the sender LIKE works
+        $countSql = "SELECT COUNT(*) as count
+                     FROM messages m
+                     LEFT JOIN users sender ON m.sender_id = sender.id
+                     $where";
+        $totalResult = $this->db->fetchOne($countSql, $params);
         $total = $totalResult['count'] ?? 0;
-        
-        $sql = "SELECT m.*, 
+
+        $sql = "SELECT m.*,
                        sender.first_name as sender_first_name, sender.last_name as sender_last_name,
                        CONCAT(receiver.first_name, ' ', receiver.last_name) as receiver_name,
                        a.application_number
                 FROM messages m
-                LEFT JOIN users sender ON m.sender_id = sender.id
+                LEFT JOIN users sender   ON m.sender_id   = sender.id
                 LEFT JOIN users receiver ON m.receiver_id = receiver.id
                 LEFT JOIN applications a ON m.application_id = a.id
-                $where 
-                ORDER BY m.created_at DESC 
+                $where
+                ORDER BY m.created_at DESC
                 LIMIT $limit OFFSET $offset";
-                
+
         $items = $this->db->fetchAll($sql, $params);
-        
+
         return [
             'items' => $items,
-            'total' => $total
+            'total' => $total,
         ];
     }
     

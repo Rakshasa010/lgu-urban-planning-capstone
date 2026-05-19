@@ -9,7 +9,7 @@ require_once __DIR__ . '/../core/Helper.php';
 require_once __DIR__ . '/../modules/PermitProcessing/PermitController.php';
 
 $auth = new Auth();
-$auth->requireRole(['admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
+$auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
 
 $db = Database::getInstance();
 $permitController = new PermitController();
@@ -80,6 +80,7 @@ if ($filters['status'] === 'overdue') {
 $applications = $permitController->getApplications($filters);
 
 $pageTitle = 'Applications';
+$isAuthPage = true;
 include __DIR__ . '/../admin/header.php';
 ?>
 
@@ -91,24 +92,228 @@ include __DIR__ . '/../admin/header.php';
     #map-container { height: 300px; width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; }
     .select2-container--bootstrap-5 .select2-selection { border-radius: 0.375rem; }
     .table-danger:hover td { background-color: #f8d7da !important; }
-    
-    /* FIX: Force both headers and data cells to stay in 1 layer */
-    .table thead th, 
-    .table tbody td { 
-        white-space: nowrap; 
-        vertical-align: middle; 
+
+    .table thead th,
+    .table tbody td {
+        white-space: nowrap;
+        vertical-align: middle;
     }
 
-    /* Optional: Allow Project Name to wrap if it's very long, but keep ID on one line */
     .project-name-cell {
         white-space: normal !important;
         min-width: 200px;
+    }
+
+    /* ================================================
+       MOBILE RESPONSIVE
+       768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+       ================================================ */
+
+    /* --- 768px: Tablet --- */
+    @media (max-width: 768px) {
+
+        /* Page header */
+        .p-4 { padding: 1rem !important; }
+
+        .d-flex.justify-content-between.align-items-center.mb-4 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 10px;
+        }
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0;
+        }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn {
+            width: 100%;
+            font-size: 0.875rem;
+        }
+
+        /* Filter form: stack inputs */
+        .card-body .row.g-3 .col-md-4,
+        .card-body .row.g-3 .col-md-3,
+        .card-body .row.g-3 .col-md-2 {
+            width: 100%;
+            flex: 0 0 100%;
+        }
+
+        /* Overdue alert: stack button below text */
+        .alert.d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start !important;
+        }
+        .alert.d-flex.justify-content-between .btn {
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Table: shrink font, hide lower-priority columns */
+        .table { font-size: 0.8rem; }
+        .table th, .table td { padding: 0.5rem 0.4rem; }
+
+        /* Hide: Assigned To, Date */
+        .table thead th:nth-child(5),
+        .table tbody td:nth-child(5),
+        .table thead th:nth-child(6),
+        .table tbody td:nth-child(6) { display: none; }
+
+        .project-name-cell { min-width: 130px; }
+
+        /* Modal — override Bootstrap modal-lg max-width so it fits the viewport */
+        .modal-dialog.modal-lg {
+            max-width: calc(100% - 1rem) !important;
+            width: calc(100% - 1rem) !important;
+            margin: 0.5rem auto;
+        }
+        .modal-body.p-4 { padding: 1rem !important; }
+
+        /* Modal form: restore 2-column layout for larger fields at 768px */
+        .modal-body .col-md-8 { width: 66.66%; flex: 0 0 66.66%; }
+        .modal-body .col-md-4 { width: 33.33%; flex: 0 0 33.33%; }
+        .modal-body .col-md-6 { width: 50%;    flex: 0 0 50%; }
+
+        .modal-footer { padding: 0.75rem 1rem; }
+        .modal-footer .btn { padding: 8px 20px; font-size: 0.875rem; }
+        #map-container { height: 240px; }
+    }
+
+    /* --- 480px: Large Mobile --- */
+    @media (max-width: 480px) {
+
+        .p-4 { padding: 0.75rem !important; }
+
+        /* Page header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.1rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn {
+            font-size: 0.82rem;
+            padding: 7px 12px;
+        }
+
+        /* Filter card */
+        .card-body { padding: 0.75rem !important; }
+        .card-body .row.g-3 { --bs-gutter-y: 0.5rem; }
+        .form-control, .form-select { font-size: 0.82rem; padding: 6px 10px; }
+
+        /* Table: also hide Applicant col */
+        .table { font-size: 0.74rem; }
+        .table th, .table td { padding: 0.4rem 0.3rem; }
+
+        .table thead th:nth-child(3),
+        .table tbody td:nth-child(3),
+        .table thead th:nth-child(5),
+        .table tbody td:nth-child(5),
+        .table thead th:nth-child(6),
+        .table tbody td:nth-child(6) { display: none; }
+
+        /* Keep App# shorter */
+        .table thead th:first-child,
+        .table tbody td:first-child { padding-left: 0.5rem !important; }
+        .table thead th:last-child,
+        .table tbody td:last-child { padding-right: 0.5rem !important; }
+
+        .table .btn-sm { font-size: 0.7rem; padding: 3px 10px; }
+        .table .badge { font-size: 0.65rem; padding: 3px 6px; }
+        .project-name-cell { min-width: 100px; font-size: 0.74rem; }
+
+        /* Modal */
+        .modal-header { padding: 0.75rem 1rem; }
+        .modal-title { font-size: 0.95rem; }
+        .modal-body.p-4 { padding: 0.75rem !important; }
+        .modal-body .row.g-3 { --bs-gutter-y: 0.5rem; }
+        .modal-body .form-label { font-size: 0.72rem; margin-bottom: 2px; }
+        .modal-body .form-control,
+        .modal-body .form-select { font-size: 0.82rem; padding: 6px 9px; }
+        .modal-footer .btn { padding: 7px 16px; font-size: 0.82rem; }
+        #map-container { height: 200px; }
+
+        /* Coord row: stack lat/lng */
+        .modal-body .row.g-2 .col-md-6 {
+            width: 100%;
+            flex: 0 0 100%;
+        }
+    }
+
+    /* --- 320px: Small Mobile --- */
+    @media (max-width: 320px) {
+
+        .p-4 { padding: 0.5rem !important; }
+
+        /* Page header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn {
+            font-size: 0.78rem;
+            padding: 6px 10px;
+        }
+
+        /* Filter */
+        .card-body { padding: 0.6rem !important; }
+        .form-control, .form-select { font-size: 0.78rem; padding: 5px 8px; }
+        .card-body .row.g-3 { --bs-gutter-y: 0.4rem; }
+
+        /* Table: keep only App#, Status, Action */
+        .table { font-size: 0.68rem; }
+        .table th, .table td { padding: 0.35rem 0.25rem; }
+
+        .table thead th:nth-child(2),
+        .table tbody td:nth-child(2),
+        .table thead th:nth-child(3),
+        .table tbody td:nth-child(3),
+        .table thead th:nth-child(5),
+        .table tbody td:nth-child(5),
+        .table thead th:nth-child(6),
+        .table tbody td:nth-child(6) { display: none; }
+
+        .table .btn-sm { font-size: 0.62rem; padding: 2px 7px; }
+        .table .badge { font-size: 0.6rem; padding: 2px 5px; }
+
+        /* Alerts */
+        .alert { font-size: 0.78rem; padding: 0.6rem 0.75rem; }
+
+        /* Modal */
+        .modal-dialog { margin: 0.25rem; }
+        .modal-header { padding: 0.6rem 0.75rem; }
+        .modal-title { font-size: 0.88rem; }
+        .modal-body.p-4 { padding: 0.6rem !important; }
+        .modal-body .form-label { font-size: 0.68rem; }
+        .modal-body .form-control,
+        .modal-body .form-select { font-size: 0.78rem; padding: 5px 8px; }
+        .modal-body .row.g-3 { --bs-gutter-y: 0.35rem; }
+        .modal-footer { padding: 0.5rem 0.75rem; gap: 6px; }
+        .modal-footer .btn { padding: 6px 12px; font-size: 0.78rem; }
+        /* Side-by-side buttons at 320px */
+        .modal-footer {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: stretch;
+        }
+        .modal-footer .btn {
+            flex: 1;
+            text-align: center;
+        }
+        #map-container { height: 180px; }
+
+        /* Pick on Map button — full width */
+        #btn-select-map { width: 100%; margin-top: 4px; font-size: 0.75rem; }
+        .d-flex.justify-content-between.align-items-center.mb-2 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 4px;
+        }
     }
 </style>
 
 <div class="p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Development Permit Applications</h2>
+        <div>
+            <h2 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: #1e293b;">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle">
+                    <i class="bi bi-file-earmark-text" style="color:#10b981;font-size:1.9rem;"></i>
+                </span>
+                Development Permit Applications
+            </h2>
+            <p class="text-muted mb-0">Manage and monitor all development permit applications.</p>
+        </div>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#manualAddModal">
             <i class="bi bi-plus-lg me-1"></i> Manual Add Application
         </button>
@@ -139,15 +344,21 @@ include __DIR__ . '/../admin/header.php';
     
     <div class="card mb-3 shadow-sm border-0">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3" id="filterForm">
                 <div class="col-md-4">
                     <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0" name="search" placeholder="Search project or applicant..." value="<?php echo htmlspecialchars($filters['search']); ?>">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted" id="appSearchIcon"></i></span>
+                        <input type="text" class="form-control border-start-0 border-end-0" name="search" id="appSearchInput"
+                               placeholder="Search project or applicant..."
+                               value="<?php echo htmlspecialchars($filters['search']); ?>"
+                               autocomplete="off">
+                        <button type="button" id="appClearSearch" class="btn btn-outline-secondary <?php echo $filters['search'] ? '' : 'd-none'; ?>" title="Clear">
+                            <i class="bi bi-x"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select" name="status">
+                    <select class="form-select" name="status" id="appStatusSelect">
                         <option value="">All Status</option>
                         <option value="submitted" <?php echo $filters['status'] === 'submitted' ? 'selected' : ''; ?>>Submitted</option>
                         <option value="under_review" <?php echo $filters['status'] === 'under_review' ? 'selected' : ''; ?>>Under Review</option>
@@ -156,9 +367,6 @@ include __DIR__ . '/../admin/header.php';
                         <option value="rejected" <?php echo $filters['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                         <option value="overdue" <?php echo ($filters['status'] === 'overdue') ? 'selected' : ''; ?> style="color: #dc3545; font-weight: bold;">Overdue (3+ Days)</option>
                     </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100 shadow-sm">Filter</button>
                 </div>
                 <div class="col-md-2">
                     <a href="applications.php" class="btn btn-outline-secondary w-100 shadow-sm">Reset</a>
@@ -233,12 +441,12 @@ include __DIR__ . '/../admin/header.php';
     </div>
 </div>
 
-<div class="modal fade" id="manualAddModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="manualAddModal" aria-hidden="true" aria-labelledby="manualAddModalLabel">
     <div class="modal-dialog modal-lg">
         <form action="applications.php" method="POST" class="modal-content border-0 shadow-lg">
             <input type="hidden" name="action" value="manual_add">
             <div class="modal-header bg-success text-white py-3">
-                <h5 class="modal-title d-flex align-items-center"><i class="bi bi-pencil-square me-2"></i>Manual Application Entry</h5>
+                <h5 class="modal-title d-flex align-items-center" id="manualAddModalLabel"><i class="bi bi-pencil-square me-2"></i>Manual Application Entry</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -419,7 +627,88 @@ include __DIR__ . '/../admin/header.php';
             let val = $(this).val().replace(/[^0-9]/g, '');
             // Dito mo pwedeng dagdagan ng auto-dash logic kung gusto mo
         });
+
+        // FIX: aria-hidden focus warning — use inert attribute to properly manage focus
+        const manualAddModal = document.getElementById('manualAddModal');
+        if (manualAddModal) {
+            // Before Bootstrap sets aria-hidden, blur focused descendants and set inert
+            manualAddModal.addEventListener('hide.bs.modal', function () {
+                const focused = manualAddModal.querySelector(':focus');
+                if (focused) focused.blur();
+                manualAddModal.inert = true;
+            });
+
+            // Once fully hidden, clean up — Bootstrap will handle aria-hidden
+            manualAddModal.addEventListener('hidden.bs.modal', function () {
+                manualAddModal.inert = false;
+                // Return focus to the trigger button
+                const trigger = document.querySelector('[data-bs-target="#manualAddModal"]');
+                if (trigger) trigger.focus();
+            });
+
+            // Remove inert when opening so the form is fully interactive
+            manualAddModal.addEventListener('show.bs.modal', function () {
+                manualAddModal.inert = false;
+            });
+        }
     });
+
+// ── Live Search & Filter ──────────────────────────────────────────────────────
+(function () {
+    const searchInput  = document.getElementById('appSearchInput');
+    const clearBtn     = document.getElementById('appClearSearch');
+    const searchIcon   = document.getElementById('appSearchIcon');
+    const statusSelect = document.getElementById('appStatusSelect');
+    const form         = document.getElementById('filterForm');
+    if (!searchInput || !form) return;
+
+    let debounceTimer = null;
+
+    function submitForm() {
+        form.submit();
+    }
+
+    // Live search with 500ms debounce
+    searchInput.addEventListener('input', function () {
+        clearBtn.classList.toggle('d-none', this.value === '');
+        searchIcon.className = 'bi bi-arrow-clockwise text-muted';
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            searchIcon.className = 'bi bi-search text-muted';
+            submitForm();
+        }, 500);
+    });
+
+    // Enter key submits immediately
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            searchIcon.className = 'bi bi-search text-muted';
+            submitForm();
+        }
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            clearBtn.classList.add('d-none');
+            clearTimeout(debounceTimer);
+            submitForm();
+        }
+    });
+
+    // Clear button
+    clearBtn.addEventListener('click', function () {
+        searchInput.value = '';
+        clearBtn.classList.add('d-none');
+        clearTimeout(debounceTimer);
+        submitForm();
+    });
+
+    // Status dropdown — submit immediately on change
+    statusSelect.addEventListener('change', function () {
+        clearTimeout(debounceTimer);
+        submitForm();
+    });
+})();
 </script>
 
 <?php include __DIR__ . '/../admin/footer.php'; ?>

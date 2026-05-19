@@ -5,9 +5,22 @@
 require_once __DIR__ . '/../core/Database.php';
 $dbHeader = Database::getInstance()->getConnection();
 
-$stmt = $dbHeader->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'system_announcement' AND is_active = 1 LIMIT 1");
-$stmt->execute();
-$announcement = $stmt->fetchColumn();
+$stmt = $dbHeader->query(
+    "SELECT setting_key, setting_value, is_active
+     FROM system_settings
+     WHERE setting_key IN ('system_announcement', 'system_announcement_type')"
+);
+$_annRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$_annMap  = [];
+foreach ($_annRows as $_r) { $_annMap[$_r['setting_key']] = $_r; }
+
+$announcement     = ($_annMap['system_announcement']['is_active'] ?? 0)
+                    ? ($_annMap['system_announcement']['setting_value'] ?? '')
+                    : '';
+$_rawType         = $_annMap['system_announcement_type']['setting_value'] ?? 'warning';
+$announcementType = in_array($_rawType, ['info', 'warning', 'success', 'danger'], true)
+                    ? $_rawType : 'warning';
+unset($_annRows, $_annMap, $_r, $_rawType);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,7 +31,7 @@ $announcement = $stmt->fetchColumn();
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="icon" type="image/x-icon" href="assets/favicon.jpg" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.png" />
         
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
@@ -63,30 +76,39 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
 [data-bs-theme="dark"] body .strength-meter { background-color: #334155 !important; }
 
 /* MOBILE RESPONSIVE */
-@media (max-width: 768px) { .main-header { padding: 10px 20px; } }
-@media (max-width: 768px) { .header-brand h6 { font-size: 0.9rem; max-width: none; overflow: visible; white-space: nowrap; } }
-@media (max-width: 768px) { .header-accessibility { gap: 10px !important; } }
-@media (max-width: 768px) { .btn-group-sm > .btn { padding: 4px 10px; font-size: 12px; } }
-@media (max-width: 768px) { .brand-icon { width: 20px; height: 20px; } }
+@media (max-width: 768px) {
+    .main-header { padding: 10px 20px; }
+    .header-brand h6 { font-size: 0.85rem; white-space: nowrap; }
+    .header-accessibility { gap: 8px !important; }
+    .brand-icon { width: 20px; height: 20px; }
+}
 
-@media (max-width: 480px) { .main-header { padding: 8px 12px; } }
-@media (max-width: 480px) { .header-brand h6 { font-size: 0.8rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
-@media (max-width: 480px) { .header-accessibility { gap: 6px !important; } }
-@media (max-width: 480px) { .announcement-banner { font-size: 0.75rem; padding: 10px 30px; } }
-@media (max-width: 480px) { .brand-icon { width: 18px; height: 18px; } }
+@media (max-width: 425px) {
+    .main-header { padding: 8px 12px; }
+    .header-brand h6 { font-size: 0.78rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-accessibility { gap: 6px !important; }
+    .header-accessibility .btn-outline-light { padding: 2px 8px !important; font-size: 11px !important; }
+    .header-accessibility .bi-house-door,
+    .header-accessibility .bi-moon-stars { font-size: 1rem !important; }
+    .announcement-banner { font-size: 0.72rem; padding: 8px 30px; }
+    .brand-icon { width: 18px; height: 18px; }
+}
 
-@media (max-width: 320px) { .header-brand h6 { display: none; } }
-@media (max-width: 320px) { .header-brand a::before { content: none; } }
-@media (max-width: 320px) { .header-brand h6::before { content: "LGU-UPD"; } }
-@media (max-width: 320px) { .header-accessibility { gap: 4px !important; } }
-@media (max-width: 320px) { .btn-group-sm > .btn { padding: 2px 5px; font-size: 10px; } }
+@media (max-width: 320px) {
+    .main-header { padding: 7px 10px; }
+    .header-brand h6 { display: none; }
+    .header-accessibility { gap: 5px !important; }
+    .header-accessibility .btn-outline-light { padding: 2px 6px !important; font-size: 10px !important; }
+    .header-accessibility .bi-house-door,
+    .header-accessibility .bi-moon-stars { font-size: 0.95rem !important; }
+}
 
 </style>
 </head>
 <body>
 
 <?php if (!empty($announcement)): ?>
-    <div id="announcementAlert" class="alert alert-warning alert-dismissible fade show border-0 rounded-0 m-0 text-center announcement-banner" role="alert">
+    <div id="announcementAlert" class="alert alert-<?php echo $announcementType; ?> alert-dismissible fade show border-0 rounded-0 m-0 text-center announcement-banner" role="alert">
         <div class="d-flex align-items-center justify-content-center w-100">
             <i class="bi bi-megaphone-fill me-2"></i>
             <strong>Notice:</strong>&nbsp;<?php echo htmlspecialchars($announcement); ?>
@@ -98,16 +120,16 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
 <header class="main-header">
 <div class="header-brand">
         <a href="index.php" class="header-brand-link d-flex align-items-center">
-            <img src="assets/favicon.jpg" alt="Logo" class="brand-icon me-2">
+            <img src="assets/favicon.png" alt="Logo" class="brand-icon me-2">
             <h6 class="mb-0 fw-normal">Urban Planning and Development</h6>
         </a>
     </div>
-    <div class="header-accessibility d-flex align-items-center gap-3">
-        <a href="index.php" class="text-white opacity-75" title="Home"><i class="bi bi-house-door fs-5"></i></a>
+    <div class="header-accessibility d-flex align-items-center gap-2">
+        <a href="index.php" class="text-white opacity-75 d-flex align-items-center" title="Home"><i class="bi bi-house-door" style="font-size:1.1rem;"></i></a>
         <div class="btn-group btn-group-sm">
-            <button type="button" id="btn-en" class="btn btn-outline-light px-3 active">EN</button>
-            <button type="button" id="btn-tl" class="btn btn-outline-light px-3">TL</button>
+            <button type="button" id="btn-en" class="btn btn-outline-light active" style="padding:3px 10px;font-size:12px;">EN</button>
+            <button type="button" id="btn-tl" class="btn btn-outline-light" style="padding:3px 10px;font-size:12px;">TL</button>
         </div>
-        <button class="btn btn-link text-white p-0" id="darkModeBtn" type="button"><i class="bi bi-moon-stars fs-5"></i></button>
+        <button class="btn btn-link text-white p-0 d-flex align-items-center" id="darkModeBtn" type="button"><i class="bi bi-moon-stars" style="font-size:1.1rem;"></i></button>
     </div>
 </header>

@@ -18,7 +18,7 @@ $applicantController = new ApplicantController();
 $dashboardData['my_applications'] = $applicantController->getMyApplications();
 $dashboardData['unread_messages'] = $applicantController->getUnreadMessageCount();
 
+$isAuthPage = true; // Enables session timeout timer in user.js
 include __DIR__ . '/header.php';
 include __DIR__ . '/dashboard.php';
 include __DIR__ . '/footer.php';
-

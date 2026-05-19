@@ -20,7 +20,7 @@ class PermitController {
     }
     
     public function getApplications($filters = []) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official', 'assessor']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
         
         $sql = "SELECT a.*, 
                        u.first_name as applicant_first_name, u.last_name as applicant_last_name,
@@ -63,7 +63,7 @@ class PermitController {
     }
     
     public function getApplicationDetails($applicationId) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official', 'assessor']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
         
         // FIXED: Removed explicitly named missing columns to prevent PDOException
         $application = $this->db->fetchOne(
@@ -114,7 +114,7 @@ class PermitController {
     }
     
     public function updateApplicationStatus($applicationId, $status, $remarks = null, $assignOfficerId = null) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor']);
         
         // Guard: if approving, ensure impact assessment not flagged high
         if ($status === 'approved') {
@@ -169,7 +169,7 @@ class PermitController {
     }
     
     public function addRemarks($applicationId, $remarks) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
         
         $this->db->query(
             "INSERT INTO application_status_history (application_id, status, remarks, changed_by) 
@@ -183,7 +183,7 @@ class PermitController {
     }
     
     public function generatePermit($applicationId) {
-        $this->auth->requireRole(['admin', 'building_official']);
+        $this->auth->requireRole(['admin', 'super_admin', 'building_official']);
         
         $application = $this->getApplicationDetails($applicationId);
         
@@ -245,17 +245,48 @@ class PermitController {
     }
     
     public function getDashboardStats() {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official']);
-        
-        $stats = [];
-        $stats['total_applications'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications")['count'];
-        $stats['pending_review'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status IN ('submitted', 'under_review')")['count'];
-        $stats['approved'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'approved'")['count'];
-        $stats['rejected'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'rejected'")['count'];
-        $stats['for_revision'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'for_revision'")['count'];
-        
-        // Optional: Add overdue count for dashboard quick view
-        $stats['overdue_count'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE created_at <= DATE_SUB(NOW(), INTERVAL 3 DAY) AND status NOT IN ('approved', 'rejected', 'cancelled')")['count'];
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
+
+        $role   = $_SESSION['role']    ?? null;
+        $userId = $_SESSION['user_id'] ?? null;
+        $stats  = [];
+
+        // Inspectors and assessors only see applications assigned to them
+        if (in_array($role, ['inspector', 'assessor'])) {
+            $base = "SELECT COUNT(*) as count FROM applications WHERE assigned_officer_id = ?";
+            $stats['total_applications'] = $this->db->fetchOne($base, [$userId])['count'];
+            $stats['pending_review']     = $this->db->fetchOne($base . " AND status IN ('submitted', 'under_review')", [$userId])['count'];
+            $stats['approved']           = $this->db->fetchOne($base . " AND status = 'approved'",     [$userId])['count'];
+            $stats['rejected']           = $this->db->fetchOne($base . " AND status = 'rejected'",     [$userId])['count'];
+            $stats['for_revision']       = $this->db->fetchOne($base . " AND status = 'for_revision'", [$userId])['count'];
+            $stats['overdue_count']      = $this->db->fetchOne(
+                $base . " AND created_at <= DATE_SUB(NOW(), INTERVAL 3 DAY) AND status NOT IN ('approved', 'rejected', 'cancelled')",
+                [$userId]
+            )['count'];
+
+        // Zoning officers see only zoning-related types
+        } elseif ($role === 'zoning_officer') {
+            $base = "SELECT COUNT(*) as count FROM applications WHERE project_type IN ('zoning', 'subdivision', 'rezoning')";
+            $stats['total_applications'] = $this->db->fetchOne($base)['count'];
+            $stats['pending_review']     = $this->db->fetchOne($base . " AND status IN ('submitted', 'under_review')")['count'];
+            $stats['approved']           = $this->db->fetchOne($base . " AND status = 'approved'")['count'];
+            $stats['rejected']           = $this->db->fetchOne($base . " AND status = 'rejected'")['count'];
+            $stats['for_revision']       = $this->db->fetchOne($base . " AND status = 'for_revision'")['count'];
+            $stats['overdue_count']      = $this->db->fetchOne(
+                $base . " AND created_at <= DATE_SUB(NOW(), INTERVAL 3 DAY) AND status NOT IN ('approved', 'rejected', 'cancelled')"
+            )['count'];
+
+        // Admin and building_official see everything
+        } else {
+            $stats['total_applications'] = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications")['count'];
+            $stats['pending_review']     = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status IN ('submitted', 'under_review')")['count'];
+            $stats['approved']           = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'approved'")['count'];
+            $stats['rejected']           = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'rejected'")['count'];
+            $stats['for_revision']       = $this->db->fetchOne("SELECT COUNT(*) as count FROM applications WHERE status = 'for_revision'")['count'];
+            $stats['overdue_count']      = $this->db->fetchOne(
+                "SELECT COUNT(*) as count FROM applications WHERE created_at <= DATE_SUB(NOW(), INTERVAL 3 DAY) AND status NOT IN ('approved', 'rejected', 'cancelled')"
+            )['count'];
+        }
 
         return $stats;
     }
@@ -268,7 +299,7 @@ class PermitController {
     }
 
     public function sendInspectionRequest($applicationId) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'inspector']);
         
         $sql = "INSERT INTO impact_assessments (application_id, traffic_flag, energy_flag, notes, assessed_by)
                 VALUES (?, 'awaiting', 'awaiting', 'Inspection requested. Waiting for departmental reports.', ?)
@@ -276,15 +307,15 @@ class PermitController {
                     traffic_flag = 'awaiting', 
                     energy_flag = 'awaiting', 
                     notes = 'Inspection re-requested.',
-                    assessed_by = ?";
+                    assessed_by = VALUES(assessed_by)";
         
         $this->auth->logActivity($_SESSION['user_id'], 'request_inspection', 'application', $applicationId, "Sent inspection request to Roads and Energy groups");
         
-        return $this->db->query($sql, [$applicationId, $_SESSION['user_id'], $_SESSION['user_id']]);
+        return $this->db->query($sql, [$applicationId, $_SESSION['user_id']]);
     }
     
     public function saveImpactAssessment($applicationId, $trafficScore, $trafficFlag, $energyScore, $energyFlag, $notes = null) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official', 'assessor']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor']);
         
         $this->db->query(
             "INSERT INTO impact_assessments (application_id, traffic_score, traffic_flag, energy_score, energy_flag, notes, assessed_by)
@@ -305,7 +336,7 @@ class PermitController {
     }
     
     public function runMockImpactAssessment($application) {
-        $this->auth->requireRole(['admin', 'zoning_officer', 'building_official']);
+        $this->auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official']);
         
         $projectType = strtolower($application['project_type'] ?? '');
         $trafficScore = rand(40, 95);

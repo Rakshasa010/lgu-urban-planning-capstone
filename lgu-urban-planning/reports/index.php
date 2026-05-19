@@ -9,7 +9,23 @@ require_once __DIR__ . '/../modules/DocumentReportManagement/DocumentController.
 
 $auth = new Auth();
 $auth->requirePermission('generate_reports');
-$auth->requireRole(['admin', 'zoning_officer']);
+$auth->requireRole(['admin', 'super_admin']);
+
+// Load locale settings for date/time display
+$_db = Database::getInstance();
+$_localeRows   = $_db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('locale_time_format', 'locale_timezone', 'locale_date_format')");
+$_localeMap    = array_column($_localeRows, 'setting_value', 'setting_key');
+$dashTimeFormat  = $_localeMap['locale_time_format'] ?? '12h';
+$dashTimezone    = $_localeMap['locale_timezone']    ?? 'Asia/Manila';
+$dashDateFormat  = $_localeMap['locale_date_format'] ?? 'F j, Y';
+$phpDateFormat   = match($dashDateFormat) {
+    'M/D/YYYY'   => 'm/d/Y',
+    'D/M/YYYY'   => 'd/m/Y',
+    'YYYY-MM-DD' => 'Y-m-d',
+    default      => 'F j, Y',
+};
+$_tz = new DateTimeZone($dashTimezone);
+$_now = new DateTime('now', $_tz);
 
 $documentController = new DocumentController();
 $report = null;
@@ -80,6 +96,7 @@ if (isset($_REQUEST['report_type'])) {
 }
 
 $pageTitle = 'Reports & Analytics';
+$isAuthPage = true;
 include __DIR__ . '/../admin/header.php';
 ?>
 
@@ -100,12 +117,209 @@ include __DIR__ . '/../admin/header.php';
     @media (max-width: 992px) { .report-main-grid { grid-template-columns: 1fr; } }
     .table-dark-header { background-color: #f8f9fa; }
     [data-bs-theme="dark"] .table-dark-header { background-color: #0f172a !important; }
+
+    /* ── 768px: Tablet ─────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+
+        .p-4 { padding: 1rem !important; }
+
+        /* Header: stack title and date badge */
+        .d-flex.justify-content-between.align-items-center.mb-4 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 10px;
+        }
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.3rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.8rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .badge {
+            font-size: 0.72rem;
+            padding: 6px 10px !important;
+        }
+
+        /* Grid: single column */
+        .report-main-grid { grid-template-columns: 1fr; gap: 1rem; }
+
+        /* Filter sidebar: compact */
+        .filter-sidebar .card-body { padding: 1rem !important; }
+        .filter-sidebar .form-select,
+        .filter-sidebar .form-control { font-size: 0.85rem; }
+        .filter-sidebar .form-label { font-size: 0.72rem !important; }
+
+        /* Report table header */
+        .card-header.d-flex.justify-content-between { flex-wrap: wrap; gap: 8px; }
+        .card-header h5 { font-size: 0.95rem; }
+        .card-header .btn-sm { font-size: 0.75rem; padding: 5px 10px; }
+
+        /* Table */
+        .permits-table { font-size: 0.78rem; min-width: 600px; }
+        .permits-table th, .permits-table td { padding: 8px; }
+
+        /* Empty state */
+        .empty-report-state { padding: 60px 20px; }
+        .empty-report-state h4 { font-size: 1rem; }
+        .empty-report-state p { font-size: 0.8rem; }
+
+        /* Pagination */
+        .pagination .page-link { font-size: 0.78rem; padding: 5px 9px; }
+
+        /* Charts */
+        .chart-card-container { padding: 14px; }
+        .analytics-section .row { --bs-gutter-y: 1rem; }
+    }
+
+    /* ── 480px: Large Mobile ───────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+
+        .p-4 { padding: 0.75rem !important; }
+
+        /* Header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.1rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.75rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .badge {
+            font-size: 0.65rem;
+            padding: 5px 8px !important;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Grid gap */
+        .report-main-grid { gap: 0.75rem; }
+
+        /* Filter sidebar */
+        .filter-sidebar .card-body { padding: 0.75rem !important; }
+        .filter-sidebar .card-header { padding: 0.6rem 0.75rem; }
+        .filter-sidebar .card-header h5 { font-size: 0.88rem; }
+        .filter-sidebar .form-select,
+        .filter-sidebar .form-control { font-size: 0.78rem; padding: 6px 10px; }
+        .filter-sidebar .form-label { font-size: 0.65rem !important; margin-bottom: 3px; }
+        .filter-sidebar .mb-3 { margin-bottom: 0.6rem !important; }
+        .filter-sidebar .mb-4 { margin-bottom: 0.75rem !important; }
+        .filter-sidebar .btn { font-size: 0.8rem; padding: 8px; }
+
+        /* Date inputs: stack vertically */
+        .filter-sidebar .row.mb-3 .col-6 { width: 100%; flex: 0 0 100%; }
+        .filter-sidebar .row.mb-3 { --bs-gutter-y: 0.4rem; }
+
+        /* Report card */
+        .card-header.d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 8px;
+        }
+        .card-header h5 { font-size: 0.85rem; }
+        .card-header .btn-sm { width: 100%; text-align: center; font-size: 0.72rem; }
+
+        /* Table */
+        .permits-table { font-size: 0.7rem; min-width: 500px; }
+        .permits-table th, .permits-table td { padding: 6px 8px; }
+        .permits-table th { font-size: 0.62rem; }
+
+        /* Empty state */
+        .empty-report-state { padding: 40px 16px; }
+        .empty-report-state .fs-1 { font-size: 2rem !important; }
+        .empty-report-state h4 { font-size: 0.9rem; }
+        .empty-report-state p { font-size: 0.75rem; }
+
+        /* Pagination: smaller, centered */
+        .d-flex.justify-content-between.align-items-center nav { width: 100%; }
+        .pagination { justify-content: center; flex-wrap: wrap; gap: 2px; }
+        .pagination .page-link { font-size: 0.68rem; padding: 4px 8px; margin: 0 1px; }
+
+        /* Charts */
+        .chart-card-container { padding: 10px; }
+        .chart-card-container canvas { max-height: 200px; }
+        .analytics-section { margin-top: 1rem; }
+        .analytics-section .col-md-6 { width: 100%; flex: 0 0 100%; }
+
+        /* mb spacing */
+        .mb-4 { margin-bottom: 0.75rem !important; }
+    }
+
+    /* ── 320px: Small Mobile ───────────────────────────────────────────────── */
+    @media (max-width: 320px) {
+
+        .p-4 { padding: 0.5rem !important; }
+
+        /* Header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 0.95rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.68rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .badge { font-size: 0.6rem; padding: 4px 6px !important; }
+
+        /* Grid */
+        .report-main-grid { gap: 0.5rem; }
+
+        /* Filter sidebar */
+        .filter-sidebar .card-body { padding: 0.5rem !important; }
+        .filter-sidebar .card-header { padding: 0.5rem; }
+        .filter-sidebar .card-header h5 { font-size: 0.8rem; }
+        .filter-sidebar .form-select,
+        .filter-sidebar .form-control { font-size: 0.72rem; padding: 5px 8px; }
+        .filter-sidebar .form-label { font-size: 0.6rem !important; }
+        .filter-sidebar .btn { font-size: 0.72rem; padding: 6px; }
+
+        /* Report card */
+        .card-header h5 { font-size: 0.78rem; }
+        .card-header .btn-sm { font-size: 0.65rem; padding: 4px 8px; }
+
+        /* Table */
+        .permits-table { font-size: 0.62rem; min-width: 420px; }
+        .permits-table th, .permits-table td { padding: 4px 6px; }
+        .permits-table th { font-size: 0.55rem; }
+
+        /* Empty state */
+        .empty-report-state { padding: 30px 12px; }
+        .empty-report-state .fs-1 { font-size: 1.5rem !important; }
+        .empty-report-state h4 { font-size: 0.82rem; }
+        .empty-report-state p { font-size: 0.68rem; }
+
+        /* Pagination: prev/next only */
+        .pagination .page-item:not(:first-child):not(:nth-child(2)):not(:last-child):not(:nth-last-child(2)) { display: none; }
+        .pagination .page-link { font-size: 0.62rem; padding: 3px 7px; }
+
+        /* Charts */
+        .chart-card-container { padding: 8px; }
+        .chart-card-container canvas { max-height: 160px; }
+        .analytics-section { margin-top: 0.75rem; }
+
+        .mb-4 { margin-bottom: 0.6rem !important; }
+    }
 </style>
+
 
 <div class="p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0 fw-bold text-dark">Reports & Analytics</h2>
-        <span class="badge bg-primary px-3 py-2 rounded-pill">System Date: <?php echo date('M d, Y'); ?></span>
+        <div>
+            <h2 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: #1e293b;">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle">
+                    <i class="bi bi-bar-chart-line" style="color:#10b981;font-size:1.9rem;"></i>
+                </span>
+                Analytics Reports
+            </h2>
+            <p class="text-muted mb-0">Generate and export system reports for data-driven decisions.</p>
+        </div>
+        <span class="badge bg-primary px-3 py-2 rounded-pill d-inline-flex align-items-center gap-2">
+            <i class="bi bi-calendar3"></i>
+            <span><?php echo $_now->format($phpDateFormat); ?></span>
+            <span class="opacity-50">|</span>
+            <i class="bi bi-clock"></i>
+            <span id="reportTime"></span>
+        </span>
+        <script>
+        (function () {
+            const use12h   = <?php echo $dashTimeFormat === '12h' ? 'true' : 'false'; ?>;
+            const timezone = <?php echo json_encode($dashTimezone); ?>;
+            function tick() {
+                document.getElementById('reportTime').textContent =
+                    new Intl.DateTimeFormat('en-PH', {
+                        timeZone: timezone,
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: use12h
+                    }).format(new Date());
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+        </script>
     </div>
     
     <?php if ($error): ?>

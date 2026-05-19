@@ -2,16 +2,16 @@
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../core/Auth.php';
 $auth = new Auth();
-$auth->requireRole('inspector'); // Inspector lang ang pwedeng pumasok dito
+$auth->requireRole('inspector'); 
 
 $db = Database::getInstance();
 $inspector_id = $_SESSION['user_id'];
 
-// Kunin ang lahat ng inspections na naka-assign sa naka-login na inspector
 $tasks = $db->fetchAll("
-    SELECT i.*, a.application_number, a.project_name, a.owner_last_name 
+    SELECT i.*, a.application_number, a.project_name, u.last_name AS owner_last_name
     FROM inspections i 
-    JOIN applications a ON i.application_id = a.id 
+    JOIN applications a ON i.application_id = a.id
+    LEFT JOIN users u ON a.applicant_id = u.id
     WHERE i.inspector_id = ? AND i.status = 'scheduled'
     ORDER BY i.scheduled_at ASC", [$inspector_id]);
 
@@ -33,9 +33,14 @@ include __DIR__ . '/../admin/header.php';
                         </div>
                         <h6 class="fw-bold mb-1">App #<?= $t['application_number'] ?></h6>
                         <p class="small text-secondary mb-3"><?= $t['project_name'] ?> (<?= $t['owner_last_name'] ?>)</p>
-                        <a href="view.php?id=<?= $t['application_id'] ?>" class="btn btn-outline-primary btn-sm w-100">
-                            View Application & Submit Report
-                        </a>
+                        <div class="d-flex gap-2">
+                            <a href="/lgu-urban-planning/permit/view.php?id=<?= $t['application_id'] ?>" class="btn btn-outline-primary btn-sm w-50">
+                                <i class="bi bi-eye me-1"></i> View Application
+                            </a>
+                            <a href="/lgu-urban-planning/monitoring/index.php" class="btn btn-primary btn-sm w-50">
+                                <i class="bi bi-clipboard2-pulse me-1"></i> Submit Report
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

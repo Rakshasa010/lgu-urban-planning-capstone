@@ -5,6 +5,7 @@
 
 class Auth {
     private $db;
+
     
     public function __construct() {
         $this->db = Database::getInstance();
@@ -59,6 +60,7 @@ class Auth {
             $this->logActivity($_SESSION['user_id'], 'logout', 'user', $_SESSION['user_id'], 'User logged out');
         }
         
+        session_unset();
         session_destroy();
         return true;
     }

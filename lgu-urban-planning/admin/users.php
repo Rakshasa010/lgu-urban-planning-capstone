@@ -11,8 +11,200 @@ require_once __DIR__ . '/../modules/UserAccessManagement/UserController.php';
 
 $auth = new Auth();
 $auth->requirePermission('manage_users');
-$auth->requireRole(['admin']);
+$auth->requireRole(['admin', 'super_admin']);
 $userController = new UserController();
+
+// ── Load language from session (written by settings.php on every save) ────────
+$lang = $_SESSION['locale_language'] ?? 'en_PH';
+
+// ── Translation strings for users.php ────────────────────────────────────────
+$translations = [
+    'en_PH' => [
+        // Page header
+        'page_title'            => 'User Management',
+        'page_subtitle'         => 'Manage accounts and verify applicant identities.',
+        // Action buttons
+        'btn_export_csv'        => 'Export CSV',
+        'btn_create_user'       => 'Create User',
+        'btn_apply_filter'      => 'Apply Filter',
+        'btn_edit'              => 'Edit',
+        'btn_activate'          => 'Activate',
+        'btn_close'             => 'Close',
+        'btn_save_decision'     => 'Save Decision',
+        'btn_create_account'    => 'Create Account',
+        'btn_update_user'       => 'Update User',
+        'btn_cancel'            => 'Cancel',
+        'btn_verify_download'   => 'Verify & Download',
+        // Filters
+        'filter_search_ph'      => 'Search name, email...',
+        'filter_all_roles'      => 'All Roles',
+        // Table headers
+        'th_user_details'       => 'User Details',
+        'th_role'               => 'Role',
+        'th_system_status'      => 'System Status',
+        'th_id_verification'    => 'Identity Verification',
+        'th_actions'            => 'Actions',
+        // Inline status
+        'status_active'         => 'Active',
+        'status_inactive'       => 'Inactive',
+        'status_online'         => 'Online',
+        'status_offline'        => 'Offline',
+        'label_staff_member'    => 'Staff Member',
+        'label_verified'        => 'VERIFIED',
+        'label_pending'         => 'PENDING / UNVERIFIED',
+        // Pagination
+        'pagination_showing'    => 'Showing',
+        'pagination_to'         => 'to',
+        'pagination_of'         => 'of',
+        'pagination_users'      => 'users',
+        // Verification modal
+        'modal_verify_title'    => 'Identity Validation',
+        'modal_verify_loading'  => 'Fetching documents...',
+        'modal_id_front'        => 'ID Front',
+        'modal_id_back'         => 'ID Back',
+        'modal_verify_decision' => 'Verification Decision',
+        'modal_approve'         => 'Approve / Verified',
+        'modal_reject'          => 'Reject / Needs Re-upload',
+        'modal_reject_reason'   => 'Reason for Rejection',
+        'reject_blurry'         => 'Blurry or Unreadable ID',
+        'reject_expired'        => 'Expired Identification Card',
+        'reject_unsupported'    => 'ID Type not supported',
+        'reject_name_mismatch'  => 'Name on ID does not match profile',
+        'reject_missing_back'   => 'Missing back part of the ID',
+        'reject_other'          => 'Other (Please specify...)',
+        // Create / Edit user modal
+        'modal_create_title'    => 'Create New User',
+        'modal_edit_title'      => 'Edit User Account',
+        'label_first_name'      => 'First Name',
+        'label_last_name'       => 'Last Name',
+        'label_username'        => 'Username',
+        'label_email'           => 'Email',
+        'label_password'        => 'Password',
+        'label_new_password'    => 'New Password (Optional)',
+        'label_role'            => 'Role',
+        'label_phone'           => 'Phone',
+        // Role labels
+        'role_applicant'        => 'Applicant',
+        'role_inspector'        => 'Inspector',
+        'role_zoning_officer'   => 'Zoning Officer',
+        'role_building_official'=> 'Building Official',
+        'role_assessor'         => 'Assessor',
+        'role_admin'            => 'Admin',
+        'role_super_admin'      => 'Super Admin',
+        // Logs modal
+        'modal_logs_title'      => 'Activity Logs',
+        // Export modal
+        'export_modal_title'    => 'Secure Export Verification',
+        'export_warning'        => 'You are about to export sensitive user records. Please confirm your identity to proceed.',
+        'export_purpose_label'  => 'Purpose of Export',
+        'export_purpose_ph'     => '— Select a reason —',
+        'export_password_label' => 'Admin Password',
+        'export_password_ph'    => 'Re-enter your account password',
+        // Success / error messages
+        'success_verified'      => 'User identity verified and applicant notified.',
+        'success_rejected'      => 'Verification rejected and message sent.',
+        'success_created'       => 'User created successfully.',
+        'success_updated'       => 'User updated successfully.',
+        'success_activated'     => 'User activated.',
+        'err_msg_failed'        => 'User status updated but message failed',
+        'err_password'          => 'Password must be 8+ chars with uppercase and numbers.',
+    ],
+    'fil' => [
+        // Page header
+        'page_title'            => 'Pamamahala ng mga Gumagamit',
+        'page_subtitle'         => 'Pamahalaan ang mga account at i-verify ang pagkakakilanlan ng mga aplikante.',
+        // Action buttons
+        'btn_export_csv'        => 'I-export ang CSV',
+        'btn_create_user'       => 'Lumikha ng Gumagamit',
+        'btn_apply_filter'      => 'Ilapat ang Filter',
+        'btn_edit'              => 'I-edit',
+        'btn_activate'          => 'I-aktibo',
+        'btn_close'             => 'Isara',
+        'btn_save_decision'     => 'I-save ang Desisyon',
+        'btn_create_account'    => 'Lumikha ng Account',
+        'btn_update_user'       => 'I-update ang Gumagamit',
+        'btn_cancel'            => 'Kanselahin',
+        'btn_verify_download'   => 'I-verify at I-download',
+        // Filters
+        'filter_search_ph'      => 'Maghanap ng pangalan, email...',
+        'filter_all_roles'      => 'Lahat ng Papel',
+        // Table headers
+        'th_user_details'       => 'Detalye ng Gumagamit',
+        'th_role'               => 'Papel',
+        'th_system_status'      => 'Katayuan ng Sistema',
+        'th_id_verification'    => 'Pagpapatunay ng Pagkakakilanlan',
+        'th_actions'            => 'Mga Aksyon',
+        // Inline status
+        'status_active'         => 'Aktibo',
+        'status_inactive'       => 'Hindi Aktibo',
+        'status_online'         => 'Online',
+        'status_offline'        => 'Offline',
+        'label_staff_member'    => 'Miyembro ng Kawani',
+        'label_verified'        => 'NAPATUNAYAN',
+        'label_pending'         => 'NAKABINBIN / HINDI NAPATUNAYAN',
+        // Pagination
+        'pagination_showing'    => 'Ipinapakita',
+        'pagination_to'         => 'hanggang',
+        'pagination_of'         => 'sa',
+        'pagination_users'      => 'mga gumagamit',
+        // Verification modal
+        'modal_verify_title'    => 'Pagpapatunay ng Pagkakakilanlan',
+        'modal_verify_loading'  => 'Kinukuha ang mga dokumento...',
+        'modal_id_front'        => 'Harap ng ID',
+        'modal_id_back'         => 'Likod ng ID',
+        'modal_verify_decision' => 'Desisyon sa Pagpapatunay',
+        'modal_approve'         => 'Aprubahan / Napatunayan',
+        'modal_reject'          => 'Tanggihan / Kailangang Muling I-upload',
+        'modal_reject_reason'   => 'Dahilan ng Pagtanggi',
+        'reject_blurry'         => 'Malabo o Hindi Mabasang ID',
+        'reject_expired'        => 'Nag-expire na ang Identification Card',
+        'reject_unsupported'    => 'Hindi sinusuportahan ang uri ng ID',
+        'reject_name_mismatch'  => 'Hindi tugma ang pangalan sa ID at profile',
+        'reject_missing_back'   => 'Nawawala ang likod ng ID',
+        'reject_other'          => 'Iba pa (Mangyaring tukuyin...)',
+        // Create / Edit user modal
+        'modal_create_title'    => 'Lumikha ng Bagong Gumagamit',
+        'modal_edit_title'      => 'I-edit ang Account ng Gumagamit',
+        'label_first_name'      => 'Unang Pangalan',
+        'label_last_name'       => 'Apelyido',
+        'label_username'        => 'Username',
+        'label_email'           => 'Email',
+        'label_password'        => 'Password',
+        'label_new_password'    => 'Bagong Password (Opsyonal)',
+        'label_role'            => 'Papel',
+        'label_phone'           => 'Telepono',
+        // Role labels
+        'role_applicant'        => 'Aplikante',
+        'role_inspector'        => 'Inspektor',
+        'role_zoning_officer'   => 'Opisyal ng Zoning',
+        'role_building_official'=> 'Opisyal ng Gusali',
+        'role_assessor'         => 'Assessor',
+        'role_admin'            => 'Admin',
+        'role_super_admin'      => 'Super Admin',
+        // Logs modal
+        'modal_logs_title'      => 'Mga Log ng Aktibidad',
+        // Export modal
+        'export_modal_title'    => 'Secure na Pag-verify ng Export',
+        'export_warning'        => 'Mag-e-export ka ng sensitibong mga rekord ng gumagamit. Mangyaring kumpirmahin ang iyong pagkakakilanlan upang magpatuloy.',
+        'export_purpose_label'  => 'Layunin ng Export',
+        'export_purpose_ph'     => '— Pumili ng dahilan —',
+        'export_password_label' => 'Password ng Admin',
+        'export_password_ph'    => 'Muling ilagay ang iyong password',
+        // Success / error messages
+        'success_verified'      => 'Napatunayan ang pagkakakilanlan ng gumagamit at naabisuhan ang aplikante.',
+        'success_rejected'      => 'Tinanggihan ang pagpapatunay at naipadala ang mensahe.',
+        'success_created'       => 'Matagumpay na nalikha ang gumagamit.',
+        'success_updated'       => 'Matagumpay na na-update ang gumagamit.',
+        'success_activated'     => 'Na-aktibo ang gumagamit.',
+        'err_msg_failed'        => 'Na-update ang katayuan ng gumagamit ngunit nabigo ang mensahe',
+        'err_password'          => 'Ang password ay dapat 8+ character na may malaking titik at numero.',
+    ],
+];
+
+// Helper: get translated string, fallback to English
+function t_users(string $key, array $translations, string $lang): string {
+    return $translations[$lang][$key] ?? $translations['en_PH'][$key] ?? $key;
+}
 
 // --- PAGINATION SETTINGS ---
 $limit = 10; 
@@ -20,11 +212,38 @@ $page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $limit;
 
-// --- EXPORT HANDLER ---
+// --- EXPORT HANDLER (token-gated) ---
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    // Validate the one-time export token issued by verify_action.php
+    $submittedToken = $_GET['export_token'] ?? '';
+    $sessionToken   = $_SESSION['export_token'] ?? '';
+    $tokenExpiry    = $_SESSION['export_token_expires'] ?? '';
+    $tokenTable     = $_SESSION['export_token_table'] ?? '';
+
+    $tokenValid = (
+        !empty($submittedToken) &&
+        !empty($sessionToken) &&
+        hash_equals($sessionToken, $submittedToken) &&
+        $tokenTable === 'users' &&
+        strtotime($tokenExpiry) >= time()
+    );
+
+    // Invalidate token immediately (one-time use)
+    unset($_SESSION['export_token'], $_SESSION['export_token_expires'],
+          $_SESSION['export_token_table'], $_SESSION['export_token_type']);
+
+    if (!$tokenValid) {
+        http_response_code(403);
+        die('<div style="font-family:sans-serif;padding:2rem;text-align:center;">
+             <h3>&#128274; Export Denied</h3>
+             <p>Invalid or expired export token. Please use the Export button and complete verification.</p>
+             <a href="users.php">Go back</a></div>');
+    }
+
     $filters = ['role' => $_GET['role'] ?? '', 'is_active' => $_GET['is_active'] ?? '', 'search' => $_GET['search'] ?? ''];
     $usersToExport = $userController->getAllUsers($filters);
 
+    while (ob_get_level()) { ob_end_clean(); }
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=users_export_' . date('Ymd_His') . '.csv');
     
@@ -130,16 +349,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $adminId = $_SESSION['user_id'] ?? 0;
                     $db->query($sqlMessage, [$adminId, $userId, $subject, $messageBody]);
                     
-                    $success = ($status === 'approve') ? 'User identity verified and applicant notified.' : 'Verification rejected and message sent.';
+                    $success = ($status === 'approve') ? t_users('success_verified', $translations, $lang) : t_users('success_rejected', $translations, $lang);
                 } catch (PDOException $e) {
-                    $error = "User status updated but message failed: " . $e->getMessage();
+                    $error = t_users('err_msg_failed', $translations, $lang) . ": " . $e->getMessage();
                 }
             }
             elseif ($_POST['action'] === 'create' || $_POST['action'] === 'update') {
                 $password = $_POST['password'] ?? '';
                 if (!empty($password)) {
                     if (strlen($password) < 8 || !preg_match('@[A-Z]@', $password) || !preg_match('@[0-9]@', $password)) {
-                        throw new Exception('Password must be 8+ chars with uppercase and numbers.');
+                        throw new Exception(t_users('err_password', $translations, $lang));
                     }
                 }
                 
@@ -155,29 +374,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($_POST['action'] === 'create') {
                     $userController->createUser($data);
-                    $success = 'User created successfully.';
+                    $success = t_users('success_created', $translations, $lang);
                 } else {
                     $userController->updateUser($userId, $data);
-                    $success = 'User updated successfully.';
+                    $success = t_users('success_updated', $translations, $lang);
                 }
             }
-            elseif ($_POST['action'] === 'deactivate') { $userController->deactivateUser($userId); $success = 'User deactivated.'; }
-            elseif ($_POST['action'] === 'activate') { $userController->activateUser($userId); $success = 'User activated.'; }
+            elseif ($_POST['action'] === 'activate') { $userController->activateUser($userId); $success = t_users('success_activated', $translations, $lang); }
             
-            // --- BULK ACTIONS ---
-            elseif ($_POST['action'] === 'bulk_deactivate' || $_POST['action'] === 'bulk_activate') {
-                $selectedIds = $_POST['selected_users'] ?? [];
-                if (empty($selectedIds)) throw new Exception("No users selected.");
-                
-                foreach ($selectedIds as $id) {
-                    if ($_POST['action'] === 'bulk_deactivate') {
-                        $userController->deactivateUser($id);
-                    } else {
-                        $userController->activateUser($id);
-                    }
-                }
-                $success = "Bulk action completed for " . count($selectedIds) . " users.";
-            }
 
         } catch (Exception $e) { $error = $e->getMessage(); }
     }
@@ -190,58 +394,239 @@ $totalUsers = $userController->getTotalUsersCount($filters);
 $totalPages = ceil($totalUsers / $limit);
 $users = $userController->getAllUsersPaginated($filters, $limit, $offset);
 
-$pageTitle = 'User Management';
+$pageTitle = t_users('page_title', $translations, $lang);
+$isAuthPage = true;
 include __DIR__ . '/header.php';
 ?>
 
 <style>
-    /* Base UI Enhancements */
+    /* ── BASE ── */
     .strength-meter { height: 5px; background-color: #e2e8f0; border-radius: 3px; margin-top: 6px; overflow: hidden; }
     .strength-bar { height: 100%; width: 0%; transition: all 0.3s ease; }
     .cursor-pointer { cursor: pointer; }
-    
-    /* Light/Dark Adaptive Status Colors */
     .status-active { background-color: #d1e7dd; color: #0f5132; }
     .status-inactive { background-color: #f8d7da; color: #842029; }
-
-    /* Verification Preview */
-    .img-verify-preview { 
-        width: 100%; height: 220px; object-fit: contain; border-radius: 8px; 
-        border: 1px solid var(--bs-border-color); cursor: pointer; 
-        background-color: var(--bs-tertiary-bg); transition: transform 0.2s; 
-    }
+    .img-verify-preview { width: 100%; height: 220px; object-fit: contain; border-radius: 8px; border: 1px solid var(--bs-border-color); cursor: pointer; background-color: var(--bs-tertiary-bg); transition: transform 0.2s; }
     .img-verify-preview:hover { transform: scale(1.02); border-color: #0d6efd; }
     #fullImagePreview { max-width: 100%; height: auto; border-radius: 4px; }
-    
-    /* Toolbars & Online Indicators */
-    .bulk-toolbar { 
-        display: none; 
-        background: var(--bs-secondary-bg); 
-        border: 1px solid var(--bs-border-color); 
-        border-radius: 8px; 
-    }
     .online-dot { height: 10px; width: 10px; background-color: #198754; border-radius: 50%; display: inline-block; margin-right: 5px; border: 2px solid var(--bs-body-bg); box-shadow: 0 0 0 1px #198754; }
     .offline-dot { height: 10px; width: 10px; background-color: #adb5bd; border-radius: 50%; display: inline-block; margin-right: 5px; }
-
-    /* Pagination Styling Customization */
     .pagination .page-link { color: #333; border: 1px solid #dee2e6; padding: 0.5rem 0.75rem; }
     .pagination .page-item.active .page-link { background-color: #212529; border-color: #212529; color: #fff; }
     .pagination .page-item.disabled .page-link { color: #bcbcbc; }
 
+    /* ================================================
+       MOBILE RESPONSIVE
+       768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+       ================================================ */
+
+    /* --- 768px: Tablet --- */
+    @media (max-width: 768px) {
+
+        .p-4 { padding: 1rem !important; }
+
+        /* Page header: stack title + buttons */
+        .d-flex.justify-content-between.align-items-center.mb-4 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 10px;
+        }
+        .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
+            width: 100%;
+        }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn {
+            flex: 1;
+            font-size: 0.82rem;
+        }
+
+        /* Filter form: stack inputs */
+        .card-body .row.g-3 .col-md-5,
+        .card-body .row.g-3 .col-md-2 {
+            width: 100%;
+            flex: 0 0 100%;
+        }
+        .card-body .row.g-3 .col-md-5:last-child { width: 100%; flex: 0 0 100%; }
+
+        /* Table: shrink font, hide lower-priority columns */
+        .table { font-size: 0.8rem; }
+        .table th, .table td { padding: 0.5rem 0.4rem; }
+        /* Hide Identity Verification col on tablet */
+        .table thead th:nth-child(4),
+        .table tbody td:nth-child(4) { display: none; }
+
+        /* User details cell */
+        .table td .fw-bold { font-size: 0.82rem; }
+        .table td .text-muted.small { font-size: 0.72rem; }
+
+        /* Action buttons: icon-only for history */
+        .table .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
+
+        /* Card footer: stack pagination */
+        .card-footer .d-flex.justify-content-between { flex-direction: column; gap: 8px; align-items: flex-start !important; }
+
+        /* Pagination */
+        .pagination .page-link { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+
+        /* Modals */
+        .modal-dialog.modal-lg,
+        .modal-dialog.modal-xl {
+            max-width: calc(100% - 1rem) !important;
+            width: calc(100% - 1rem) !important;
+            margin: 0.5rem auto;
+        }
+        .modal-body { padding: 1rem !important; }
+
+        /* Verification modal: stack ID images */
+        #verificationModal .col-md-6 { width: 100%; flex: 0 0 100%; }
+        .img-verify-preview { height: 180px; }
+
+        /* Create/Edit modal: stack 2-col fields */
+        .modal-body .col-md-6 { width: 100%; flex: 0 0 100%; }
+        .modal-body .row.g-3 { --bs-gutter-y: 0.5rem; }
+    }
+
+    /* --- 480px: Large Mobile --- */
+    @media (max-width: 480px) {
+
+        .p-4 { padding: 0.75rem !important; }
+
+        /* Page header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.1rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.75rem; margin-bottom: 0; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn { font-size: 0.78rem; padding: 6px 10px; }
+
+        /* Filter card */
+        .card-body { padding: 0.75rem !important; }
+        .form-control, .form-select { font-size: 0.82rem; padding: 6px 9px; }
+        .card-body .row.g-3 { --bs-gutter-y: 0.4rem; }
+
+        /* Table: also hide Role col */
+        .table { font-size: 0.74rem; }
+        .table th, .table td { padding: 0.4rem 0.3rem; }
+        .table thead th:nth-child(2),
+        .table tbody td:nth-child(2),
+        .table thead th:nth-child(4),
+        .table tbody td:nth-child(4) { display: none; }
+
+        /* User details cell */
+        .table td .fw-bold { font-size: 0.78rem; }
+        .table td .text-muted.small { font-size: 0.68rem; }
+        .online-dot, .offline-dot { width: 8px; height: 8px; }
+
+        /* Action buttons */
+        .table .btn-sm { font-size: 0.7rem; padding: 3px 7px; }
+
+        /* Pagination */
+        .pagination .page-link { padding: 0.35rem 0.5rem; font-size: 0.75rem; }
+        .card-footer { padding: 0.6rem 0.75rem !important; }
+        .card-footer .small { font-size: 0.72rem; }
+
+        /* Modals */
+        .modal-header { padding: 0.75rem 1rem !important; }
+        .modal-title { font-size: 0.95rem; }
+        .modal-body { padding: 0.75rem !important; }
+        .modal-body .form-label { font-size: 0.75rem; margin-bottom: 2px; }
+        .modal-body .form-control,
+        .modal-body .form-select { font-size: 0.82rem; padding: 6px 9px; }
+        .modal-body .mb-3 { margin-bottom: 0.6rem !important; }
+        .modal-footer { padding: 0.6rem 0.75rem; }
+        .modal-footer .btn { font-size: 0.82rem; padding: 7px 14px; }
+
+        /* Verification modal */
+        .img-verify-preview { height: 150px; }
+
+        /* Logs modal table */
+        #logsModal .table { font-size: 0.72rem; }
+        #logsModal .table th, #logsModal .table td { padding: 0.35rem 0.3rem; }
+    }
+
+    /* --- 320px: Small Mobile --- */
+    @media (max-width: 320px) {
+
+        .p-4 { padding: 0.5rem !important; }
+
+        /* Page header */
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 0.95rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.7rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn { font-size: 0.72rem; padding: 5px 8px; }
+
+        /* Filter */
+        .card-body { padding: 0.6rem !important; }
+        .form-control, .form-select { font-size: 0.78rem; padding: 5px 8px; }
+
+        /* Table: keep only User Details, Status, Actions */
+        .table { font-size: 0.65rem; }
+        .table th, .table td { padding: 0.3rem 0.2rem; }
+        .table thead th:nth-child(2),
+        .table tbody td:nth-child(2),
+        .table thead th:nth-child(3),
+        .table tbody td:nth-child(3),
+        .table thead th:nth-child(4),
+        .table tbody td:nth-child(4) { display: none; }
+
+        /* User details cell */
+        .table td .fw-bold { font-size: 0.72rem; }
+        .table td .text-muted.small { font-size: 0.62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+        /* Action buttons: icon only, no text */
+        .table .btn-sm { font-size: 0.62rem; padding: 2px 5px; }
+        .table .btn-sm .bi-pencil-square ~ *,
+        /* Hide "Edit" text label — keep icon only */
+        .table td.text-center .btn-sm { min-width: 28px; }
+
+        /* Pagination */
+        .pagination { flex-wrap: wrap; gap: 2px; }
+        .pagination .page-link { padding: 0.3rem 0.45rem; font-size: 0.68rem; }
+        .card-footer { padding: 0.5rem 0.6rem !important; }
+        .card-footer .small { font-size: 0.68rem; }
+
+        /* Modals */
+        .modal-dialog.modal-lg,
+        .modal-dialog.modal-xl { margin: 0.25rem; }
+        .modal-header { padding: 0.6rem 0.75rem !important; }
+        .modal-title { font-size: 0.85rem; }
+        .modal-body { padding: 0.6rem !important; }
+        .modal-body .form-label { font-size: 0.68rem; margin-bottom: 1px; }
+        .modal-body .form-control,
+        .modal-body .form-select { font-size: 0.78rem; padding: 5px 8px; }
+        .modal-body .mb-3 { margin-bottom: 0.45rem !important; }
+        .modal-footer { padding: 0.5rem 0.6rem; gap: 6px; }
+        /* Side-by-side footer buttons */
+        .modal-footer {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: stretch;
+        }
+        .modal-footer .btn { flex: 1; text-align: center; font-size: 0.75rem; padding: 6px 8px; }
+
+        /* Verification modal */
+        .img-verify-preview { height: 120px; }
+
+        /* Logs modal */
+        #logsModal .table { font-size: 0.65rem; }
+        #logsModal .table th, #logsModal .table td { padding: 0.28rem 0.25rem; }
+        #logsModal .row.g-2 .col-6 { font-size: 0.65rem; }
+    }
 </style>
 
 <div class="p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-0 fw-bold">User Management</h2>
-            <p class="text-muted small">Manage accounts and verify applicant identities.</p>
+            <h2 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: #1e293b;">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle">
+                    <i class="bi bi-people" style="color:#14b8a6;font-size:1.9rem;"></i>
+                </span>
+                <?= t_users('page_title', $translations, $lang) ?>
+            </h2>
+            <p class="text-muted small mb-0"><?= t_users('page_subtitle', $translations, $lang) ?></p>
         </div>
         <div class="d-flex gap-2">
-            <a href="?export=csv&<?= http_build_query($filters) ?>" class="btn btn-outline-dark shadow-sm">
-                <i class="bi bi-download"></i> Export CSV
-            </a>
+            <button type="button" class="btn btn-outline-dark shadow-sm"
+                onclick="openExportModal('csv', 'users', '?export=csv&<?= http_build_query($filters) ?>')">
+                <i class="bi bi-download"></i> <?= t_users('btn_export_csv', $translations, $lang) ?>
+            </button>
             <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                <i class="bi bi-person-plus"></i> Create User
+                <i class="bi bi-person-plus"></i> <?= t_users('btn_create_user', $translations, $lang) ?>
             </button>
         </div>
     </div>
@@ -252,25 +637,22 @@ include __DIR__ . '/header.php';
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-5"><input type="text" class="form-control" name="search" placeholder="Search name, email..." value="<?= htmlspecialchars($filters['search']) ?>"></div>
+                <div class="col-md-5"><input type="text" class="form-control" name="search" placeholder="<?= t_users('filter_search_ph', $translations, $lang) ?>" value="<?= htmlspecialchars($filters['search']) ?>"></div>
                 <div class="col-md-2">
                     <select class="form-select" name="role">
-                        <option value="">All Roles</option>
-                        <option value="applicant" <?= $filters['role'] === 'applicant' ? 'selected' : '' ?>>Applicant</option>
-                        <option value="inspector" <?= $filters['role'] === 'inspector' ? 'selected' : '' ?>>Inspector</option>
-                        <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>>Administrator</option>
+                        <option value=""><?= t_users('filter_all_roles', $translations, $lang) ?></option>
+                        <option value="applicant" <?= $filters['role'] === 'applicant' ? 'selected' : '' ?>><?= t_users('role_applicant', $translations, $lang) ?></option>
+                        <option value="inspector" <?= $filters['role'] === 'inspector' ? 'selected' : '' ?>><?= t_users('role_inspector', $translations, $lang) ?></option>
+                        <option value="zoning_officer" <?= $filters['role'] === 'zoning_officer' ? 'selected' : '' ?>><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
+                        <option value="building_official" <?= $filters['role'] === 'building_official' ? 'selected' : '' ?>><?= t_users('role_building_official', $translations, $lang) ?></option>
+                        <option value="assessor" <?= $filters['role'] === 'assessor' ? 'selected' : '' ?>><?= t_users('role_assessor', $translations, $lang) ?></option>
+                        <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>><?= t_users('role_admin', $translations, $lang) ?></option>
+                        <option value="super_admin" <?= $filters['role'] === 'super_admin' ? 'selected' : '' ?>><?= t_users('role_super_admin', $translations, $lang) ?></option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <select class="form-select" name="is_active">
-                        <option value="">All Status</option>
-                        <option value="1" <?= $filters['is_active'] === '1' ? 'selected' : '' ?>>Active</option>
-                        <option value="0" <?= $filters['is_active'] === '0' ? 'selected' : '' ?>>Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-5">
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark w-100">Apply Filter</button>
+                        <button type="submit" class="btn btn-dark w-100"><?= t_users('btn_apply_filter', $translations, $lang) ?></button>
                         
                         <a href="users.php" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" title="Reset Filters">
                             <i class="bi bi-arrow-clockwise"></i>
@@ -281,38 +663,17 @@ include __DIR__ . '/header.php';
         </div>
     </div>
 
-    <div id="bulkToolbar" class="bulk-toolbar p-3 mb-3">
-        <div class="d-flex align-items-center justify-content-between">
-            <div>
-                <span class="badge bg-primary rounded-pill me-2" id="selectedCount">0</span> users selected for bulk action
-            </div>
-            <div>
-                <button type="button" class="btn btn-outline-danger btn-sm me-2" onclick="submitBulkAction('bulk_deactivate')">
-                    <i class="bi bi-person-x"></i> Deactivate Selected
-                </button>
-                <button type="button" class="btn btn-outline-success btn-sm" onclick="submitBulkAction('bulk_activate')">
-                    <i class="bi bi-person-check"></i> Activate Selected
-                </button>
-            </div>
-        </div>
-    </div>
-    
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <form id="bulkForm" method="POST">
-                    <input type="hidden" name="action" id="bulkActionInput" value="">
                     <table class="table align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4" style="width: 40px;">
-                                    <input type="checkbox" class="form-check-input" id="selectAll">
-                                </th>
-                                <th>User Details</th>
-                                <th>Role</th>
-                                <th>System Status</th>
-                                <th>Identity Verification</th>
-                                <th class="text-center">Actions</th>
+                                <th><?= t_users('th_user_details', $translations, $lang) ?></th>
+                                <th><?= t_users('th_role', $translations, $lang) ?></th>
+                                <th><?= t_users('th_system_status', $translations, $lang) ?></th>
+                                <th><?= t_users('th_id_verification', $translations, $lang) ?></th>
+                                <th class="text-center"><?= t_users('th_actions', $translations, $lang) ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -328,12 +689,9 @@ include __DIR__ . '/header.php';
                                 }
                             ?>
                             <tr>
-                                <td class="ps-4">
-                                    <input type="checkbox" name="selected_users[]" value="<?= $user['id'] ?>" class="form-check-input user-checkbox">
-                                </td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="<?= $isOnline ? 'online-dot' : 'offline-dot' ?>" title="<?= $isOnline ? 'Online' : 'Offline' ?>"></div>
+                                        <div class="<?= $isOnline ? 'online-dot' : 'offline-dot' ?>" title="<?= $isOnline ? t_users('status_online', $translations, $lang) : t_users('status_offline', $translations, $lang) ?>"></div>
                                         <div>
                                             <div class="fw-bold"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></div>
                                             <div class="text-muted small"><?= htmlspecialchars($user['email']) ?> | @<?= htmlspecialchars($user['username']) ?></div>
@@ -341,39 +699,40 @@ include __DIR__ . '/header.php';
                                     </div>
                                 </td>
                                 <td><span class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;"><?= htmlspecialchars($user['role']) ?></span></td>
-                                <td><span class="badge px-3 <?= $user['is_active'] ? 'status-active' : 'status-inactive' ?>"><?= $user['is_active'] ? 'Active' : 'Inactive' ?></span></td>
+                                <td><span class="badge px-3 <?= $user['is_active'] ? 'status-active' : 'status-inactive' ?>"><?= $user['is_active'] ? t_users('status_active', $translations, $lang) : t_users('status_inactive', $translations, $lang) ?></span></td>
                                 <td>
                                     <?php 
-                                    $staffRoles = ['admin', 'zoning_officer', 'building_official', 'assessor', 'inspector'];
+                                    $staffRoles = ['super_admin', 'admin', 'zoning_officer', 'building_official', 'assessor', 'inspector'];
                                     if (in_array(strtolower($user['role']), $staffRoles)): 
                                     ?>
-                                        <span class="text-muted small">Staff Member</span>
+                                        <span class="text-muted small"><?= t_users('label_staff_member', $translations, $lang) ?></span>
                                     <?php else: ?>
                                         <span class="small fw-bold cursor-pointer <?= $user['is_verified'] ? 'text-success' : 'text-warning' ?>" 
                                             onclick="openVerificationModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'].' '.$user['last_name']) ?>')">
                                             <i class="bi <?= $user['is_verified'] ? 'bi-check-circle-fill' : 'bi-clock-history' ?>"></i> 
-                                            <?= $user['is_verified'] ? 'VERIFIED' : 'PENDING / UNVERIFIED' ?>
+                                            <?= $user['is_verified'] ? t_users('label_verified', $translations, $lang) : t_users('label_pending', $translations, $lang) ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-outline-dark" onclick="viewLogs(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>')"><i class="bi bi-clock-history"></i></button>
-                                    <button type="button" class="btn btn-sm btn-light border" onclick='editUser(<?= json_encode($user) ?>)'><i class="bi bi-pencil-square"></i> Edit</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="quickAction(<?= $user['id'] ?>, '<?= $user['is_active'] ? 'deactivate' : 'activate' ?>')">
-                                        <?= $user['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                    <button type="button" class="btn btn-sm btn-light border" onclick='editUser(<?= json_encode($user) ?>)'><i class="bi bi-pencil-square"></i> <?= t_users('btn_edit', $translations, $lang) ?></button>
+                                    <?php if (!$user['is_active']): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-success border-0" onclick="quickAction(<?= $user['id'] ?>, 'activate')">
+                                        <?= t_users('btn_activate', $translations, $lang) ?>
                                     </button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </form>
             </div>
         </div>
         <div class="card-footer border-0 py-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="small text-muted">
-                    Showing <b><?= $offset + 1 ?></b> to <b><?= min($offset + $limit, $totalUsers) ?></b> of <b><?= $totalUsers ?></b> users
+                    <?= t_users('pagination_showing', $translations, $lang) ?> <b><?= $offset + 1 ?></b> <?= t_users('pagination_to', $translations, $lang) ?> <b><?= min($offset + $limit, $totalUsers) ?></b> <?= t_users('pagination_of', $translations, $lang) ?> <b><?= $totalUsers ?></b> <?= t_users('pagination_users', $translations, $lang) ?>
                 </div>
                 <?php if ($totalPages > 1): ?>
                 <nav>
@@ -416,7 +775,7 @@ include __DIR__ . '/header.php';
     <div class="modal-dialog modal-lg">
         <form method="POST" class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title">Identity Validation: <span id="v_name"></span></h5>
+                <h5 class="modal-title"><?= t_users('modal_verify_title', $translations, $lang) ?>: <span id="v_name"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -424,34 +783,34 @@ include __DIR__ . '/header.php';
                 <input type="hidden" name="user_id" id="v_user_id">
                 <div id="v_loading" class="text-center py-4">
                     <div class="spinner-border text-primary"></div>
-                    <p class="mt-2 text-muted">Fetching documents...</p>
+                    <p class="mt-2 text-muted"><?= t_users('modal_verify_loading', $translations, $lang) ?></p>
                 </div>
                 <div id="v_content" style="display:none;">
                     <div class="row g-3">
                         <div class="col-md-6 text-center">
-                            <label class="small fw-bold d-block mb-1">ID Front</label>
+                            <label class="small fw-bold d-block mb-1"><?= t_users('modal_id_front', $translations, $lang) ?></label>
                             <img src="" id="img_front" class="img-verify-preview" onclick="zoomImage(this.src)">
                         </div>
                         <div class="col-md-6 text-center">
-                            <label class="small fw-bold d-block mb-1">ID Back</label>
+                            <label class="small fw-bold d-block mb-1"><?= t_users('modal_id_back', $translations, $lang) ?></label>
                             <img src="" id="img_back" class="img-verify-preview" onclick="zoomImage(this.src)">
                         </div>
                     </div>
                     <div class="mt-4 p-3 bg-light rounded shadow-sm">
-                        <label class="small fw-bold mb-2">Verification Decision</label>
+                        <label class="small fw-bold mb-2"><?= t_users('modal_verify_decision', $translations, $lang) ?></label>
                         <select name="status" id="v_decision" class="form-select shadow-sm" onchange="toggleRejectionBox(this.value)">
-                            <option value="approve">Approve / Verified</option>
-                            <option value="reject">Reject / Needs Re-upload</option>
+                            <option value="approve"><?= t_users('modal_approve', $translations, $lang) ?></option>
+                            <option value="reject"><?= t_users('modal_reject', $translations, $lang) ?></option>
                         </select>
                         <div id="rejection_box" class="mt-3" style="display:none;">
-                            <label class="small fw-bold text-danger">Reason for Rejection</label>
+                            <label class="small fw-bold text-danger"><?= t_users('modal_reject_reason', $translations, $lang) ?></label>
                             <select name="rejection_reason" id="v_rejection_reason" class="form-select mb-2" onchange="checkOtherReason(this.value)">
-                                <option value="Blurry or Unreadable ID">Blurry or Unreadable ID</option>
-                                <option value="Expired Identification Card">Expired Identification Card</option>
-                                <option value="ID Type not supported">ID Type not supported</option>
-                                <option value="Name on ID does not match profile">Name on ID does not match profile</option>
-                                <option value="Missing back part of the ID">Missing back part of the ID</option>
-                                <option value="Other">Other (Please specify...)</option>
+                                <option value="Blurry or Unreadable ID"><?= t_users('reject_blurry', $translations, $lang) ?></option>
+                                <option value="Expired Identification Card"><?= t_users('reject_expired', $translations, $lang) ?></option>
+                                <option value="ID Type not supported"><?= t_users('reject_unsupported', $translations, $lang) ?></option>
+                                <option value="Name on ID does not match profile"><?= t_users('reject_name_mismatch', $translations, $lang) ?></option>
+                                <option value="Missing back part of the ID"><?= t_users('reject_missing_back', $translations, $lang) ?></option>
+                                <option value="Other"><?= t_users('reject_other', $translations, $lang) ?></option>
                             </select>
                             <textarea name="custom_reason" id="v_custom_reason" class="form-control" placeholder="Type specific reason here..." style="display:none;"></textarea>
                         </div>
@@ -459,8 +818,8 @@ include __DIR__ . '/header.php';
                 </div>
             </div>
             <div class="modal-footer border-0" id="v_footer" style="display:none;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-dark px-4">Save Decision</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"><?= t_users('btn_close', $translations, $lang) ?></button>
+                <button type="submit" class="btn btn-dark px-4"><?= t_users('btn_save_decision', $translations, $lang) ?></button>
             </div>
         </form>
     </div>
@@ -480,15 +839,15 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="createUserModal" tabindex="-1">
     <div class="modal-dialog">
         <form method="POST" class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white"><h5>Create New User</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-primary text-white"><h5><?= t_users('modal_create_title', $translations, $lang) ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body row g-3">
                 <input type="hidden" name="action" value="create">
-                <div class="col-md-6"><label class="small fw-bold">First Name</label><input type="text" name="first_name" class="form-control" required></div>
-                <div class="col-md-6"><label class="small fw-bold">Last Name</label><input type="text" name="last_name" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold">Username</label><input type="text" name="username" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold">Email</label><input type="email" name="email" class="form-control" required></div>
+                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_first_name', $translations, $lang) ?></label><input type="text" name="first_name" class="form-control" required></div>
+                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_last_name', $translations, $lang) ?></label><input type="text" name="last_name" class="form-control" required></div>
+                <div class="col-12"><label class="small fw-bold"><?= t_users('label_username', $translations, $lang) ?></label><input type="text" name="username" class="form-control" required></div>
+                <div class="col-12"><label class="small fw-bold"><?= t_users('label_email', $translations, $lang) ?></label><input type="email" name="email" class="form-control" required></div>
                 <div class="col-md-6">
-                    <label class="small fw-bold">Password</label>
+                    <label class="small fw-bold"><?= t_users('label_password', $translations, $lang) ?></label>
                     <div class="input-group">
                         <input type="password" name="password" id="create_p" class="form-control" onkeyup="checkStrength(this.value, 's_create')" required>
                         <span class="input-group-text bg-white" onclick="togglePasswordVisibility('create_p', 'create_eye')"><i class="bi bi-eye-slash" id="create_eye"></i></span>
@@ -496,18 +855,19 @@ include __DIR__ . '/header.php';
                     <div class="strength-meter"><div id="s_create" class="strength-bar"></div></div>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold">Role</label>
+                    <label class="small fw-bold"><?= t_users('label_role', $translations, $lang) ?></label>
                     <select name="role" class="form-select">
-                        <option value="applicant">Applicant</option>
-                        <option value="inspector">Inspector</option>
-                        <option value="zoning_officer">Zoning Officer</option>
-                        <option value="building_official">Building Official</option>
-                        <option value="assessor">Assessor</option>
-                        <option value="admin">Admin</option>
+                        <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
+                        <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
+                        <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
+                        <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
+                        <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
+                        <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
+                        <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
                     </select>
                 </div>
             </div>
-            <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100 py-2 shadow-sm">Create Account</button></div>
+            <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100 py-2 shadow-sm"><?= t_users('btn_create_account', $translations, $lang) ?></button></div>
         </form>
     </div>
 </div>
@@ -515,27 +875,28 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="editUserModal" tabindex="-1">
     <div class="modal-dialog">
         <form method="POST" class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white"><h5>Edit User Account</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-dark text-white"><h5><?= t_users('modal_edit_title', $translations, $lang) ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body row g-3">
                 <input type="hidden" name="action" value="update"><input type="hidden" name="user_id" id="e_id">
-                <div class="col-md-6"><label class="small fw-bold">First Name</label><input type="text" name="first_name" id="e_fname" class="form-control" required></div>
-                <div class="col-md-6"><label class="small fw-bold">Last Name</label><input type="text" name="last_name" id="e_lname" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold">Username</label><input type="text" name="username" id="e_username" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold">Email</label><input type="email" name="email" id="e_email" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold">Phone</label><input type="text" name="phone" id="e_phone" class="form-control"></div>
+                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_first_name', $translations, $lang) ?></label><input type="text" name="first_name" id="e_fname" class="form-control" required></div>
+                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_last_name', $translations, $lang) ?></label><input type="text" name="last_name" id="e_lname" class="form-control" required></div>
+                <div class="col-12"><label class="small fw-bold"><?= t_users('label_username', $translations, $lang) ?></label><input type="text" name="username" id="e_username" class="form-control" required></div>
+                <div class="col-12"><label class="small fw-bold"><?= t_users('label_email', $translations, $lang) ?></label><input type="email" name="email" id="e_email" class="form-control" required></div>
+                <div class="col-12"><label class="small fw-bold"><?= t_users('label_phone', $translations, $lang) ?></label><input type="text" name="phone" id="e_phone" class="form-control"></div>
                 <div class="col-md-6">
-                    <label class="small fw-bold">Role</label>
+                    <label class="small fw-bold"><?= t_users('label_role', $translations, $lang) ?></label>
                     <select name="role" id="e_role" class="form-select">
-                        <option value="applicant">Applicant</option>
-                        <option value="inspector">Inspector</option>
-                        <option value="zoning_officer">Zoning Officer</option>
-                        <option value="building_official">Building Official</option>
-                        <option value="assessor">Assessor</option>
-                        <option value="admin">Admin</option>
+                        <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
+                        <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
+                        <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
+                        <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
+                        <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
+                        <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
+                        <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold">New Password (Optional)</label>
+                    <label class="small fw-bold"><?= t_users('label_new_password', $translations, $lang) ?></label>
                     <div class="input-group">
                         <input type="password" name="password" id="e_p" class="form-control" onkeyup="checkStrength(this.value, 's_edit')">
                         <span class="input-group-text bg-white" onclick="togglePasswordVisibility('e_p', 'edit_eye')"><i class="bi bi-eye-slash" id="edit_eye"></i></span>
@@ -543,7 +904,7 @@ include __DIR__ . '/header.php';
                     <div class="strength-meter"><div id="s_edit" class="strength-bar"></div></div>
                 </div>
             </div>
-            <div class="modal-footer border-0"><button type="submit" class="btn btn-dark w-100 shadow-sm">Update User</button></div>
+            <div class="modal-footer border-0"><button type="submit" class="btn btn-dark w-100 shadow-sm"><?= t_users('btn_update_user', $translations, $lang) ?></button></div>
         </form>
     </div>
 </div>
@@ -551,8 +912,75 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="logsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white"><h5 class="modal-title">Activity Logs: <span id="log_user_name"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-dark text-white"><h5 class="modal-title"><?= t_users('modal_logs_title', $translations, $lang) ?>: <span id="log_user_name"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body" id="logs_content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOAST NOTIFICATION CONTAINER ===== -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="exportToast" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2" id="exportToastBody">
+                <i class="bi" id="exportToastIcon" style="font-size:1.1rem;flex-shrink:0;"></i>
+                <span id="exportToastMsg"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SECURE EXPORT VERIFICATION MODAL ===== -->
+<div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="exportVerifyModalLabel">
+                    <i class="bi bi-shield-lock-fill me-2"></i><?= t_users('export_modal_title', $translations, $lang) ?>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                    <span><?= t_users('export_warning', $translations, $lang) ?></span>
+                </div>
+
+                <div id="exportVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold"><?= t_users('export_purpose_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                    <select id="exportReason" class="form-select">
+                        <option value=""><?= t_users('export_purpose_ph', $translations, $lang) ?></option>
+                        <option value="Reporting">Reporting</option>
+                        <option value="Auditing">Auditing</option>
+                        <option value="Archiving">Archiving</option>
+                        <option value="Compliance Review">Compliance Review</option>
+                        <option value="Data Backup">Data Backup</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-1">
+                    <label class="form-label small fw-bold"><?= t_users('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="password" id="exportPassword" class="form-control"
+                               placeholder="<?= t_users('export_password_ph', $translations, $lang) ?>">
+                        <span class="input-group-text bg-white" style="cursor:pointer;"
+                              onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
+                            <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
+                <button type="button" class="btn btn-dark px-4" id="exportVerifyBtn">
+                    <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
+                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?= t_users('btn_verify_download', $translations, $lang) ?>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -560,36 +988,168 @@ include __DIR__ . '/header.php';
 <script>
 const CURRENT_FILE = window.location.pathname.split('/').pop() || 'users.php';
 
-const selectAll = document.getElementById('selectAll');
-const userCheckboxes = document.querySelectorAll('.user-checkbox');
-const bulkToolbar = document.getElementById('bulkToolbar');
-const selectedCountText = document.getElementById('selectedCount');
+// ===== EXPORT VERIFICATION LOGIC =====
+const _exportModalEl = document.getElementById('exportVerifyModal');
+let _exportType = '', _exportTable = '', _exportUrl = '';
 
-function updateBulkToolbar() {
-    const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
-    if (checkedCount > 0) {
-        bulkToolbar.style.display = 'block';
-        selectedCountText.innerText = checkedCount;
-    } else {
-        bulkToolbar.style.display = 'none';
-    }
+/* ---- helpers ---- */
+function _elmt(id) { return document.getElementById(id); }
+
+function _resetExportModal() {
+    _elmt('exportPassword').value   = '';
+    _elmt('exportPassword').type    = 'password';
+    _elmt('exportReason').value     = '';
+    _elmt('exportEyeIcon').className = 'bi bi-eye-slash';
+    _elmt('exportVerifyBtn').disabled = false;
+    _elmt('exportBtnSpinner').classList.add('d-none');
+    _elmt('exportBtnIcon').classList.remove('d-none');
+    _hideAlert();
 }
 
-selectAll.addEventListener('change', function() {
-    userCheckboxes.forEach(cb => cb.checked = this.checked);
-    updateBulkToolbar();
-});
-
-userCheckboxes.forEach(cb => {
-    cb.addEventListener('change', updateBulkToolbar);
-});
-
-function submitBulkAction(action) {
-    if (confirm(`Are you sure you want to perform this bulk action?`)) {
-        document.getElementById('bulkActionInput').value = action;
-        document.getElementById('bulkForm').submit();
-    }
+function _getAlertEl() {
+    return document.getElementById('exportVerifyAlert');
 }
+
+function _hideAlert() {
+    var el = _getAlertEl();
+    if (!el) return;
+    el.style.display = 'none';
+    el.className = 'alert small py-2 mb-3';
+    el.innerText = '';
+}
+
+function _showAlert(msg, type) {
+    var el = _getAlertEl();
+    if (!el) return;
+
+    // FORCE RESET (important fix)
+    el.style.display = 'none';
+    el.innerHTML = '';
+
+    // Force reflow (trick para mag refresh DOM)
+    void el.offsetHeight;
+
+    // Apply new content
+    el.className = 'alert alert-' + type + ' small py-2 mb-3';
+    el.innerText = msg;
+    el.style.display = 'block';
+}
+
+function _setBtnLoading(on) {
+    _elmt('exportVerifyBtn').disabled = on;
+    _elmt('exportBtnSpinner').classList.toggle('d-none', !on);
+    _elmt('exportBtnIcon').classList.toggle('d-none', on);
+}
+
+/* ---- toast notification ---- */
+function _showToast(msg, type) {
+    var toastEl   = _elmt('exportToast');
+    var toastMsg  = _elmt('exportToastMsg');
+    var toastIcon = _elmt('exportToastIcon');
+
+    // Map type → Bootstrap bg class + icon
+    var config = {
+        warning: { bg: 'bg-warning',  text: 'text-dark',  icon: 'bi-exclamation-triangle-fill' },
+        danger:  { bg: 'bg-danger',   text: 'text-white', icon: 'bi-x-circle-fill'              },
+        success: { bg: 'bg-success',  text: 'text-white', icon: 'bi-check-circle-fill'          },
+        info:    { bg: 'bg-info',     text: 'text-dark',  icon: 'bi-info-circle-fill'           }
+    };
+    var c = config[type] || config['info'];
+
+    // Reset classes, then apply
+    toastEl.className = 'toast align-items-center border-0 shadow ' + c.bg + ' ' + c.text;
+    toastIcon.className = 'bi ' + c.icon;
+    toastMsg.innerText = msg;
+
+    var bsToast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 });
+    bsToast.show();
+}
+
+/* ---- open modal ---- */
+function openExportModal(type, table, downloadUrl) {
+    _exportType  = type.toUpperCase();
+    _exportTable = table;
+    _exportUrl   = new URL(downloadUrl, window.location.href).href;
+
+    _resetExportModal();
+    _hideAlert();        
+
+    bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
+}
+
+/* ---- close modal on hide ---- */
+_exportModalEl.addEventListener('hide.bs.modal', function () {
+    var focused = _exportModalEl.querySelector(':focus');
+    if (focused) focused.blur();
+});
+
+_exportModalEl.addEventListener('hidden.bs.modal', function () {
+    _hideAlert();
+});
+
+/* ---- main submit ---- */
+function submitExportVerification() {
+    var password = _elmt('exportPassword').value.trim();
+    var reason   = _elmt('exportReason').value;
+
+    // Validate purpose
+    if (!reason) {
+        _showToast('Please select a purpose for this export.', 'warning');
+        return;
+    }
+
+    // Validate password field not empty
+    if (!password) {
+        _showToast('Please enter your password to continue.', 'warning');
+        return;
+    }
+
+    _setBtnLoading(true);
+    _hideAlert();
+
+    var fd = new FormData();
+    fd.append('password',    password);
+    fd.append('reason',      reason);
+    fd.append('export_type', _exportType);
+    fd.append('table_name',  _exportTable);
+
+    fetch('verify_action.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function(res) {
+            if (!res.ok) throw new Error('Server error: ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            if (!data.success) {
+                // Wrong password or other server rejection
+                _setBtnLoading(false);
+                _showAlert(data.message || 'Incorrect password. Export denied.', 'danger');
+                return;
+            }
+
+            // Password verified — trigger download directly via iframe
+            _showAlert('Verification successful. Starting download...', 'success');
+            var sep         = _exportUrl.includes('?') ? '&' : '?';
+            var downloadUrl = _exportUrl + sep + 'export_token=' + encodeURIComponent(data.token);
+
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = downloadUrl;
+            document.body.appendChild(iframe);
+
+            setTimeout(function() {
+                document.body.removeChild(iframe);
+                _setBtnLoading(false);
+                bootstrap.Modal.getOrCreateInstance(_exportModalEl).hide();
+            }, 3000);
+        })
+        .catch(function() {
+            _setBtnLoading(false);
+            _showAlert('Network error. Please try again.', 'danger');
+        });
+}
+
+_elmt('exportVerifyBtn').onclick = submitExportVerification;
+// ===== END EXPORT VERIFICATION LOGIC =====
 
 function quickAction(id, action) {
     if (confirm('Change status?')) {
@@ -614,7 +1174,7 @@ function togglePasswordVisibility(inputId, eyeId) {
 function zoomImage(src) {
     if (src.includes('placehold.co')) return; 
     document.getElementById('fullImagePreview').src = src;
-    new bootstrap.Modal(document.getElementById('imageZoomModal')).show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('imageZoomModal')).show();
 }
 
 function openVerificationModal(userId, name) {
@@ -623,18 +1183,15 @@ function openVerificationModal(userId, name) {
     document.getElementById('v_loading').style.display = 'block';
     document.getElementById('v_content').style.display = 'none';
     document.getElementById('v_footer').style.display = 'none';
-
-    new bootstrap.Modal(document.getElementById('verificationModal')).show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('verificationModal')).show();
 
     fetch(`${CURRENT_FILE}?action=get_verification&user_id=${userId}`)
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                const placeholder = 'https://placehold.co/400x300?text=No+Image+Found'; 
-                
+                const placeholder = 'https://placehold.co/400x300?text=No+Image'; 
                 document.getElementById('img_front').src = data.id_front ? data.id_front : placeholder;
                 document.getElementById('img_back').src = data.id_back ? data.id_back : placeholder;
-                
                 document.getElementById('v_decision').value = data.is_verified ? 'approve' : 'reject';
                 
                 const selectReason = document.getElementById('v_rejection_reason');
@@ -651,9 +1208,7 @@ function openVerificationModal(userId, name) {
                         customText.style.display = 'block';
                     }
                 }
-
                 toggleRejectionBox(document.getElementById('v_decision').value);
-                
                 document.getElementById('v_loading').style.display = 'none';
                 document.getElementById('v_content').style.display = 'block';
                 document.getElementById('v_footer').style.display = 'flex';
@@ -667,7 +1222,6 @@ function toggleRejectionBox(val) {
 
 function checkOtherReason(val) {
     document.getElementById('v_custom_reason').style.display = (val === 'Other') ? 'block' : 'none';
-    if(val !== 'Other') document.getElementById('v_custom_reason').value = '';
 }
 
 function editUser(u) {
@@ -678,15 +1232,14 @@ function editUser(u) {
     document.getElementById('e_email').value = u.email;
     document.getElementById('e_phone').value = u.phone || '';
     document.getElementById('e_role').value = u.role;
-    document.getElementById('e_p').value = '';
-    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editUserModal')).show();
 }
 
 function viewLogs(userId, userName) {
     document.getElementById('log_user_name').innerText = userName;
     const content = document.getElementById('logs_content');
     content.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>`;
-    new bootstrap.Modal(document.getElementById('logsModal')).show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('logsModal')).show();
     
     fetch(`${CURRENT_FILE}?action=get_history&user_id=${userId}`)
         .then(res => res.json())
@@ -694,15 +1247,15 @@ function viewLogs(userId, userName) {
             if (data.success) {
                 let appRows = (data.applications || []).map(app => 
                     `<tr><td><b>${app.application_number}</b></td><td>${app.project_name}</td><td><span class="badge bg-light text-dark border">${app.status}</span></td><td>${app.created_at}</td></tr>`
-                ).join('') || '<tr><td colspan="4" class="text-center py-3">No applications found.</td></tr>';
+                ).join('') || '<tr><td colspan="4" class="text-center">No applications.</td></tr>';
                 
                 content.innerHTML = `
                     <div class="row g-2 mb-3">
-                        <div class="col-6"><div class="p-3 border bg-light rounded small">LAST LOGIN:<br><b>${data.last_login}</b></div></div>
-                        <div class="col-6"><div class="p-3 border bg-light rounded small">TOTAL SUBMISSIONS:<br><b>${data.app_count}</b></div></div>
+                        <div class="col-6"><div class="p-2 border rounded small">LOGIN: <b>${data.last_login}</b></div></div>
+                        <div class="col-6"><div class="p-2 border rounded small">APPS: <b>${data.app_count}</b></div></div>
                     </div>
                     <div class="table-responsive"><table class="table table-sm small border">
-                        <thead class="table-light"><tr><th>ID</th><th>Project</th><th>Status</th><th>Date</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Project</th><th>Status</th><th>Date</th></tr></thead>
                         <tbody>${appRows}</tbody>
                     </table></div>`;
             }
@@ -716,8 +1269,10 @@ function checkStrength(password, barId) {
     if (password.match(/[A-Z]/)) s += 25;
     if (password.match(/[0-9]/)) s += 25;
     let bar = document.getElementById(barId);
-    bar.style.width = s + "%";
-    bar.style.backgroundColor = s <= 50 ? "#dc3545" : (s <= 75 ? "#ffc107" : "#198754");
+    if (bar) {
+        bar.style.width = s + "%";
+        bar.style.backgroundColor = s <= 50 ? "#dc3545" : (s <= 75 ? "#ffc107" : "#198754");
+    }
 }
 </script>
 
