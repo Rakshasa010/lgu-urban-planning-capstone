@@ -43,6 +43,10 @@ function _ht(string $key): string {
     global $_hT, $_hLang;
     return $_hT[$_hLang][$key] ?? $_hT['en_PH'][$key] ?? $key;
 }
+
+// Show the preloader once, right after a successful login
+$showLoginPreloader = !empty($_SESSION['show_preloader']);
+unset($_SESSION['show_preloader']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,7 +59,96 @@ function _ht(string $key): string {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap');
-        
+
+        /* ---------- INFRA PRELOADER ---------- */
+        #infra-preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(255, 255, 255, 0.30);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #infra-preloader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .infra-svg { width: 200px; height: auto; overflow: visible; }
+
+        .infra-preloader .draw {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: var(--len, 800);
+            stroke-dashoffset: var(--len, 800);
+            animation: infra-draw-in 1.6s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        @keyframes infra-draw-in {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .infra-preloader .d1 { animation-delay: 0.1s; }
+        .infra-preloader .d2 { animation-delay: 0.3s; }
+        .infra-preloader .d3 { animation-delay: 0.5s; }
+        .infra-preloader .d4 { animation-delay: 0.7s; }
+        .infra-preloader .d5 { animation-delay: 0.9s; }
+        .infra-preloader .d6 { animation-delay: 1.0s; }
+
+        .infra-preloader .dots-group {
+            opacity: 0;
+            animation: infra-fade-in 0.5s ease forwards;
+            animation-delay: 1.5s;
+        }
+        .infra-preloader .dot-rect { fill: #1a3a6e; }
+
+        .infra-preloader .infra-text {
+            opacity: 0;
+            animation: infra-rise-in 0.6s cubic-bezier(.4,0,.2,1) forwards;
+            animation-delay: 1.7s;
+        }
+        .infra-preloader .sub-text {
+            opacity: 0;
+            animation: infra-rise-in 0.5s cubic-bezier(.4,0,.2,1) forwards;
+            animation-delay: 2.1s;
+        }
+        @keyframes infra-rise-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0);   }
+        }
+        @keyframes infra-fade-in {
+            to { opacity: 1; }
+        }
+
+        .infra-loading-dots {
+            display: flex;
+            justify-content: center;
+            width: 200px;
+            gap: 7px;
+            opacity: 0;
+            animation: infra-fade-in 0.4s ease forwards;
+            animation-delay: 2.4s;
+            transform: translateX(-18px);
+        }
+        .infra-loading-dots .ld {
+            width: 7px; height: 7px; border-radius: 50%; background: #c5cae9;
+            animation: infra-ld-pulse 1.1s ease-in-out infinite;
+        }
+        .infra-loading-dots .ld:nth-child(1) { animation-delay: 2.4s; }
+        .infra-loading-dots .ld:nth-child(2) { animation-delay: 2.55s; }
+        .infra-loading-dots .ld:nth-child(3) { animation-delay: 2.7s; }
+        @keyframes infra-ld-pulse {
+            0%,100% { background: #c5cae9; transform: scale(1); }
+            50%      { background: #1a237e; transform: scale(1.4); }
+        }
+
         * {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
@@ -736,6 +829,83 @@ function _ht(string $key): string {
     </script>
 </head>
 <body <?php if (!empty($isAuthPage)) echo 'data-auth-page="true"'; ?>>
+
+    <!-- INFRA Preloader (only shown once, right after login) -->
+    <?php if ($showLoginPreloader): ?>
+    <div id="infra-preloader" class="infra-preloader">
+        <svg class="infra-svg" viewBox="0 0 200 175" xmlns="http://www.w3.org/2000/svg">
+
+            <polyline class="draw d1" points="22,118 22,90 44,90 44,118" stroke="#1a5fa8" stroke-width="3" style="--len:120"/>
+            <polyline class="draw d2" points="33,118 33,72 58,72 58,118" stroke="#1a5fa8" stroke-width="3" style="--len:160"/>
+
+            <polyline class="draw d3" points="68,50 68,30 96,10 96,30 96,118" stroke="#1a3a6e" stroke-width="3.5" style="--len:340"/>
+            <polyline class="draw d3" points="58,110 58,52 68,52 68,118" stroke="#1a3a6e" stroke-width="3" style="--len:180"/>
+            <polyline class="draw d4" points="96,50 96,52 106,52 106,118" stroke="#1a3a6e" stroke-width="3" style="--len:180"/>
+
+            <polyline class="draw d4" points="106,118 106,75 126,75 126,118" stroke="#1a5fa8" stroke-width="3" style="--len:155"/>
+            <polyline class="draw d5" points="126,118 126,95 142,95 142,118" stroke="#1a5fa8" stroke-width="3" style="--len:110"/>
+
+            <line class="draw d5" x1="18" y1="118" x2="146" y2="118" stroke="#1a3a6e" stroke-width="3" style="--len:130"/>
+
+            <g class="dots-group">
+
+                <rect class="dot-rect" x="72" y="38" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="38" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="48" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="48" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="58" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="58" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="68" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="68" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="78" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="78" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="88" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="88" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="72" y="98" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="80" y="98" width="4" height="4" rx="0.5"/>
+
+                <rect class="dot-rect" x="110" y="82" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="118" y="82" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="110" y="91" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="118" y="91" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="110" y="100" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="118" y="100" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="110" y="109" width="4" height="4" rx="0.5"/>
+                <rect class="dot-rect" x="118" y="109" width="4" height="4" rx="0.5"/>
+            </g>
+
+            <text class="infra-text" x="82" y="142" text-anchor="middle"
+                font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+                font-size="22" font-weight="800" fill="#1a3a6e" letter-spacing="3">INFRA</text>
+
+            <text class="sub-text" x="82" y="160" text-anchor="middle"
+                font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+                font-size="9" font-weight="600" fill="#5c6bc0" letter-spacing="4">GOV SERVICES</text>
+
+        </svg>
+
+        <div class="infra-loading-dots">
+            <div class="ld"></div>
+            <div class="ld"></div>
+            <div class="ld"></div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var MIN_DISPLAY_MS = 2800;
+            var start = Date.now();
+            window.addEventListener('load', function () {
+                var elapsed = Date.now() - start;
+                var wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+                setTimeout(function () {
+                    var el = document.getElementById('infra-preloader');
+                    if (el) el.classList.add('is-hidden');
+                }, wait);
+            });
+        })();
+    </script>
+    <?php endif; ?>
+
     <nav class="top-navbar">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">

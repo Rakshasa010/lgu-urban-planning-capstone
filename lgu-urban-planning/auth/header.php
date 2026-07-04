@@ -125,7 +125,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
         </a>
     </div>
     <div class="header-accessibility d-flex align-items-center gap-2">
-        <a href="index.php" class="text-white opacity-75 d-flex align-items-center" title="Home"><i class="bi bi-house-door" style="font-size:1.1rem;"></i></a>
+        <a href="landingpage.php" class="text-white opacity-75 d-flex align-items-center" title="Home"><i class="bi bi-house-door" style="font-size:1.1rem;"></i></a>
         <div class="btn-group btn-group-sm">
             <button type="button" id="btn-en" class="btn btn-outline-light active" style="padding:3px 10px;font-size:12px;">EN</button>
             <button type="button" id="btn-tl" class="btn btn-outline-light" style="padding:3px 10px;font-size:12px;">TL</button>

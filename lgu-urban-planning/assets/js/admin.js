@@ -197,6 +197,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let warningTimer = null;
     let logoutTimer  = null;
+    let isExpired    = false; // true once SESSION_DURATION has elapsed and the expired notice is showing
+
+    const WARNING_DURATION = (SESSION_DURATION - WARNING_THRESHOLD) / 1000; // seconds the warning modal counts down (30s)
+    const REDIRECT_COUNTDOWN = 5; // seconds shown on the final "Session Expired" notice before redirecting
+
+    let countdownInterval = null;
 
     document.body.insertAdjacentHTML('beforeend', `
         <div id="sessionTimeoutModal" style="
@@ -206,32 +212,94 @@ document.addEventListener('DOMContentLoaded', function () {
                 background:#fff; border-radius:12px; padding:32px 28px;
                 max-width:380px; width:90%; text-align:center;
                 box-shadow:0 8px 32px rgba(0,0,0,.2);">
-                <div style="font-size:2rem; margin-bottom:8px;">⚠️</div>
-                <h5 style="margin:0 0 8px; font-weight:700; color:#111;">Session Expiring</h5>
-                <p style="margin:0 0 20px; color:#555; font-size:.95rem;">
-                    Your session will expire in 30 seconds due to inactivity.
+                <div id="sessionModalIcon" style="font-size:2rem; margin-bottom:8px;">⚠️</div>
+                <h5 id="sessionModalTitle" style="margin:0 0 8px; font-weight:700; color:#111;">Session Expiring</h5>
+                <p id="sessionModalText" style="margin:0 0 20px; color:#555; font-size:.95rem;">
+                    Your session will expire in <span id="sessionCountdownNum">30</span> seconds due to inactivity.
                     Click OK to stay logged in.
                 </p>
-                <button onclick="window.dismissTimeoutWarning()"
+                <button id="sessionModalBtn" onclick="window.dismissTimeoutWarning()"
                     style="background:#6366f1;color:#fff;border:none;border-radius:8px;
                            padding:8px 24px;font-weight:600;cursor:pointer;">OK</button>
             </div>
         </div>`);
 
+    const modalEl   = document.getElementById('sessionTimeoutModal');
+    const iconEl    = document.getElementById('sessionModalIcon');
+    const titleEl   = document.getElementById('sessionModalTitle');
+    const textEl    = document.getElementById('sessionModalText');
+    const btnEl     = document.getElementById('sessionModalBtn');
+
+    function stopCountdown() {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+
+    // Restore the modal to its default "warning" look (used after activity resets things)
+    function resetModalToWarningState() {
+        stopCountdown();
+        iconEl.textContent = '⚠️';
+        titleEl.textContent = 'Session Expiring';
+        textEl.innerHTML = 'Your session will expire in <span id="sessionCountdownNum">' + WARNING_DURATION + '</span> seconds due to inactivity. Click OK to stay logged in.';
+        btnEl.style.display = 'inline-block';
+    }
+
+    function startWarningCountdown() {
+        let remaining = WARNING_DURATION;
+        const liveNumEl = document.getElementById('sessionCountdownNum');
+        if (liveNumEl) liveNumEl.textContent = remaining;
+
+        stopCountdown();
+        countdownInterval = setInterval(() => {
+            remaining--;
+            const el = document.getElementById('sessionCountdownNum');
+            if (el) el.textContent = Math.max(remaining, 0);
+            if (remaining <= 0) stopCountdown();
+        }, 1000);
+    }
+
+    // Final "Session Expired" notice shown right before the hard redirect
+    function showExpiredNotice() {
+        isExpired = true;
+        stopCountdown();
+        iconEl.textContent = '⏰';
+        titleEl.textContent = 'Session Expired';
+        btnEl.style.display = 'none'; // no point offering "OK" — session is already dead server-side after redirect
+
+        let remaining = REDIRECT_COUNTDOWN;
+        textEl.innerHTML = 'You have been logged out due to inactivity.<br>Redirecting in <span id="sessionCountdownNum">' + remaining + '</span> seconds…';
+        modalEl.style.display = 'flex';
+
+        countdownInterval = setInterval(() => {
+            remaining--;
+            const el = document.getElementById('sessionCountdownNum');
+            if (el) el.textContent = Math.max(remaining, 0);
+            if (remaining <= 0) {
+                stopCountdown();
+                window.location.href = LOGOUT_URL;
+            }
+        }, 1000);
+    }
+
     function resetSessionTimers() {
+        if (isExpired) return; // session already destroyed server-side; let the redirect happen
         clearTimeout(warningTimer);
         clearTimeout(logoutTimer);
+        stopCountdown();
 
         // Hide the warning if it was visible (user activity dismissed it implicitly)
-        document.getElementById('sessionTimeoutModal').style.display = 'none';
+        modalEl.style.display = 'none';
+        resetModalToWarningState();
 
         warningTimer = setTimeout(() => {
-            document.getElementById('sessionTimeoutModal').style.display = 'flex';
+            modalEl.style.display = 'flex';
+            startWarningCountdown();
         }, WARNING_THRESHOLD);
 
-        // Redirect to logout.php — properly destroys the PHP session server-side
+        // Instead of redirecting straight away, show the "Session Expired" notice
+        // with its own short countdown so the user understands what happened.
         logoutTimer = setTimeout(() => {
-            window.location.href = LOGOUT_URL;
+            showExpiredNotice();
         }, SESSION_DURATION);
     }
 
