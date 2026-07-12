@@ -18,13 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['report_data'])) {
     $result = $documentController->exportReport($report, $format);
     
     if ($result['success']) {
-        $config = require __DIR__ . '/../config/app.php';
-        $filePath = $config['upload_path'] . $result['file_path'];
+        $filePath = $result['file_path'];
         
         if (file_exists($filePath)) {
             header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="' . $result['file_name'] . '"');
+            header('Content-Length: ' . filesize($filePath));
             readfile($filePath);
+            @unlink($filePath); // clean up the temp export file after sending
             exit;
         }
     }
@@ -32,4 +33,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['report_data'])) {
 
 header('Location: /lgu-urban-planning/reports/index.php');
 exit;
-

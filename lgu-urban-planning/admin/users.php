@@ -274,6 +274,75 @@ if (isset($_GET['action'])) {
     $uId = $_GET['user_id'] ?? 0;
     
     try {
+        if ($_GET['action'] === 'search_users') {
+            $searchPage   = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+            if ($searchPage < 1) $searchPage = 1;
+            $searchLimit  = 10;
+            $searchOffset = ($searchPage - 1) * $searchLimit;
+
+            $searchFilters = [
+                'role'      => $_GET['role'] ?? '',
+                'is_active' => $_GET['is_active'] ?? '',
+                'search'    => $_GET['search'] ?? ''
+            ];
+
+            $searchTotal      = $userController->getTotalUsersCount($searchFilters);
+            $searchTotalPages = max(1, ceil($searchTotal / $searchLimit));
+            $searchUsers      = $userController->getAllUsersPaginated($searchFilters, $searchLimit, $searchOffset);
+
+            $staffRoles = ['super_admin', 'admin', 'zoning_officer', 'building_official', 'assessor', 'inspector'];
+            $rows = [];
+            foreach ($searchUsers as $user) {
+                $isOnline = false;
+                if (!empty($user['last_activity'])) {
+                    $lastActivity = strtotime($user['last_activity']);
+                    $currentTime = time();
+                    if (($currentTime - $lastActivity) <= 300 && $lastActivity > 0) {
+                        $isOnline = true;
+                    }
+                }
+                $rows[] = [
+                    'id'          => $user['id'],
+                    'first_name'  => $user['first_name'],
+                    'last_name'   => $user['last_name'],
+                    'username'    => $user['username'],
+                    'email'       => $user['email'],
+                    'role'        => $user['role'],
+                    'is_active'   => (int)$user['is_active'],
+                    'is_verified' => (int)$user['is_verified'],
+                    'is_online'   => $isOnline,
+                    'is_staff'    => in_array(strtolower($user['role']), $staffRoles),
+                    'phone'       => $user['phone'] ?? ''
+                ];
+            }
+
+            echo json_encode([
+                'success'     => true,
+                'users'       => $rows,
+                'totalUsers'  => (int)$searchTotal,
+                'totalPages'  => (int)$searchTotalPages,
+                'page'        => $searchPage,
+                'limit'       => $searchLimit,
+                'offset'      => $searchOffset,
+                'labels'      => [
+                    'staff'    => t_users('label_staff_member', $translations, $lang),
+                    'verified' => t_users('label_verified', $translations, $lang),
+                    'pending'  => t_users('label_pending', $translations, $lang),
+                    'active'   => t_users('status_active', $translations, $lang),
+                    'inactive' => t_users('status_inactive', $translations, $lang),
+                    'online'   => t_users('status_online', $translations, $lang),
+                    'offline'  => t_users('status_offline', $translations, $lang),
+                    'edit'     => t_users('btn_edit', $translations, $lang),
+                    'activate' => t_users('btn_activate', $translations, $lang),
+                    'showing'  => t_users('pagination_showing', $translations, $lang),
+                    'to'       => t_users('pagination_to', $translations, $lang),
+                    'of'       => t_users('pagination_of', $translations, $lang),
+                    'users'    => t_users('pagination_users', $translations, $lang),
+                ]
+            ]);
+            exit;
+        }
+
         if ($_GET['action'] === 'get_history') {
             $history = $userController->getUserHistory($uId);
             echo json_encode([
@@ -391,8 +460,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $filters = ['role' => $_GET['role'] ?? '', 'is_active' => $_GET['is_active'] ?? '', 'search' => $_GET['search'] ?? ''];
 
 $totalUsers = $userController->getTotalUsersCount($filters);
-$totalPages = ceil($totalUsers / $limit);
+$totalPages = max(1, ceil($totalUsers / $limit));
 $users = $userController->getAllUsersPaginated($filters, $limit, $offset);
+
+// Pagination link query string (style matches applications.php)
+$query_string = http_build_query(array_filter($filters));
 
 $pageTitle = t_users('page_title', $translations, $lang);
 $isAuthPage = true;
@@ -411,8 +483,9 @@ include __DIR__ . '/header.php';
     #fullImagePreview { max-width: 100%; height: auto; border-radius: 4px; }
     .online-dot { height: 10px; width: 10px; background-color: #198754; border-radius: 50%; display: inline-block; margin-right: 5px; border: 2px solid var(--bs-body-bg); box-shadow: 0 0 0 1px #198754; }
     .offline-dot { height: 10px; width: 10px; background-color: #adb5bd; border-radius: 50%; display: inline-block; margin-right: 5px; }
-    .pagination .page-link { color: #333; border: 1px solid #dee2e6; padding: 0.5rem 0.75rem; }
-    .pagination .page-item.active .page-link { background-color: #212529; border-color: #212529; color: #fff; }
+    .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
+    .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
+    .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
     .pagination .page-item.disabled .page-link { color: #bcbcbc; }
 
     /* ================================================
@@ -461,8 +534,10 @@ include __DIR__ . '/header.php';
         /* Action buttons: icon-only for history */
         .table .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 
-        /* Card footer: stack pagination */
-        .card-footer .d-flex.justify-content-between { flex-direction: column; gap: 8px; align-items: flex-start !important; }
+        /* Card footer: stack pagination (style matches applications.php) */
+        .card-footer .row { flex-direction: column; gap: 10px; text-align: center; }
+        .card-footer .col-md-6:last-child { text-align: center !important; }
+        .pagination { justify-content: center !important; }
 
         /* Pagination */
         .pagination .page-link { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
@@ -621,7 +696,7 @@ include __DIR__ . '/header.php';
             <p class="text-muted small mb-0"><?= t_users('page_subtitle', $translations, $lang) ?></p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-dark shadow-sm"
+            <button type="button" class="btn btn-success shadow-sm"
                 onclick="openExportModal('csv', 'users', '?export=csv&<?= http_build_query($filters) ?>')">
                 <i class="bi bi-download"></i> <?= t_users('btn_export_csv', $translations, $lang) ?>
             </button>
@@ -636,10 +711,15 @@ include __DIR__ . '/header.php';
     
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-5"><input type="text" class="form-control" name="search" placeholder="<?= t_users('filter_search_ph', $translations, $lang) ?>" value="<?= htmlspecialchars($filters['search']) ?>"></div>
+            <form method="GET" class="row g-3" id="userFilterForm" onsubmit="return false;">
+                <div class="col-md-5">
+                    <div class="position-relative">
+                        <input type="text" class="form-control" id="searchInput" name="search" autocomplete="off" placeholder="<?= t_users('filter_search_ph', $translations, $lang) ?>" value="<?= htmlspecialchars($filters['search']) ?>">
+                        <span id="searchSpinner" class="spinner-border spinner-border-sm text-primary position-absolute top-50 end-0 translate-middle-y me-3" style="display:none;"></span>
+                    </div>
+                </div>
                 <div class="col-md-2">
-                    <select class="form-select" name="role">
+                    <select class="form-select" id="roleFilter" name="role">
                         <option value=""><?= t_users('filter_all_roles', $translations, $lang) ?></option>
                         <option value="applicant" <?= $filters['role'] === 'applicant' ? 'selected' : '' ?>><?= t_users('role_applicant', $translations, $lang) ?></option>
                         <option value="inspector" <?= $filters['role'] === 'inspector' ? 'selected' : '' ?>><?= t_users('role_inspector', $translations, $lang) ?></option>
@@ -652,7 +732,7 @@ include __DIR__ . '/header.php';
                 </div>
                 <div class="col-md-5">
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark w-100"><?= t_users('btn_apply_filter', $translations, $lang) ?></button>
+                        <button type="submit" class="btn btn-primary w-100"><?= t_users('btn_apply_filter', $translations, $lang) ?></button>
                         
                         <a href="users.php" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" title="Reset Filters">
                             <i class="bi bi-arrow-clockwise"></i>
@@ -676,7 +756,7 @@ include __DIR__ . '/header.php';
                                 <th class="text-center"><?= t_users('th_actions', $translations, $lang) ?></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="usersTableBody">
                             <?php 
                             foreach ($users as $user): 
                                 $isOnline = false;
@@ -729,38 +809,42 @@ include __DIR__ . '/header.php';
                     </table>
             </div>
         </div>
-        <div class="card-footer border-0 py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="small text-muted">
-                    <?= t_users('pagination_showing', $translations, $lang) ?> <b><?= $offset + 1 ?></b> <?= t_users('pagination_to', $translations, $lang) ?> <b><?= min($offset + $limit, $totalUsers) ?></b> <?= t_users('pagination_of', $translations, $lang) ?> <b><?= $totalUsers ?></b> <?= t_users('pagination_users', $translations, $lang) ?>
+        <div class="card-footer py-3 border-0">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <span class="info-text text-muted" id="paginationInfo">
+                        <?= t_users('pagination_showing', $translations, $lang) ?> <strong><?= $totalUsers > 0 ? ($offset + 1) : 0 ?></strong> <?= t_users('pagination_to', $translations, $lang) ?>
+                        <strong><?= min($offset + $limit, $totalUsers) ?></strong> <?= t_users('pagination_of', $translations, $lang) ?>
+                        <strong><?= $totalUsers ?></strong> <?= t_users('pagination_users', $translations, $lang) ?>
+                    </span>
                 </div>
-                <?php if ($totalPages > 1): ?>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                            <a class="page-link" href="?p=<?= $page - 1 ?>&<?= http_build_query($filters) ?>">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-
-                        <?php 
-                        $start = max(1, $page - 2);
-                        $end = min($totalPages, $page + 2);
-                        for ($i = $start; $i <= $end; $i++): 
-                        ?>
-                            <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                                <a class="page-link" href="?p=<?= $i ?>&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                <div class="col-md-6 text-md-end">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0" id="paginationNav">
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?p=1&<?= $query_string ?>" data-page="1"><i class="bi bi-chevron-double-left"></i></a>
                             </li>
-                        <?php endfor; ?>
-
-                        <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                            <a class="page-link" href="?p=<?= $page + 1 ?>&<?= http_build_query($filters) ?>">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <?php endif; ?>
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?p=<?= ($page - 1) ?>&<?= $query_string ?>" data-page="<?= ($page - 1) ?>">Prev</a>
+                            </li>
+                            <?php
+                            $start = max(1, $page - 2);
+                            $end = min($totalPages, $page + 2);
+                            for ($i = $start; $i <= $end; $i++):
+                            ?>
+                                <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                    <a class="page-link" href="?p=<?= $i ?>&<?= $query_string ?>" data-page="<?= $i ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?p=<?= ($page + 1) ?>&<?= $query_string ?>" data-page="<?= ($page + 1) ?>">Next</a>
+                            </li>
+                            <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?p=<?= $totalPages ?>&<?= $query_string ?>" data-page="<?= $totalPages ?>"><i class="bi bi-chevron-double-right"></i></a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
         </div>
@@ -772,9 +856,9 @@ include __DIR__ . '/header.php';
 </form>
 
 <div class="modal fade" id="verificationModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="POST" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title"><?= t_users('modal_verify_title', $translations, $lang) ?>: <span id="v_name"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -819,7 +903,7 @@ include __DIR__ . '/header.php';
             </div>
             <div class="modal-footer border-0" id="v_footer" style="display:none;">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal"><?= t_users('btn_close', $translations, $lang) ?></button>
-                <button type="submit" class="btn btn-dark px-4"><?= t_users('btn_save_decision', $translations, $lang) ?></button>
+                <button type="submit" class="btn btn-primary px-4"><?= t_users('btn_save_decision', $translations, $lang) ?></button>
             </div>
         </form>
     </div>
@@ -836,83 +920,243 @@ include __DIR__ . '/header.php';
     </div>
 </div>
 
+<style>
+    #createUserModal .modal-content, #editUserModal .modal-content { border-radius: 18px; overflow: hidden; }
+    #createUserModal .modal-header, #editUserModal .modal-header { padding: 1.75rem 2rem 1.5rem; }
+    #createUserModal .modal-header h5, #editUserModal .modal-header h5 { font-size: 1.35rem; letter-spacing: 0.2px; }
+    #createUserModal .modal-header .header-subtitle, #editUserModal .modal-header .header-subtitle { font-size: 0.8rem; opacity: 0.85; font-weight: 400; margin-top: 2px; }
+    #createUserModal .modal-body, #editUserModal .modal-body { padding: 2rem; background: #fbfbfd; }
+    #createUserModal .form-section-label, #editUserModal .form-section-label {
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+        color: #8891a5; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 8px;
+    }
+    #createUserModal .form-section-label::after, #editUserModal .form-section-label::after { content: ""; flex: 1; height: 1px; background: #e5e7ee; }
+    #createUserModal .form-section + .form-section, #editUserModal .form-section + .form-section { margin-top: 1.6rem; }
+    #createUserModal label.field-label, #editUserModal label.field-label { font-size: 0.78rem; font-weight: 600; color: #3a3f4b; margin-bottom: 0.35rem; display: block; }
+    #createUserModal .input-icon-group, #editUserModal .input-icon-group { position: relative; }
+    #createUserModal .input-icon-group > i.field-icon, #editUserModal .input-icon-group > i.field-icon {
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: #9aa1b3; font-size: 0.9rem; pointer-events: none;
+    }
+    #createUserModal .input-icon-group .form-control,
+    #createUserModal .input-icon-group .form-select,
+    #editUserModal .input-icon-group .form-control,
+    #editUserModal .input-icon-group .form-select { padding-left: 40px; }
+    #createUserModal .form-control, #createUserModal .form-select,
+    #editUserModal .form-control, #editUserModal .form-select {
+        border-radius: 10px; border: 1px solid #e2e4ea; padding: 0.6rem 0.85rem; font-size: 0.9rem;
+        background: #fff; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    #createUserModal .form-control:focus, #createUserModal .form-select:focus,
+    #editUserModal .form-control:focus, #editUserModal .form-select:focus {
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12); border-color: #86b7fe;
+    }
+    #createUserModal .input-group .input-group-text, #editUserModal .input-group .input-group-text {
+        border-radius: 0 10px 10px 0; border: 1px solid #e2e4ea; border-left: none; background: #fff;
+    }
+    #createUserModal .input-group .form-control, #editUserModal .input-group .form-control { border-radius: 10px 0 0 10px; }
+    #createUserModal .modal-footer, #editUserModal .modal-footer { padding: 1.25rem 2rem 1.75rem; background: #fbfbfd; gap: 0.6rem; }
+    #createUserModal .btn-create-submit, #editUserModal .btn-edit-submit {
+        border-radius: 10px; padding: 0.7rem 1rem; font-weight: 600; font-size: 0.92rem;
+        letter-spacing: 0.2px;
+    }
+    #editUserModal .btn-edit-cancel {
+        border-radius: 10px; padding: 0.7rem 1.1rem; font-weight: 600; font-size: 0.92rem;
+        letter-spacing: 0.2px; border: 1px solid #e2e4ea; color: #5a6072; background: #fff;
+    }
+    #editUserModal .btn-edit-cancel:hover { background: #f4f5f8; }
+
+    /* ---- Edit User modal: compact sizing so it fits the viewport without scrolling ---- */
+    #editUserModal .modal-dialog { max-width: 640px; }
+    #editUserModal .modal-header { padding: 1.1rem 1.75rem 0.9rem; }
+    #editUserModal .modal-header h5 { font-size: 1.15rem; }
+    #editUserModal .modal-header .header-subtitle { font-size: 0.75rem; }
+    #editUserModal .modal-body { padding: 1.25rem 1.75rem; background: #fbfbfd; }
+    #editUserModal .form-section-label { font-size: 0.66rem; margin-bottom: 0.6rem; }
+    #editUserModal .form-section + .form-section { margin-top: 1rem; }
+    #editUserModal label.field-label { font-size: 0.74rem; margin-bottom: 0.25rem; }
+    #editUserModal .form-control, #editUserModal .form-select { padding: 0.5rem 0.75rem; font-size: 0.87rem; }
+    #editUserModal .input-icon-group .form-control, #editUserModal .input-icon-group .form-select { padding-left: 38px; }
+    #editUserModal .modal-footer { padding: 0.9rem 1.75rem 1.25rem; }
+    #editUserModal .row.g-3 { --bs-gutter-y: 0.75rem; }
+</style>
+
 <div class="modal fade" id="createUserModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form method="POST" class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white"><h5><?= t_users('modal_create_title', $translations, $lang) ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body row g-3">
-                <input type="hidden" name="action" value="create">
-                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_first_name', $translations, $lang) ?></label><input type="text" name="first_name" class="form-control" required></div>
-                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_last_name', $translations, $lang) ?></label><input type="text" name="last_name" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold"><?= t_users('label_username', $translations, $lang) ?></label><input type="text" name="username" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold"><?= t_users('label_email', $translations, $lang) ?></label><input type="email" name="email" class="form-control" required></div>
-                <div class="col-md-6">
-                    <label class="small fw-bold"><?= t_users('label_password', $translations, $lang) ?></label>
-                    <div class="input-group">
-                        <input type="password" name="password" id="create_p" class="form-control" onkeyup="checkStrength(this.value, 's_create')" required>
-                        <span class="input-group-text bg-white" onclick="togglePasswordVisibility('create_p', 'create_eye')"><i class="bi bi-eye-slash" id="create_eye"></i></span>
-                    </div>
-                    <div class="strength-meter"><div id="s_create" class="strength-bar"></div></div>
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white position-relative justify-content-center">
+                <div class="text-center">
+                    <h5 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i><?= t_users('modal_create_title', $translations, $lang) ?></h5>
+                    <div class="header-subtitle">Add a new staff or applicant account</div>
                 </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold"><?= t_users('label_role', $translations, $lang) ?></label>
-                    <select name="role" class="form-select">
-                        <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
-                        <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
-                        <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
-                        <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
-                        <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
-                        <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
-                        <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
-                    </select>
+                <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="action" value="create">
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-person-vcard"></i> Personal Information</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_first_name', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-person field-icon"></i>
+                                <input type="text" name="first_name" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_last_name', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-person field-icon"></i>
+                                <input type="text" name="last_name" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-shield-lock"></i> Account &amp; Access</div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="field-label"><?= t_users('label_username', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-at field-icon"></i>
+                                <input type="text" name="username" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="field-label"><?= t_users('label_email', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-envelope field-icon"></i>
+                                <input type="email" name="email" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_password', $translations, $lang) ?></label>
+                            <div class="input-group">
+                                <input type="password" name="password" id="create_p" class="form-control" onkeyup="checkStrength(this.value, 's_create')" required>
+                                <span class="input-group-text" style="cursor:pointer;" onclick="togglePasswordVisibility('create_p', 'create_eye')"><i class="bi bi-eye-slash" id="create_eye"></i></span>
+                            </div>
+                            <div class="strength-meter"><div id="s_create" class="strength-bar"></div></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_role', $translations, $lang) ?></label>
+                            <select name="role" class="form-select">
+                                <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
+                                <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
+                                <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
+                                <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
+                                <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
+                                <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
+                                <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100 py-2 shadow-sm"><?= t_users('btn_create_account', $translations, $lang) ?></button></div>
+            <div class="modal-footer border-0">
+                <button type="submit" class="btn btn-primary w-100 shadow-sm btn-create-submit">
+                    <i class="bi bi-check-circle me-1"></i> <?= t_users('btn_create_account', $translations, $lang) ?>
+                </button>
+            </div>
         </form>
     </div>
 </div>
 
 <div class="modal fade" id="editUserModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form method="POST" class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white"><h5><?= t_users('modal_edit_title', $translations, $lang) ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body row g-3">
-                <input type="hidden" name="action" value="update"><input type="hidden" name="user_id" id="e_id">
-                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_first_name', $translations, $lang) ?></label><input type="text" name="first_name" id="e_fname" class="form-control" required></div>
-                <div class="col-md-6"><label class="small fw-bold"><?= t_users('label_last_name', $translations, $lang) ?></label><input type="text" name="last_name" id="e_lname" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold"><?= t_users('label_username', $translations, $lang) ?></label><input type="text" name="username" id="e_username" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold"><?= t_users('label_email', $translations, $lang) ?></label><input type="email" name="email" id="e_email" class="form-control" required></div>
-                <div class="col-12"><label class="small fw-bold"><?= t_users('label_phone', $translations, $lang) ?></label><input type="text" name="phone" id="e_phone" class="form-control"></div>
-                <div class="col-md-6">
-                    <label class="small fw-bold"><?= t_users('label_role', $translations, $lang) ?></label>
-                    <select name="role" id="e_role" class="form-select">
-                        <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
-                        <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
-                        <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
-                        <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
-                        <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
-                        <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
-                        <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
-                    </select>
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white position-relative justify-content-center">
+                <div class="text-center">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i><?= t_users('modal_edit_title', $translations, $lang) ?></h5>
+                    <div class="header-subtitle">Update account details and permissions</div>
                 </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold"><?= t_users('label_new_password', $translations, $lang) ?></label>
-                    <div class="input-group">
-                        <input type="password" name="password" id="e_p" class="form-control" onkeyup="checkStrength(this.value, 's_edit')">
-                        <span class="input-group-text bg-white" onclick="togglePasswordVisibility('e_p', 'edit_eye')"><i class="bi bi-eye-slash" id="edit_eye"></i></span>
+                <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="action" value="update"><input type="hidden" name="user_id" id="e_id">
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-person-vcard"></i> Personal Information</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_first_name', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-person field-icon"></i>
+                                <input type="text" name="first_name" id="e_fname" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_last_name', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-person field-icon"></i>
+                                <input type="text" name="last_name" id="e_lname" class="form-control" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="strength-meter"><div id="s_edit" class="strength-bar"></div></div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-shield-lock"></i> Account &amp; Access</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_username', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-at field-icon"></i>
+                                <input type="text" name="username" id="e_username" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_email', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-envelope field-icon"></i>
+                                <input type="email" name="email" id="e_email" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_phone', $translations, $lang) ?></label>
+                            <div class="input-icon-group">
+                                <i class="bi bi-telephone field-icon"></i>
+                                <input type="text" name="phone" id="e_phone" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_users('label_role', $translations, $lang) ?></label>
+                            <select name="role" id="e_role" class="form-select">
+                                <option value="applicant"><?= t_users('role_applicant', $translations, $lang) ?></option>
+                                <option value="inspector"><?= t_users('role_inspector', $translations, $lang) ?></option>
+                                <option value="zoning_officer"><?= t_users('role_zoning_officer', $translations, $lang) ?></option>
+                                <option value="building_official"><?= t_users('role_building_official', $translations, $lang) ?></option>
+                                <option value="assessor"><?= t_users('role_assessor', $translations, $lang) ?></option>
+                                <option value="admin"><?= t_users('role_admin', $translations, $lang) ?></option>
+                                <option value="super_admin"><?= t_users('role_super_admin', $translations, $lang) ?></option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="field-label"><?= t_users('label_new_password', $translations, $lang) ?></label>
+                            <div class="input-group">
+                                <input type="password" name="password" id="e_p" class="form-control" onkeyup="checkStrength(this.value, 's_edit')">
+                                <span class="input-group-text" style="cursor:pointer;" onclick="togglePasswordVisibility('e_p', 'edit_eye')"><i class="bi bi-eye-slash" id="edit_eye"></i></span>
+                            </div>
+                            <div class="strength-meter"><div id="s_edit" class="strength-bar"></div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer border-0"><button type="submit" class="btn btn-dark w-100 shadow-sm"><?= t_users('btn_update_user', $translations, $lang) ?></button></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-edit-cancel" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
+                <button type="submit" class="btn btn-primary flex-fill shadow-sm btn-edit-submit">
+                    <i class="bi bi-check-circle me-1"></i> <?= t_users('btn_update_user', $translations, $lang) ?>
+                </button>
+            </div>
         </form>
     </div>
 </div>
 
 <div class="modal fade" id="logsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white"><h5 class="modal-title"><?= t_users('modal_logs_title', $translations, $lang) ?>: <span id="log_user_name"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-primary text-white"><h5 class="modal-title"><?= t_users('modal_logs_title', $translations, $lang) ?>: <span id="log_user_name"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body" id="logs_content"></div>
         </div>
     </div>
@@ -935,7 +1179,7 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="exportVerifyModalLabel">
                     <i class="bi bi-shield-lock-fill me-2"></i><?= t_users('export_modal_title', $translations, $lang) ?>
                 </h5>
@@ -976,7 +1220,7 @@ include __DIR__ . '/header.php';
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
-                <button type="button" class="btn btn-dark px-4" id="exportVerifyBtn">
+                <button type="button" class="btn btn-primary px-4" id="exportVerifyBtn">
                     <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
                     <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?= t_users('btn_verify_download', $translations, $lang) ?>
                 </button>
@@ -987,6 +1231,167 @@ include __DIR__ . '/header.php';
 
 <script>
 const CURRENT_FILE = window.location.pathname.split('/').pop() || 'users.php';
+
+// ===== LIVE SEARCH LOGIC =====
+(function () {
+    const searchInput   = document.getElementById('searchInput');
+    const roleFilter     = document.getElementById('roleFilter');
+    const searchSpinner  = document.getElementById('searchSpinner');
+    const tbody          = document.getElementById('usersTableBody');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationNav  = document.getElementById('paginationNav');
+    const filterForm     = document.getElementById('userFilterForm');
+
+    let debounceTimer = null;
+    let currentPage   = 1;
+    let requestSeq    = 0; // guards against out-of-order responses
+
+    function esc(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function buildUrl(page) {
+        const params = new URLSearchParams();
+        params.set('action', 'search_users');
+        params.set('search', searchInput.value.trim());
+        params.set('role', roleFilter.value);
+        params.set('p', page);
+        return `${CURRENT_FILE}?${params.toString()}`;
+    }
+
+    function rowHtml(u, labels) {
+        const statusClass = u.is_active ? 'status-active' : 'status-inactive';
+        const statusLabel = u.is_active ? labels.active : labels.inactive;
+        const dotClass = u.is_online ? 'online-dot' : 'offline-dot';
+        const dotTitle = u.is_online ? labels.online : labels.offline;
+
+        let idCell;
+        if (u.is_staff) {
+            idCell = `<span class="text-muted small">${esc(labels.staff)}</span>`;
+        } else {
+            const vClass = u.is_verified ? 'text-success' : 'text-warning';
+            const vIcon  = u.is_verified ? 'bi-check-circle-fill' : 'bi-clock-history';
+            const vText  = u.is_verified ? labels.verified : labels.pending;
+            idCell = `<span class="small fw-bold cursor-pointer ${vClass}" onclick="openVerificationModal(${u.id}, '${esc(u.first_name + ' ' + u.last_name)}')">
+                        <i class="bi ${vIcon}"></i> ${esc(vText)}
+                      </span>`;
+        }
+
+        const activateBtn = !u.is_active
+            ? `<button type="button" class="btn btn-sm btn-outline-success border-0" onclick="quickAction(${u.id}, 'activate')">${esc(labels.activate)}</button>`
+            : '';
+
+        // Build a plain object (mirrors PHP $user array) for the editUser() JS function
+        const userObj = {
+            id: u.id, first_name: u.first_name, last_name: u.last_name,
+            username: u.username, email: u.email, role: u.role, phone: u.phone
+        };
+
+        return `<tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="${dotClass}" title="${esc(dotTitle)}"></div>
+                    <div>
+                        <div class="fw-bold">${esc(u.first_name + ' ' + u.last_name)}</div>
+                        <div class="text-muted small">${esc(u.email)} | @${esc(u.username)}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;">${esc(u.role)}</span></td>
+            <td><span class="badge px-3 ${statusClass}">${esc(statusLabel)}</span></td>
+            <td>${idCell}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-dark" onclick="viewLogs(${u.id}, '${esc(u.first_name + ' ' + u.last_name)}')"><i class="bi bi-clock-history"></i></button>
+                <button type="button" class="btn btn-sm btn-light border" onclick='editUser(${JSON.stringify(userObj)})'><i class="bi bi-pencil-square"></i> ${esc(labels.edit)}</button>
+                ${activateBtn}
+            </td>
+        </tr>`;
+    }
+
+    function renderPagination(data) {
+        const { page, totalPages } = data;
+        const items = [];
+        const item = (label, targetPage, disabled, active) => `
+            <li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${targetPage}">${label}</a>
+            </li>`;
+
+        items.push(item('<i class="bi bi-chevron-double-left"></i>', 1, page <= 1, false));
+        items.push(item('Prev', page - 1, page <= 1, false));
+        const start = Math.max(1, page - 2);
+        const end = Math.min(totalPages, page + 2);
+        for (let i = start; i <= end; i++) {
+            items.push(item(i, i, false, page === i));
+        }
+        items.push(item('Next', page + 1, page >= totalPages, false));
+        items.push(item('<i class="bi bi-chevron-double-right"></i>', totalPages, page >= totalPages, false));
+
+        paginationNav.innerHTML = items.join('');
+        paginationNav.querySelectorAll('a.page-link').forEach(a => {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                const p = parseInt(this.dataset.page, 10);
+                if (!isNaN(p) && p >= 1) doSearch(p);
+            });
+        });
+    }
+
+    function renderInfo(data) {
+        const { totalUsers, offset, limit, labels } = data;
+        const from = totalUsers > 0 ? offset + 1 : 0;
+        const to = Math.min(offset + limit, totalUsers);
+        paginationInfo.innerHTML = `${esc(labels.showing)} <strong>${from}</strong> ${esc(labels.to)}
+            <strong>${to}</strong> ${esc(labels.of)}
+            <strong>${totalUsers}</strong> ${esc(labels.users)}`;
+    }
+
+    function doSearch(page) {
+        currentPage = page || 1;
+        const seq = ++requestSeq;
+        searchSpinner.style.display = 'inline-block';
+
+        fetch(buildUrl(currentPage))
+            .then(res => res.json())
+            .then(data => {
+                if (seq !== requestSeq) return; // stale response, ignore
+                if (!data.success) return;
+
+                if (!data.users.length) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">No matching users found.</td></tr>`;
+                } else {
+                    tbody.innerHTML = data.users.map(u => rowHtml(u, data.labels)).join('');
+                }
+                renderInfo(data);
+                renderPagination(data);
+
+                // Reflect state in the URL for shareable/bookmarkable links, without reloading
+                const qp = new URLSearchParams();
+                if (searchInput.value.trim()) qp.set('search', searchInput.value.trim());
+                if (roleFilter.value) qp.set('role', roleFilter.value);
+                if (currentPage > 1) qp.set('p', currentPage);
+                const newUrl = window.location.pathname + (qp.toString() ? '?' + qp.toString() : '');
+                history.replaceState(null, '', newUrl);
+            })
+            .catch(() => { /* silently ignore network hiccups */ })
+            .finally(() => { searchSpinner.style.display = 'none'; });
+    }
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => doSearch(1), 350);
+    });
+
+    roleFilter.addEventListener('change', () => doSearch(1));
+
+    // "Apply Filter" button still works, just without a full page reload
+    filterForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        doSearch(1);
+    });
+})();
 
 // ===== EXPORT VERIFICATION LOGIC =====
 const _exportModalEl = document.getElementById('exportVerifyModal');
@@ -1235,6 +1640,14 @@ function editUser(u) {
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editUserModal')).show();
 }
 
+function _statusBadgeClass(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'approved') return 'bg-success text-white';
+    if (s === 'submitted') return 'bg-primary text-white';
+    if (s === 'rejected') return 'bg-danger text-white';
+    return 'bg-light text-dark border';
+}
+
 function viewLogs(userId, userName) {
     document.getElementById('log_user_name').innerText = userName;
     const content = document.getElementById('logs_content');
@@ -1246,7 +1659,7 @@ function viewLogs(userId, userName) {
         .then(data => {
             if (data.success) {
                 let appRows = (data.applications || []).map(app => 
-                    `<tr><td><b>${app.application_number}</b></td><td>${app.project_name}</td><td><span class="badge bg-light text-dark border">${app.status}</span></td><td>${app.created_at}</td></tr>`
+                    `<tr><td><b>${app.application_number}</b></td><td>${app.project_name}</td><td><span class="badge ${_statusBadgeClass(app.status)}">${app.status}</span></td><td>${app.created_at}</td></tr>`
                 ).join('') || '<tr><td colspan="4" class="text-center">No applications.</td></tr>';
                 
                 content.innerHTML = `

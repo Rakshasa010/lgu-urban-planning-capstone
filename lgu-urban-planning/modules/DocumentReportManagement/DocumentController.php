@@ -41,6 +41,63 @@ class DocumentController {
         );
     }
     
+    // --- Inspector Workload Snapshot (for dashboard chart, independent of selected report/year) ---
+    public function getInspectorWorkloadSnapshot() {
+        $this->auth->requirePermission('generate_reports');
+
+        $sql = "SELECT 
+                    CONCAT(u.first_name, ' ', u.last_name) AS inspector_name,
+                    COUNT(i.id) AS total_inspections
+                FROM users u
+                INNER JOIN inspections i ON u.id = i.inspector_id
+                GROUP BY u.id, u.first_name, u.last_name
+                ORDER BY COUNT(i.id) DESC
+                LIMIT 8";
+
+        return $this->db->fetchAll($sql) ?: [];
+    }
+
+    // --- Export Report to file (CSV) ---
+    public function exportReport($report, $format = 'csv') {
+        $this->auth->requirePermission('generate_reports');
+
+        if (empty($report) || !is_array($report)) {
+            return ['success' => false, 'error' => 'No report data to export.'];
+        }
+
+        if ($format !== 'csv') {
+            return ['success' => false, 'error' => 'Unsupported export format: ' . htmlspecialchars($format)];
+        }
+
+        $exportDir = realpath(__DIR__ . '/../../') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports';
+        if (!is_dir($exportDir) && !mkdir($exportDir, 0755, true) && !is_dir($exportDir)) {
+            return ['success' => false, 'error' => 'Unable to create export directory.'];
+        }
+
+        $fileName = 'report_' . date('Ymd_His') . '_' . substr(uniqid(), -6) . '.csv';
+        $fullPath = $exportDir . DIRECTORY_SEPARATOR . $fileName;
+
+        $fp = fopen($fullPath, 'w');
+        if ($fp === false) {
+            return ['success' => false, 'error' => 'Unable to create export file.'];
+        }
+
+        // Header row from the first record's column names
+        fputcsv($fp, array_keys(reset($report)));
+
+        foreach ($report as $row) {
+            fputcsv($fp, $row);
+        }
+
+        fclose($fp);
+
+        return [
+            'success'   => true,
+            'file_path' => $fullPath, // absolute path — no need to combine with config upload_path
+            'file_name' => $fileName
+        ];
+    }
+
     public function generateReport($reportType, $filters = []) {
         $this->auth->requirePermission('generate_reports');
 

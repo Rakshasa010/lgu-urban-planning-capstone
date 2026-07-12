@@ -79,6 +79,20 @@ if ($filters['status'] === 'overdue') {
 
 $applications = $permitController->getApplications($filters);
 
+// --- PAGINATION CONFIGURATION (style matches audit-logs.php) ---
+$limit = 15;
+$page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($page < 1) $page = 1;
+
+$totalApplications = count($applications);
+$totalPages = max(1, ceil($totalApplications / $limit));
+if ($page > $totalPages) $page = $totalPages;
+
+$offset = ($page - 1) * $limit;
+$applications = array_slice($applications, $offset, $limit);
+
+$query_string = http_build_query(array_filter($filters));
+
 $pageTitle = 'Applications';
 $isAuthPage = true;
 include __DIR__ . '/../admin/header.php';
@@ -102,6 +116,204 @@ include __DIR__ . '/../admin/header.php';
     .project-name-cell {
         white-space: normal !important;
         min-width: 200px;
+    }
+
+    /* Pagination — same style as audit-logs.php */
+    .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
+    .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+    .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
+    .info-text { font-size: 0.875rem; color: #6c757d; }
+
+    /* ================================================
+       MANUAL ADD MODAL — modern / professional redesign
+       ================================================ */
+    #manualAddModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #manualAddModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #manualAddModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #manualAddModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #manualAddModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #manualAddModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #manualAddModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #manualAddModal .form-section:last-child { margin-bottom: 0; }
+
+    #manualAddModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #manualAddModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #manualAddModal .modal-body .form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+    }
+
+    #manualAddModal .modal-body .form-control,
+    #manualAddModal .modal-body .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #manualAddModal .modal-body .form-control:focus,
+    #manualAddModal .modal-body .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #manualAddModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+    #manualAddModal .modal-body textarea.form-control { resize: vertical; }
+
+    /* Select2 (live search) — match the modernized input style */
+    #manualAddModal .select2-container--bootstrap-5 .select2-selection {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        min-height: calc(1.5em + 1.1rem + 3px);
+        padding: 0.55rem 0.85rem;
+        background-color: #fcfdfe;
+    }
+    #manualAddModal .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+    #manualAddModal .select2-container--bootstrap-5.select2-container--open .select2-selection {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+
+    #manualAddModal #btn-select-map {
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        border-width: 1.5px;
+    }
+
+    #manualAddModal #map-container {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #manualAddModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #manualAddModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #manualAddModal .modal-footer .btn-primary {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #manualAddModal .modal-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+    }
+    #manualAddModal .modal-footer .btn-outline-secondary {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #manualAddModal .modal-footer .btn-outline-secondary:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+    }
+
+    /* Manual Add Application — gradient button (green variant) */
+    .btn-manual-add {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 0.55rem 1.4rem;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-manual-add:hover {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-manual-add:active,
+    .btn-manual-add:focus {
+        color: #fff;
+    }
+
+    /* Table "View" button — gradient blue */
+    .btn-view-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-view-gradient:hover,
+    .btn-view-gradient:focus,
+    .btn-view-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
     }
 
     /* ================================================
@@ -166,16 +378,21 @@ include __DIR__ . '/../admin/header.php';
             width: calc(100% - 1rem) !important;
             margin: 0.5rem auto;
         }
-        .modal-body.p-4 { padding: 1rem !important; }
+        .modal-body { padding: 1rem !important; }
 
         /* Modal form: restore 2-column layout for larger fields at 768px */
         .modal-body .col-md-8 { width: 66.66%; flex: 0 0 66.66%; }
         .modal-body .col-md-4 { width: 33.33%; flex: 0 0 33.33%; }
         .modal-body .col-md-6 { width: 50%;    flex: 0 0 50%; }
 
-        .modal-footer { padding: 0.75rem 1rem; }
-        .modal-footer .btn { padding: 8px 20px; font-size: 0.875rem; }
+        #manualAddModal .modal-footer { padding: 0.75rem 1rem; }
+        #manualAddModal .modal-footer .btn { padding: 8px 20px; font-size: 0.875rem; }
         #map-container { height: 240px; }
+
+        /* Pagination */
+        .card-footer .row { flex-direction: column; gap: 10px; text-align: center; }
+        .card-footer .col-md-6:last-child { text-align: center !important; }
+        .pagination { justify-content: center !important; }
     }
 
     /* --- 480px: Large Mobile --- */
@@ -217,14 +434,14 @@ include __DIR__ . '/../admin/header.php';
         .project-name-cell { min-width: 100px; font-size: 0.74rem; }
 
         /* Modal */
-        .modal-header { padding: 0.75rem 1rem; }
-        .modal-title { font-size: 0.95rem; }
-        .modal-body.p-4 { padding: 0.75rem !important; }
+        #manualAddModal .modal-header { padding: 0.75rem 1rem; }
+        #manualAddModal .modal-title { font-size: 0.95rem; }
+        .modal-body { padding: 0.75rem !important; }
         .modal-body .row.g-3 { --bs-gutter-y: 0.5rem; }
-        .modal-body .form-label { font-size: 0.72rem; margin-bottom: 2px; }
-        .modal-body .form-control,
-        .modal-body .form-select { font-size: 0.82rem; padding: 6px 9px; }
-        .modal-footer .btn { padding: 7px 16px; font-size: 0.82rem; }
+        #manualAddModal .modal-body .form-label { font-size: 0.72rem; margin-bottom: 2px; }
+        #manualAddModal .modal-body .form-control,
+        #manualAddModal .modal-body .form-select { font-size: 0.82rem; padding: 6px 9px; }
+        #manualAddModal .modal-footer .btn { padding: 7px 16px; font-size: 0.82rem; }
         #map-container { height: 200px; }
 
         /* Coord row: stack lat/lng */
@@ -232,6 +449,11 @@ include __DIR__ . '/../admin/header.php';
             width: 100%;
             flex: 0 0 100%;
         }
+
+        /* Pagination */
+        .pagination .page-link { font-size: 0.72rem; padding: 4px 8px; }
+        .card-footer { padding: 0.6rem 0.75rem; }
+        .info-text { font-size: 0.72rem; }
     }
 
     /* --- 320px: Small Mobile --- */
@@ -272,22 +494,22 @@ include __DIR__ . '/../admin/header.php';
 
         /* Modal */
         .modal-dialog { margin: 0.25rem; }
-        .modal-header { padding: 0.6rem 0.75rem; }
-        .modal-title { font-size: 0.88rem; }
-        .modal-body.p-4 { padding: 0.6rem !important; }
-        .modal-body .form-label { font-size: 0.68rem; }
-        .modal-body .form-control,
-        .modal-body .form-select { font-size: 0.78rem; padding: 5px 8px; }
+        #manualAddModal .modal-header { padding: 0.6rem 0.75rem; }
+        #manualAddModal .modal-title { font-size: 0.88rem; }
+        .modal-body { padding: 0.6rem !important; }
+        #manualAddModal .modal-body .form-label { font-size: 0.68rem; }
+        #manualAddModal .modal-body .form-control,
+        #manualAddModal .modal-body .form-select { font-size: 0.78rem; padding: 5px 8px; }
         .modal-body .row.g-3 { --bs-gutter-y: 0.35rem; }
-        .modal-footer { padding: 0.5rem 0.75rem; gap: 6px; }
-        .modal-footer .btn { padding: 6px 12px; font-size: 0.78rem; }
+        #manualAddModal .modal-footer { padding: 0.5rem 0.75rem; gap: 6px; }
+        #manualAddModal .modal-footer .btn { padding: 6px 12px; font-size: 0.78rem; }
         /* Side-by-side buttons at 320px */
-        .modal-footer {
+        #manualAddModal .modal-footer {
             display: flex !important;
             flex-direction: row !important;
             justify-content: stretch;
         }
-        .modal-footer .btn {
+        #manualAddModal .modal-footer .btn {
             flex: 1;
             text-align: center;
         }
@@ -300,6 +522,12 @@ include __DIR__ . '/../admin/header.php';
             align-items: flex-start !important;
             gap: 4px;
         }
+
+        /* Pagination: show only prev/next + current */
+        .pagination .page-item:not(:first-child):not(:nth-child(2)):not(:last-child):not(:nth-last-child(2)) { display: none; }
+        .pagination .page-link { font-size: 0.65rem; padding: 3px 7px; }
+        .card-footer { padding: 0.5rem; }
+        .info-text { font-size: 0.65rem; }
     }
 </style>
 
@@ -314,7 +542,7 @@ include __DIR__ . '/../admin/header.php';
             </h2>
             <p class="text-muted mb-0">Manage and monitor all development permit applications.</p>
         </div>
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#manualAddModal">
+        <button type="button" class="btn btn-manual-add" data-bs-toggle="modal" data-bs-target="#manualAddModal">
             <i class="bi bi-plus-lg me-1"></i> Manual Add Application
         </button>
     </div>
@@ -429,13 +657,52 @@ include __DIR__ . '/../admin/header.php';
                                 </td>
                                 <td><?php echo Helper::formatDate($app['created_at']); ?></td>
                                 <td class="text-center pe-4">
-                                    <a href="view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-primary px-3 shadow-sm rounded-pill">View</a>
+                                    <a href="view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-view-gradient px-3">View</a>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <div class="card-footer py-3 border-0">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <span class="info-text text-muted">
+                        Showing <strong><?php echo $totalApplications > 0 ? ($offset + 1) : 0; ?></strong> to
+                        <strong><?php echo min($offset + $limit, $totalApplications); ?></strong> of
+                        <strong><?php echo $totalApplications; ?></strong> entries
+                    </span>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0">
+                            <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?p=1&<?php echo $query_string; ?>"><i class="bi bi-chevron-double-left"></i></a>
+                            </li>
+                            <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?p=<?php echo ($page - 1); ?>&<?php echo $query_string; ?>">Prev</a>
+                            </li>
+                            <?php
+                            $start = max(1, $page - 2);
+                            $end = min($totalPages, $page + 2);
+                            for ($i = $start; $i <= $end; $i++):
+                            ?>
+                                <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+                                    <a class="page-link" href="?p=<?php echo $i; ?>&<?php echo $query_string; ?>"><?php echo $i; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?p=<?php echo ($page + 1); ?>&<?php echo $query_string; ?>">Next</a>
+                            </li>
+                            <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?p=<?php echo $totalPages; ?>&<?php echo $query_string; ?>"><i class="bi bi-chevron-double-right"></i></a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
@@ -445,82 +712,109 @@ include __DIR__ . '/../admin/header.php';
     <div class="modal-dialog modal-lg">
         <form action="applications.php" method="POST" class="modal-content border-0 shadow-lg">
             <input type="hidden" name="action" value="manual_add">
-            <div class="modal-header bg-success text-white py-3">
-                <h5 class="modal-title d-flex align-items-center" id="manualAddModalLabel"><i class="bi bi-pencil-square me-2"></i>Manual Application Entry</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold small text-uppercase">Select Registered Applicant</label>
-                        <select name="applicant_id" class="form-select select2-search" data-placeholder="Search applicant name..." required>
-                            <option value=""></option>
-                            <?php foreach($allApplicants as $applicant): ?>
-                                <option value="<?php echo $applicant['id']; ?>"><?php echo htmlspecialchars($applicant['last_name'] . ', ' . $applicant['first_name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label fw-bold small text-uppercase">Project Name</label>
-                        <input type="text" name="project_name" class="form-control shadow-sm" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase">Project Type</label>
-                        <select name="project_type" class="form-select shadow-sm" required>
-                            <option value="Residential">Residential</option>
-                            <option value="Commercial">Commercial</option>
-                            <option value="Industrial">Industrial</option>
-                            <option value="Institutional">Institutional</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small text-uppercase">Barangay</label>
-                        <input type="text" name="barangay" class="form-control shadow-sm" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small text-uppercase">Street</label>
-                        <input type="text" name="street" class="form-control shadow-sm">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase">Lot Number</label>
-                        <input type="text" name="lot_number" class="form-control shadow-sm">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase">Block Number</label>
-                        <input type="text" name="block" class="form-control shadow-sm">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase">Parcel ID (PIN)</label>
-                        <input type="text" name="parcel_id" class="form-control shadow-sm" placeholder="e.g. 123-45-678">
-                    </div>
-                    
-                    <div class="col-md-12 mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label fw-bold small text-uppercase mb-0">Project Location (Coordinates)</label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-select-map">
-                                <i class="bi bi-geo-alt me-1"></i> Pick On Map
-                            </button>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <input type="number" step="any" name="latitude" id="inp-lat" class="form-control coord-input" placeholder="Latitude" required>
-                            </div>
-                            <div class="col-md-6">
-                                <input type="number" step="any" name="longitude" id="inp-lng" class="form-control coord-input" placeholder="Longitude" required>
-                            </div>
-                        </div>
-                        <div id="map-container" style="display:none; margin-top:10px;"></div>
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold small text-uppercase">Project Description</label>
-                        <textarea name="project_description" class="form-control shadow-sm" rows="2"></textarea>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-pencil-square"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="manualAddModalLabel">Manual Application Entry</h5>
+                        <div class="modal-header-subtitle">Record a walk-in or manually submitted application</div>
                     </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-footer bg-light border-top-0 py-3">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-success px-5 shadow">Create Application</button>
+            <div class="modal-body">
+
+                <!-- Applicant -->
+                <div class="form-section">
+                    <div class="form-section-title"><i class="bi bi-person-badge"></i> Applicant</div>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Select Registered Applicant</label>
+                            <select name="applicant_id" class="form-select select2-search" data-placeholder="Search applicant name..." required>
+                                <option value=""></option>
+                                <?php foreach($allApplicants as $applicant): ?>
+                                    <option value="<?php echo $applicant['id']; ?>"><?php echo htmlspecialchars($applicant['last_name'] . ', ' . $applicant['first_name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Details -->
+                <div class="form-section">
+                    <div class="form-section-title"><i class="bi bi-building"></i> Project Details</div>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Project Name</label>
+                            <input type="text" name="project_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project Type</label>
+                            <select name="project_type" class="form-select" required>
+                                <option value="Residential">Residential</option>
+                                <option value="Commercial">Commercial</option>
+                                <option value="Industrial">Industrial</option>
+                                <option value="Institutional">Institutional</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Project Description</label>
+                            <textarea name="project_description" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="form-section">
+                    <div class="form-section-title"><i class="bi bi-geo-alt"></i> Location &amp; Parcel</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Barangay</label>
+                            <input type="text" name="barangay" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Street</label>
+                            <input type="text" name="street" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Lot Number</label>
+                            <input type="text" name="lot_number" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Block Number</label>
+                            <input type="text" name="block" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Parcel ID (PIN)</label>
+                            <input type="text" name="parcel_id" class="form-control" placeholder="e.g. 123-45-678">
+                        </div>
+
+                        <div class="col-md-12 mt-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">Project Location (Coordinates)</label>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-select-map">
+                                    <i class="bi bi-geo-alt me-1"></i> Pick On Map
+                                </button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="number" step="any" name="latitude" id="inp-lat" class="form-control coord-input" placeholder="Latitude" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="number" step="any" name="longitude" id="inp-lng" class="form-control coord-input" placeholder="Longitude" required>
+                                </div>
+                            </div>
+                            <div id="map-container" style="display:none; margin-top:10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check-lg me-1"></i> Create Application
+                </button>
             </div>
         </form>
     </div>
@@ -626,6 +920,15 @@ include __DIR__ . '/../admin/header.php';
         $('#parcel_id').on('input', function() {
             let val = $(this).val().replace(/[^0-9]/g, '');
             // Dito mo pwedeng dagdagan ng auto-dash logic kung gusto mo
+        });
+
+        // 4. Live search for "Select Registered Applicant"
+        $('.select2-search').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            dropdownParent: $('#manualAddModal'),
+            placeholder: function () { return $(this).data('placeholder'); },
+            allowClear: true
         });
 
         // FIX: aria-hidden focus warning — use inert attribute to properly manage focus

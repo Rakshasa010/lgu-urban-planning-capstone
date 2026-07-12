@@ -88,7 +88,7 @@ if (isset($_REQUEST['report_type'])) {
         $chartData['barangays'] = array_slice($chartData['barangays'], 0, 5);
 
         $totalItems = count($report['data']);
-        $totalPages = ceil($totalItems / $itemsPerPage);
+        $totalPages = max(1, ceil($totalItems / $itemsPerPage));
         $offset = ($currentPage - 1) * $itemsPerPage;
         $allDataForExport = $report['data']; 
         $report['data'] = array_slice($allDataForExport, $offset, $itemsPerPage); 
@@ -97,6 +97,10 @@ if (isset($_REQUEST['report_type'])) {
 
 $pageTitle = 'Reports & Analytics';
 $isAuthPage = true;
+
+// --- Inspector Workload snapshot (always shown, all-time — not tied to selected report/year) ---
+$inspectorWorkload = $documentController->getInspectorWorkloadSnapshot();
+
 include __DIR__ . '/../admin/header.php';
 ?>
 
@@ -111,9 +115,11 @@ include __DIR__ . '/../admin/header.php';
     .empty-report-state { background: #fff; border: 2px dashed #e3e6f0; border-radius: 15px; padding: 100px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #858796; }
     .analytics-section { margin-top: 2rem; }
     .chart-card-container { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e3e6f0; height: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-    .pagination .page-link { color: #2d5a27; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
-    .pagination .page-item.active .page-link { background-color: #2d5a27; border-color: #2d5a27; color: white; }
+    .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
+    .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+    .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
     .pagination .page-item.disabled .page-link { color: #6c757d; background-color: #f8f9fa; }
+    .info-text { font-size: 0.875rem; color: #6c757d; }
     @media (max-width: 992px) { .report-main-grid { grid-template-columns: 1fr; } }
     .table-dark-header { background-color: #f8f9fa; }
     [data-bs-theme="dark"] .table-dark-header { background-color: #0f172a !important; }
@@ -160,6 +166,9 @@ include __DIR__ . '/../admin/header.php';
         .empty-report-state p { font-size: 0.8rem; }
 
         /* Pagination */
+        .card-footer .row { flex-direction: column; gap: 10px; text-align: center; }
+        .card-footer .col-md-6:last-child { text-align: center !important; }
+        .pagination { justify-content: center !important; }
         .pagination .page-link { font-size: 0.78rem; padding: 5px 9px; }
 
         /* Charts */
@@ -406,33 +415,48 @@ include __DIR__ . '/../admin/header.php';
                             </table>
                         </div>
                     </div>
-                    <?php if (isset($totalPages) && $totalPages > 1): ?>
+                    <?php if ($report && !empty($report['data'])): ?>
                     <div class="card-footer bg-white py-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <nav>
-                                <ul class="pagination mb-0">
-                                    <?php 
-                                    $linkParams = $_GET;
-                                    $linkParams['page'] = 1;
-                                    echo '<li class="page-item '.($currentPage <= 1 ? 'disabled' : '').'"><a class="page-link" href="?'.http_build_query($linkParams).'"><i class="bi bi-chevron-double-left"></i></a></li>';
-                                    $linkParams['page'] = max(1, $currentPage - 1);
-                                    echo '<li class="page-item '.($currentPage <= 1 ? 'disabled' : '').'"><a class="page-link" href="?'.http_build_query($linkParams).'">Prev</a></li>';
-                                    for ($i = 1; $i <= $totalPages; $i++): 
-                                        $linkParams['page'] = $i;
-                                        $queryString = http_build_query($linkParams);
-                                    ?>
-                                        <li class="page-item <?php echo ($i == $currentPage) ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?<?php echo $queryString; ?>"><?php echo $i; ?></a>
+                        <div class="row align-items-center">
+                            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                                <span class="info-text text-muted">
+                                    Showing <strong><?php echo $totalItems > 0 ? ($offset + 1) : 0; ?></strong> to
+                                    <strong><?php echo min($offset + $itemsPerPage, $totalItems); ?></strong> of
+                                    <strong><?php echo $totalItems; ?></strong> entries
+                                </span>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0">
+                                        <?php
+                                        $linkParams = $_GET;
+                                        unset($linkParams['page']);
+                                        $query_string = http_build_query(array_filter($linkParams));
+                                        ?>
+                                        <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=1&<?php echo $query_string; ?>"><i class="bi bi-chevron-double-left"></i></a>
                                         </li>
-                                    <?php endfor; ?>
-                                    <?php 
-                                    $linkParams['page'] = min($totalPages, $currentPage + 1);
-                                    echo '<li class="page-item '.($currentPage >= $totalPages ? 'disabled' : '').'"><a class="page-link" href="?'.http_build_query($linkParams).'">Next</a></li>';
-                                    $linkParams['page'] = $totalPages;
-                                    echo '<li class="page-item '.($currentPage >= $totalPages ? 'disabled' : '').'"><a class="page-link" href="?'.http_build_query($linkParams).'"><i class="bi bi-chevron-double-right"></i></a></li>';
-                                    ?>
-                                </ul>
-                            </nav>
+                                        <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo ($currentPage - 1); ?>&<?php echo $query_string; ?>">Prev</a>
+                                        </li>
+                                        <?php
+                                        $start = max(1, $currentPage - 2);
+                                        $end = min($totalPages, $currentPage + 2);
+                                        for ($i = $start; $i <= $end; $i++):
+                                        ?>
+                                            <li class="page-item <?php echo ($currentPage == $i) ? 'active' : ''; ?>">
+                                                <a class="page-link" href="?page=<?php echo $i; ?>&<?php echo $query_string; ?>"><?php echo $i; ?></a>
+                                            </li>
+                                        <?php endfor; ?>
+                                        <li class="page-item <?php echo ($currentPage >= $totalPages) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo ($currentPage + 1); ?>&<?php echo $query_string; ?>">Next</a>
+                                        </li>
+                                        <li class="page-item <?php echo ($currentPage >= $totalPages) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo $totalPages; ?>&<?php echo $query_string; ?>"><i class="bi bi-chevron-double-right"></i></a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -467,10 +491,16 @@ include __DIR__ . '/../admin/header.php';
                     <div style="height: 250px;"><canvas id="revenueBarChart"></canvas></div>
                 </div>
             </div>
-            <div class="col-12">
+            <div class="col-md-6">
                 <div class="chart-card-container">
                     <h6 class="fw-bold mb-3 text-uppercase small text-muted">Top 5 Barangays by Projects</h6>
                     <div style="height: 300px;"><canvas id="barangayHorizontalChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-card-container">
+                    <h6 class="fw-bold mb-3 text-uppercase small text-muted">Inspector Workload Distribution</h6>
+                    <div style="height: 300px;"><canvas id="inspectorWorkloadChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -484,6 +514,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const monthValues = <?php echo json_encode(array_values($chartData['months'])); ?>;
     const brgyLabels = <?php echo json_encode(array_keys($chartData['barangays'])); ?>;
     const brgyValues = <?php echo json_encode(array_values($chartData['barangays'])); ?>;
+    const inspectorLabels = <?php echo json_encode(array_column($inspectorWorkload, 'inspector_name')); ?>;
+    const inspectorValues = <?php echo json_encode(array_map('intval', array_column($inspectorWorkload, 'total_inspections'))); ?>;
     const yoyCurrent = <?php echo (int)$chartData['yoy_comparison']['current']; ?>;
     const yoyPrev = <?php echo (int)$chartData['yoy_comparison']['previous']; ?>;
     const currentYearStr = '<?php echo $selectedYear; ?>';
@@ -559,6 +591,25 @@ document.addEventListener('DOMContentLoaded', function() {
             indexAxis: 'y', 
             maintainAspectRatio: false,
             plugins: { legend: { display: false } }
+        }
+    });
+
+    new Chart(document.getElementById('inspectorWorkloadChart'), {
+        type: 'bar',
+        data: {
+            labels: inspectorLabels.length ? inspectorLabels : ['No Data'],
+            datasets: [{
+                label: 'Inspections Assigned',
+                data: inspectorValues.length ? inspectorValues : [0],
+                backgroundColor: '#f59e0b',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 });

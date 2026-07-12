@@ -100,12 +100,17 @@ function lp_status_badge(string $status): array {
     --purple:#6366f1;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:smooth; overflow-x:hidden;}
+  /* Page already hides overflow-x, so Bootstrap's scrollbar-compensation
+     padding on modal open just shows up as a stray blank strip. Disable it. */
+  body.modal-open{padding-right:0 !important;}
   body{
     font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color:var(--ink);
     background:#fff;
     margin:0;
+    overflow-x:hidden;
+    max-width:100vw;
   }
   a{text-decoration:none;}
   .container-xl{max-width:1240px;}
@@ -154,7 +159,7 @@ function lp_status_badge(string $status): array {
   .navbar-toggle-btn.is-open{transform:rotate(90deg);}
 
   .mobile-nav{
-    display:none; max-height:0; overflow:hidden; opacity:0;
+    max-height:0; overflow:hidden; opacity:0;
     transition:max-height .35s ease, opacity .3s ease;
   }
   .mobile-nav.is-open{max-height:280px; opacity:1;}
@@ -366,30 +371,30 @@ function lp_status_badge(string $status): array {
   .role-card h4{font-weight:700; font-size:1rem; margin-bottom:8px; color:#fff;}
   .role-card p{color:rgba(255,255,255,0.75); font-size:0.86rem; margin:0;}
 
-  /* ---------- CONTACT MODAL ---------- */
-  #contactModal .modal-content{
+  /* ---------- CONTACT / PRIVACY / TERMS MODAL ---------- */
+  #contactModal .modal-content, #privacyModal .modal-content, #termsModal .modal-content{
     border:none; border-radius:18px; overflow:hidden;
     box-shadow:0 24px 60px rgba(15,23,42,0.28);
   }
-  #contactModal .modal-header{
+  #contactModal .modal-header, #privacyModal .modal-header, #termsModal .modal-header{
     background:linear-gradient(135deg, var(--navy-1) 0%, var(--navy-2) 100%);
     border:none; padding:22px 26px;
   }
-  #contactModal .modal-header .modal-title{
+  #contactModal .modal-header .modal-title, #privacyModal .modal-header .modal-title, #termsModal .modal-header .modal-title{
     color:#fff; font-weight:700; font-size:1.05rem; display:flex; align-items:center; gap:10px;
   }
-  #contactModal .modal-header .btn-close{filter:invert(1) grayscale(1) brightness(2);}
-  #contactModal .modal-body{padding:26px;}
-  #contactModal .modal-body p.lede{color:var(--muted); font-size:0.88rem; margin-bottom:20px;}
-  #contactModal .contact-block h6{font-weight:700; font-size:0.92rem; margin-bottom:10px; color:var(--ink);}
-  #contactModal .contact-block p{font-size:0.88rem; color:var(--ink); margin-bottom:14px; line-height:1.6;}
-  #contactModal .contact-block i{width:18px; color:var(--blue-accent); margin-right:8px;}
-  #contactModal .modal-footer{border-top:1px solid #eef0f5; padding:16px 26px;}
-  #contactModal .btn-close-modal{
+  #contactModal .modal-header .btn-close, #privacyModal .modal-header .btn-close, #termsModal .modal-header .btn-close{filter:invert(1) grayscale(1) brightness(2);}
+  #contactModal .modal-body, #privacyModal .modal-body, #termsModal .modal-body{padding:26px;}
+  #contactModal .modal-body p.lede, #privacyModal .modal-body p.lede, #termsModal .modal-body p.lede{color:var(--muted); font-size:0.88rem; margin-bottom:20px;}
+  #contactModal .contact-block h6, #privacyModal .contact-block h6, #termsModal .contact-block h6{font-weight:700; font-size:0.92rem; margin-bottom:10px; color:var(--ink);}
+  #contactModal .contact-block p, #privacyModal .contact-block p, #termsModal .contact-block p{font-size:0.88rem; color:var(--ink); margin-bottom:14px; line-height:1.6;}
+  #contactModal .contact-block i, #privacyModal .contact-block i, #termsModal .contact-block i{width:18px; color:var(--blue-accent); margin-right:8px;}
+  #contactModal .modal-footer, #privacyModal .modal-footer, #termsModal .modal-footer{border-top:1px solid #eef0f5; padding:16px 26px;}
+  #contactModal .btn-close-modal, #privacyModal .btn-close-modal, #termsModal .btn-close-modal{
     background:var(--navy-2); color:#fff; border:none; padding:9px 22px; border-radius:8px;
     font-weight:600; font-size:0.86rem;
   }
-  #contactModal .btn-close-modal:hover{background:var(--navy-1); color:#fff;}
+  #contactModal .btn-close-modal:hover, #privacyModal .btn-close-modal:hover, #termsModal .btn-close-modal:hover{background:var(--navy-1); color:#fff;}
 
   /* ---------- FAQ MODAL ---------- */
   #faqModal .modal-content{
@@ -453,18 +458,171 @@ function lp_status_badge(string $status): array {
   footer .flink{display:block; margin-bottom:9px;}
   .footer-bottom{border-top:1px solid rgba(255,255,255,0.1); margin-top:34px; padding-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:0.8rem; color:rgba(255,255,255,0.5);}
 
-  @media (max-width: 991px){
-    .hero-inner{grid-template-columns:1fr;}
-    .top-navbar nav{display:none;}
+  /* =======================================================================
+     RESPONSIVE BREAKPOINTS
+     1024px → Laptop / small desktop
+     768px  → Tablets
+     480px  → Large mobile
+     320px  → Small mobile
+     Each tier is cumulative — mobile-first overrides stack on top of the
+     wider tier's rules as the viewport shrinks.
+     ======================================================================= */
+
+  /* ---------- 1024px : LAPTOP ---------- */
+  @media (max-width:1024px){
+    .container-xl{max-width:960px;}
+    .hero-inner{grid-template-columns:1.05fr 0.95fr; gap:28px;}
+    .hero{padding-top:84px;}
+    .hero h1{font-size:clamp(1.7rem, 3.6vw, 2.3rem);}
+    .hero p.lede{font-size:0.96rem;}
+    .mock-card{padding:16px;}
+    .mock-stat .n{font-size:1.15rem;}
+
+    .top-navbar nav{display:none !important;}
     .navbar-toggle-btn{display:block;}
-    .trust-strip .row-stats{grid-template-columns:repeat(2,1fr);}
-    .process-strip{grid-template-columns:1fr 1fr; row-gap:34px;}
+
+    .trust-strip .row-stats{grid-template-columns:repeat(2,1fr); row-gap:28px;}
+
+    section{padding:76px 0;}
+    .section-head{margin-bottom:40px;}
+
+    .process-strip{grid-template-columns:1fr 1fr; row-gap:36px;}
     .process-strip::before{display:none;}
     .process-plane{display:none;}
+
+    .role-card{padding:22px;}
   }
-  @media (max-width:576px){
-    section{padding:60px 0;}
-    .process-strip{grid-template-columns:1fr;}
+
+  /* ---------- 768px : TABLETS ---------- */
+  @media (max-width:768px){
+    .hero{padding-top:16px;}
+    .hero-inner{grid-template-columns:1fr; gap:44px; text-align:left;}
+    .hero-badge{margin-bottom:18px;}
+    .hero h1{font-size:clamp(1.7rem, 5.2vw, 2.2rem); margin-bottom:16px;}
+    .hero p.lede{font-size:0.96rem; max-width:100%; margin-bottom:24px;}
+    .hero-ctas{gap:12px; margin-bottom:40px;}
+    .btn-hero-primary, .btn-hero-ghost{padding:12px 20px; font-size:0.88rem; flex:1 1 auto; justify-content:center;}
+    .hero-wave{margin-top:40px;}
+
+    .mock-card{max-width:100%; transform:none; padding:18px;}
+    .mock-card, .mock-card:hover{transform:none !important;}
+    .mock-stats{gap:10px;}
+    .mock-stat{padding:12px;}
+    .mock-stat .n{font-size:1.2rem;}
+
+    .trust-strip{padding:32px 0;}
+    .trust-strip .row-stats{gap:24px 16px;}
+    .trust-strip .stat-icon{width:34px; height:34px; margin-bottom:10px;}
+    .trust-strip .num{font-size:1.35rem;}
+    .trust-strip .lab{font-size:0.72rem;}
+
+    section{padding:56px 0;}
+    .section-title{font-size:clamp(1.4rem,4.5vw,1.8rem);}
+    .section-sub{font-size:0.92rem;}
+    .section-head{margin-bottom:32px;}
+
+    .feature-card{padding:24px 20px;}
+
+    .process-strip{grid-template-columns:1fr; row-gap:26px;}
+    .process-step{padding:0;}
+
+    .role-card{padding:22px;}
+    #roles .row.g-4 > div{margin-bottom:0;}
+
+    footer{padding:38px 0 20px;}
+    footer .col-md-4{margin-bottom:8px;}
+    .footer-bottom{flex-direction:column; align-items:flex-start; gap:6px;}
+
+    #contactModal .modal-body, #contactModal .modal-header,
+    #privacyModal .modal-body, #privacyModal .modal-header,
+    #termsModal .modal-body, #termsModal .modal-header,
+    #faqModal .modal-body, #faqModal .modal-header{padding:18px 20px;}
+
+    #backToTop{right:16px; bottom:16px; width:42px; height:42px; font-size:1rem;}
+  }
+
+  /* ---------- 480px : LARGE MOBILE ---------- */
+  @media (max-width:480px){
+    .top-navbar{padding:12px 0;}
+    .top-navbar.is-scrolled{padding:8px 0;}
+    .top-navbar .brand img{height:30px; width:30px;}
+    .top-navbar .brand-text .name{font-size:0.82rem;}
+    .top-navbar .brand-text .sub{font-size:0.6rem;}
+
+    .hero-badge{font-size:0.7rem; padding:6px 12px;}
+    .hero h1{font-size:1.55rem; line-height:1.2;}
+    .hero p.lede{font-size:0.9rem;}
+    .hero-ctas{flex-direction:column;}
+    .btn-hero-primary, .btn-hero-ghost{width:100%;}
+
+    .mock-stats{grid-template-columns:1fr 1fr; gap:8px;}
+    .mock-row{font-size:0.72rem; padding:9px 10px;}
+
+    .trust-strip .row-stats{grid-template-columns:1fr 1fr; gap:22px 14px;}
+    .trust-strip .stat-item::before{display:none;}
+
+    section{padding:44px 0;}
+    .eyebrow{font-size:0.72rem;}
+    .section-title{font-size:1.5rem;}
+
+    .feature-card{padding:20px 18px;}
+    .feature-icon{width:42px; height:42px; font-size:1.1rem; margin-bottom:14px;}
+    .feature-card h3{font-size:1rem;}
+    .feature-card p{font-size:0.86rem;}
+
+    .process-step .step-num{width:36px; height:36px; font-size:0.86rem;}
+
+    .role-card{padding:18px;}
+    .role-card .role-icon{width:40px; height:40px; font-size:1.05rem;}
+
+    footer{font-size:0.82rem;}
+    footer .row.g-4 > div{margin-bottom:4px;}
+
+    #contactModal .modal-dialog, #privacyModal .modal-dialog, #termsModal .modal-dialog, #faqModal .modal-dialog{margin:12px;}
+    .faq-accordion .accordion-button{font-size:0.86rem; padding:12px 14px;}
+    .faq-accordion .accordion-body{font-size:0.82rem; padding:12px 14px;}
+  }
+
+  /* ---------- 320px : SMALL MOBILE ---------- */
+  @media (max-width:320px){
+    .container-xl, .container, .container-fluid{padding-left:14px; padding-right:14px;}
+
+    .top-navbar .brand{gap:8px;}
+    .top-navbar .brand-text .name{font-size:0.72rem;}
+    .top-navbar .brand-text .sub{font-size:0.55rem;}
+    .btn-nav-login{padding:7px 14px; font-size:0.8rem;}
+
+    .hero h1{font-size:1.32rem;}
+    .hero p.lede{font-size:0.85rem; margin-bottom:20px;}
+    .btn-hero-primary, .btn-hero-ghost{padding:11px 16px; font-size:0.82rem;}
+
+    .mock-card{padding:14px;}
+    .mock-stats{grid-template-columns:1fr 1fr; gap:6px;}
+    .mock-stat{padding:10px;}
+    .mock-stat .n{font-size:1.05rem;}
+    .mock-stat .l{font-size:0.6rem;}
+    .mock-row{font-size:0.68rem; padding:8px;}
+
+    .trust-strip .row-stats{grid-template-columns:1fr 1fr; gap:18px 10px;}
+    .trust-strip .num{font-size:1.15rem;}
+    .trust-strip .lab{font-size:0.66rem;}
+
+    section{padding:36px 0;}
+    .section-title{font-size:1.3rem;}
+    .section-sub{font-size:0.86rem;}
+
+    .feature-card{padding:16px 14px;}
+    .feature-card h3{font-size:0.94rem;}
+    .feature-card p{font-size:0.82rem;}
+
+    .process-step h4{font-size:0.92rem;}
+    .process-step p{font-size:0.8rem;}
+
+    .role-card h4{font-size:0.92rem;}
+    .role-card p{font-size:0.8rem;}
+
+    footer{padding:30px 0 16px; font-size:0.78rem;}
+    #backToTop{right:12px; bottom:12px; width:38px; height:38px; font-size:0.92rem;}
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -728,7 +886,7 @@ function lp_status_badge(string $status): array {
   <div class="container-xl">
     <div class="row g-4">
       <div class="col-md-4">
-        <h5>LGU Urban Planning</h5>
+        <h5>Urban Planning and Development</h5>
         <p style="color:rgba(255,255,255,0.6); font-size:0.86rem;">Development Permit Management System for local government units — permitting, zoning, and inspections in one place.</p>
       </div>
       <div class="col-6 col-md-2">
@@ -745,12 +903,14 @@ function lp_status_badge(string $status): array {
       </div>
       <div class="col-6 col-md-2">
         <h5>Support</h5>
-        <a href="#" class="flink" data-bs-toggle="modal" data-bs-target="#contactModal">Contact the LGU Office</a>
+        <a href="#" class="flink" data-bs-toggle="modal" data-bs-target="#contactModal">Contacts</a>
         <a href="#" class="flink" data-bs-toggle="modal" data-bs-target="#faqModal">FAQs</a>
+        <a href="#" class="flink" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+        <a href="#" class="flink" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a>
       </div>
     </div>
     <div class="footer-bottom">
-      <div>&copy; <?php echo date('Y'); ?> LGU Urban Planning System</div>
+      <div>&copy; <?php echo date('Y'); ?> Urban Planning and Development</div>
       <div>Development Permit Management System</div>
     </div>
   </div>
@@ -763,7 +923,7 @@ function lp_status_badge(string $status): array {
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-headset"></i>Contact the LGU Office</h5>
+        <h5 class="modal-title"><i class="bi bi-headset"></i>Contacts</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -777,6 +937,58 @@ function lp_status_badge(string $status): array {
           </p>
           <h6>Office Hours</h6>
           <p class="mb-0"><i class="bi bi-clock"></i>Monday – Friday, 8:00 AM – 5:00 PM</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-close-modal" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY POLICY MODAL -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-shield-lock"></i>Data Privacy Policy</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="lede">The Local Government Unit (LGU) is committed to protecting the privacy of its stakeholders in accordance with the Data Privacy Act of 2012.</p>
+        <div class="contact-block">
+          <h6>I. Commitment to Data Privacy</h6>
+          <p>The Local Government Unit (LGU) is committed to protecting the privacy of its stakeholders and ensuring that all personal data collected through the Urban Planning and Development Permit Management System are processed in accordance with <strong>Republic Act No. 10173</strong>, otherwise known as the <strong>Data Privacy Act of 2012</strong>.</p>
+          <h6>II. Collection and Use of Personal Information</h6>
+          <p>We collect personal information solely for the purpose of processing development permits, verifying identity, and official communication regarding urban planning applications. This may include, but is not limited to, names, contact details, and property documents.</p>
+          <h6>III. Security Measures</h6>
+          <p class="mb-0">Strict organizational, physical, and technical security measures are implemented to protect your data against unauthorized access, alteration, or disclosure. Only authorized LGU personnel are granted access to your information.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-close-modal" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TERMS OF SERVICE MODAL -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i>Terms of Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="lede">By accessing and using this portal, you agree to the following terms:</p>
+        <div class="contact-block">
+          <h6>1. Accuracy of Information</h6>
+          <p>Users are responsible for ensuring all submitted documents and data are true, accurate, and up-to-date. Any falsification of public documents is subject to legal action under the Revised Penal Code.</p>
+          <h6>2. Proper Use of Portal</h6>
+          <p>This system shall be used exclusively for official urban planning and development permit applications. Unauthorized attempts to bypass security or modify data are strictly prohibited.</p>
+          <h6>3. Compliance</h6>
+          <p class="mb-0">Applications are subject to the National Building Code of the Philippines, local zoning ordinances, and other relevant environmental and safety regulations.</p>
         </div>
       </div>
       <div class="modal-footer">
@@ -854,7 +1066,7 @@ function lp_status_badge(string $status): array {
               </button>
             </h2>
             <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">Reach out to the City Planning and Development Department using the details under "Contact the LGU Office" in the footer, or visit the office in person during business hours.</div>
+              <div class="accordion-body">Reach out to the City Planning and Development Department using the details under "Contacts" in the footer, or visit the office in person during business hours.</div>
             </div>
           </div>
         </div>
@@ -869,6 +1081,20 @@ function lp_status_badge(string $status): array {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function(){
+  // Fix: Bootstrap sets aria-hidden="true" on a modal while its close button
+  // (or another focused descendant) still has focus, which browsers correctly
+  // flag as an accessibility violation. Blur focus out of the modal first,
+  // returning it to the element that triggered the modal, before Bootstrap
+  // applies aria-hidden.
+  document.querySelectorAll('.modal').forEach(function(modalEl){
+    modalEl.addEventListener('hide.bs.modal', function(){
+      var focused = document.activeElement;
+      if (focused && modalEl.contains(focused)){
+        focused.blur();
+      }
+    });
+  });
+
   // Navbar shrink on scroll + back-to-top visibility
   var navbar = document.getElementById('topNavbar');
   var backToTop = document.getElementById('backToTop');

@@ -11,6 +11,28 @@ $apps        = $controller->getApplicationsForDropdown('approved');
 $staffs      = $controller->getStaffList();
 $inspections = $controller->getInspectionLogs();
 
+// --- TAB FILTER (All / For Inspection / Scheduled / Completed) ---
+$allowedTabs = ['all', 'inspection', 'scheduled', 'completed'];
+$activeTab = isset($_GET['status']) && in_array($_GET['status'], $allowedTabs) ? $_GET['status'] : 'all';
+
+if ($activeTab !== 'all') {
+    $inspections = array_values(array_filter($inspections, function ($log) use ($activeTab) {
+        return strtolower(trim($log['display_status'])) === $activeTab;
+    }));
+}
+
+// --- PAGINATION CONFIGURATION (style matches audit-logs.php) ---
+$limit = 10;
+$page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($page < 1) $page = 1;
+
+$totalInspections = count($inspections);
+$totalPages = max(1, ceil($totalInspections / $limit));
+if ($page > $totalPages) $page = $totalPages;
+
+$offset = ($page - 1) * $limit;
+$inspections = array_slice($inspections, $offset, $limit);
+
 $currentRole   = $_SESSION['role'] ?? '';
 $isInspector   = $currentRole === 'inspector';
 $isZoningStaff = in_array($currentRole, ['zoning_officer', 'admin', 'super_admin', 'building_official']);
@@ -105,6 +127,11 @@ include __DIR__ . '/../admin/header.php';
             width: 100%;
             flex: 0 0 100%;
         }
+
+        /* Pagination */
+        .card-footer .row { flex-direction: column; gap: 10px; text-align: center; }
+        .card-footer .col-md-6:last-child { text-align: center !important; }
+        .pagination { justify-content: center !important; }
     }
 
     /* --- 480px: Large Mobile --- */
@@ -172,6 +199,11 @@ include __DIR__ . '/../admin/header.php';
         #viewModal .card-body { padding: 0.65rem !important; }
         #viewModal .btn-sm { font-size: 0.75rem; }
         #viewModal .badge.bg-white { font-size: 0.6rem; }
+
+        /* Pagination */
+        .pagination .page-link { font-size: 0.72rem; padding: 4px 8px; }
+        .card-footer { padding: 0.6rem 0.75rem; }
+        .info-text { font-size: 0.72rem; }
     }
 
     /* ── SEARCHABLE DROPDOWN ── */
@@ -209,6 +241,12 @@ include __DIR__ . '/../admin/header.php';
     .sd-item:hover, .sd-item.active { background: #e8f4fd; }
     .sd-item.selected { background: #d1ecf1; font-weight: 600; }
     .sd-no-results { padding: 10px 12px; color: #6c757d; font-size: 0.8rem; font-style: italic; }
+
+    /* Pagination — same style as audit-logs.php */
+    .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
+    .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+    .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
+    .info-text { font-size: 0.875rem; color: #6c757d; }
 
     /* --- 320px: Small Mobile --- */
     @media (max-width: 320px) {
@@ -283,6 +321,12 @@ include __DIR__ . '/../admin/header.php';
         #viewModal .card-body { padding: 0.5rem !important; }
         #viewModal .btn-sm { font-size: 0.68rem; padding: 5px 8px; }
         #viewModal textarea.form-control-sm { font-size: 0.72rem; }
+
+        /* Pagination: show only prev/next + current */
+        .pagination .page-item:not(:first-child):not(:nth-child(2)):not(:last-child):not(:nth-last-child(2)) { display: none; }
+        .pagination .page-link { font-size: 0.65rem; padding: 3px 7px; }
+        .card-footer { padding: 0.5rem; }
+        .info-text { font-size: 0.65rem; }
     }
 </style>
 
@@ -314,24 +358,24 @@ include __DIR__ . '/../admin/header.php';
 
     <ul class="nav nav-pills border rounded-pill p-1 bg-light shadow-sm" id="monitoringTabs" style="font-size: 0.75rem;">
     <li class="nav-item">
-        <button class="nav-link active rounded-pill py-0 px-2 fw-bold" data-bs-toggle="pill" onclick="filterTable('all')">
+        <a href="?status=all" class="nav-link rounded-pill py-0 px-2 fw-bold <?= $activeTab === 'all' ? 'active bg-primary text-white' : 'text-secondary' ?>">
             All
-        </button>
+        </a>
     </li>
     <li class="nav-item">
-        <button class="nav-link rounded-pill py-0 px-2 fw-bold text-secondary" data-bs-toggle="pill" onclick="filterTable('inspection')">
+        <a href="?status=inspection" class="nav-link rounded-pill py-0 px-2 fw-bold <?= $activeTab === 'inspection' ? 'active bg-primary text-white' : 'text-secondary' ?>">
             For Inspection
-        </button>
+        </a>
     </li>
     <li class="nav-item">
-        <button class="nav-link rounded-pill py-0 px-2 fw-bold text-secondary" data-bs-toggle="pill" onclick="filterTable('scheduled')">
+        <a href="?status=scheduled" class="nav-link rounded-pill py-0 px-2 fw-bold <?= $activeTab === 'scheduled' ? 'active bg-primary text-white' : 'text-secondary' ?>">
             Scheduled
-        </button>
+        </a>
     </li>
     <li class="nav-item">
-        <button class="nav-link rounded-pill py-0 px-2 fw-bold text-secondary" data-bs-toggle="pill" onclick="filterTable('completed')">
+        <a href="?status=completed" class="nav-link rounded-pill py-0 px-2 fw-bold <?= $activeTab === 'completed' ? 'active bg-primary text-white' : 'text-secondary' ?>">
             Completed
-        </button>
+        </a>
     </li>
 </ul>
 </div>
@@ -387,10 +431,49 @@ include __DIR__ . '/../admin/header.php';
             </td>
         </tr>
     <?php endforeach; else: ?>
-        <tr class="no-records"><td colspan="5" class="text-center py-5 text-muted italic">No records found.</td></tr>
+        <tr class="no-records"><td colspan="5" class="text-center py-5 text-muted italic"><?= $activeTab === 'all' ? 'No records found.' : 'No records found for this category.' ?></td></tr>
     <?php endif; ?>
 </tbody>
 </table>
+                    </div>
+                </div>
+
+                <div class="card-footer py-3 border-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                            <span class="info-text text-muted">
+                                Showing <strong><?= $totalInspections > 0 ? ($offset + 1) : 0 ?></strong> to
+                                <strong><?= min($offset + $limit, $totalInspections) ?></strong> of
+                                <strong><?= $totalInspections ?></strong> entries
+                            </span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0">
+                                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?status=<?= $activeTab ?>&p=1"><i class="bi bi-chevron-double-left"></i></a>
+                                    </li>
+                                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?status=<?= $activeTab ?>&p=<?= ($page - 1) ?>">Prev</a>
+                                    </li>
+                                    <?php
+                                    $start = max(1, $page - 2);
+                                    $end = min($totalPages, $page + 2);
+                                    for ($i = $start; $i <= $end; $i++):
+                                    ?>
+                                        <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                            <a class="page-link" href="?status=<?= $activeTab ?>&p=<?= $i ?>"><?= $i ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?status=<?= $activeTab ?>&p=<?= ($page + 1) ?>">Next</a>
+                                    </li>
+                                    <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?status=<?= $activeTab ?>&p=<?= $totalPages ?>"><i class="bi bi-chevron-double-right"></i></a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -861,44 +944,6 @@ function saveChecklist() {
             });
         }
     });
-}
-
-function filterTable(status) {
-    const tabs = document.querySelectorAll('#monitoringTabs .nav-link');
-    tabs.forEach(tab => {
-        tab.classList.remove('active', 'bg-primary', 'text-white');
-        tab.classList.add('text-secondary');
-    });
-    
-    if(event && event.target) {
-        event.target.classList.add('active', 'bg-primary', 'text-white');
-        event.target.classList.remove('text-secondary');
-    }
-
-    const rows = document.querySelectorAll('#inspectionTableBody tr:not(.no-records)');
-    let hasVisibleRow = false;
-
-    rows.forEach(row => {
-        const rowStatus = row.getAttribute('data-status').trim().toLowerCase();
-        if (status === 'all' || rowStatus === status.toLowerCase()) {
-            row.style.setProperty('display', '', 'important');
-            hasVisibleRow = true;
-        } else {
-            row.style.setProperty('display', 'none', 'important');
-        }
-    });
-
-    const noRecordsRow = document.querySelector('.no-records');
-    if (!hasVisibleRow) {
-        if (!noRecordsRow) {
-            const tbody = document.getElementById('inspectionTableBody');
-            if(tbody) tbody.innerHTML += '<tr class="no-records"><td colspan="5" class="text-center py-5 text-muted italic">No records found for this category.</td></tr>';
-        } else {
-            noRecordsRow.style.display = '';
-        }
-    } else if (noRecordsRow) {
-        noRecordsRow.style.display = 'none';
-    }
 }
 
 // === SEARCHABLE DROPDOWNS ===

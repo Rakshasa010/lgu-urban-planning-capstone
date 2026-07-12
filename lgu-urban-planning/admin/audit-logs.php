@@ -279,7 +279,7 @@ $offset = ($page - 1) * $limit;
 
 // --- 3. DATA FETCHING ---
 $totalLogs  = $userController->getTotalAuditLogsCount($filters);
-$totalPages = ceil($totalLogs / $limit);
+$totalPages = max(1, ceil($totalLogs / $limit));
 $logs       = $userController->getAuditLogs($filters, $limit, $offset);
 
 $query_string = http_build_query(array_filter($filters));
@@ -322,7 +322,8 @@ include __DIR__ . '/header.php';
         color: white;
     }
     .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
-    .pagination .page-item.active .page-link { background-color: #1a5c2b; border-color: #1a5c2b; color: white; }
+    .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+    .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
     .info-text { font-size: 0.875rem; color: #6c757d; }
     .table-lgu thead { background-color: #f8f9fa; border-top: 2px solid #1a5c2b; }
     .breadcrumb-item a { color: #1a5c2b; text-decoration: none; }

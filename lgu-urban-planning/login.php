@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $dbInstance->query("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?", [$user['id']]);
                     unset($_SESSION['temp_login_user'], $_SESSION['temp_login_pass']);
                     session_regenerate_id(true);
+                    $_SESSION['show_preloader'] = true;
                     $auth->redirectToDashboard();
                     exit;
                 }
@@ -206,11 +207,38 @@ include __DIR__ . '/auth/header.php';
     .login-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; margin-top: 5px; }
     .login-card { width: 100%; max-width: 380px; background: rgba(255, 255, 255, 0.85); padding: 15px 32px; border-radius: 18px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
     .login-header { background: linear-gradient(135deg, #6384d2, #285ccd); margin: -28px -32px 25px -32px; padding: 20px; text-align: center; color: white; }
-    .login-logo { width: 80px; margin-bottom: 10px; }
+    .login-header h5 { font-size: 1.1rem; white-space: nowrap; }
+    .login-logo-wrap {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        margin-bottom: 0;
+        filter:
+            drop-shadow(0 0 6px rgba(255,255,255,0.9))
+            drop-shadow(0 0 14px rgba(255,255,255,0.7))
+            drop-shadow(0 0 24px rgba(255,255,255,0.5));
+    }
 
     /* FORM */
     .form-label { font-size: 13px; font-weight: 600; color: #000; margin-bottom: 5px; }
     .form-control { background: rgba(255,255,255,0.7) !important; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 10px 12px; color: #000; font-size: 13px; }
+
+    .form-control.is-invalid { border: 1px solid #dc3545 !important; box-shadow: 0 0 0 3px rgba(220,53,69,0.12); animation: field-shake 0.3s ease; }
+    .field-error { display: none; color: #dc3545; font-size: 0.75rem; margin-top: 5px; }
+    .field-error.show { display: block; }
+    @keyframes field-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+    }
 
     /* BUTTON */
     .btn-login { width: 100%; padding: 10px; background: linear-gradient(135deg, #6384d2, #285ccd); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 600; transition: 0.25s ease; }
@@ -285,8 +313,9 @@ include __DIR__ . '/auth/header.php';
         margin: 0;
     }
 
-    .login-logo {
-        width: 55px;
+    .login-logo-wrap {
+        width: 70px;
+        height: 70px;
         margin-bottom: 8px;
     }
 
@@ -356,8 +385,9 @@ include __DIR__ . '/auth/header.php';
         padding: 14px 16px;
     }
 
-    .login-logo {
-        width: 45px;
+    .login-logo-wrap {
+        width: 58px;
+        height: 58px;
         margin-bottom: 6px;
     }
 
@@ -447,8 +477,9 @@ include __DIR__ . '/auth/header.php';
         padding: 12px 14px;
     }
 
-    .login-logo {
-        width: 36px;
+    .login-logo-wrap {
+        width: 48px;
+        height: 48px;
         margin-bottom: 5px;
     }
 
@@ -549,8 +580,10 @@ include __DIR__ . '/auth/header.php';
 <div class="login-container">
     <div class="login-card">
         <div class="login-header">
-            <img src="assets/img/lgu-logo.png" alt="LGU Logo" class="login-logo">
-            <h5 class="fw-bold mb-1" data-en="LGU Urban Planning" data-tl="Pagpaplano ng Lungsod">LGU Urban Planning</h5>
+            <div class="login-logo-wrap">
+                <img src="/lgu-urban-planning/assets/upad-logo.png" alt="LGU Logo" class="login-logo">
+            </div>
+            <h5 class="fw-bold mb-1" data-en="Urban Planning and Development" data-tl="Pagpaplano ng Lungsod">Urban Planning and Development</h5>
             <div class="small opacity-75" style="font-size: 0.65rem;" 
                  data-en="Development Permit Management System" 
                  data-tl="Sistema ng Pamamahala ng Permit">Development Permit Management System</div>
@@ -560,7 +593,7 @@ include __DIR__ . '/auth/header.php';
             <?php if (!$showOtpForm): ?>
                 <h5 class="text-center mb-4 fw-bold text-dark" data-en="Login to Your Account" data-tl="Mag-login">Login to Your Account</h5>
                 
-                <form method="POST">
+                <form method="POST" id="loginForm" novalidate>
                     <div class="mb-3">
                         <label class="form-label">
                             <i class="bi bi-person me-1"></i> 
@@ -570,6 +603,7 @@ include __DIR__ . '/auth/header.php';
                             data-en-placeholder="Enter your username or email" 
                             data-tl-placeholder="Ilagay ang iyong username o email" 
                             placeholder="Enter your username or email" required>
+                        <div class="field-error" data-en="Please fill out this field." data-tl="Pakipunan ang patlang na ito."></div>
                     </div>
 
                     <div class="mb-4">
@@ -584,6 +618,7 @@ include __DIR__ . '/auth/header.php';
                                 placeholder="Enter your password" required>
                             <i class="bi bi-eye password-toggle" onclick="togglePassword('password', 'toggleIcon')" id="toggleIcon"></i>
                         </div>
+                        <div class="field-error" data-en="Please fill out this field." data-tl="Pakipunan ang patlang na ito."></div>
                     </div>
                     
                     <button type="submit" class="btn btn-login shadow-sm">
@@ -688,5 +723,51 @@ include __DIR__ . '/auth/header.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(function () {
+    var form = document.getElementById('loginForm');
+    if (!form) return;
+
+    var lang = document.documentElement.getAttribute('lang') === 'tl' ? 'tl' : 'en';
+
+    function markField(field, invalid) {
+        var wrapper = field.closest('.mb-3, .mb-4');
+        var error = wrapper ? wrapper.querySelector('.field-error') : null;
+        field.classList.toggle('is-invalid', invalid);
+        if (error) {
+            error.textContent = error.getAttribute('data-' + lang) || error.getAttribute('data-en');
+            error.classList.toggle('show', invalid);
+        }
+    }
+
+    form.addEventListener('submit', function (e) {
+        var fields = form.querySelectorAll('[required]');
+        var firstInvalid = null;
+        var hasInvalid = false;
+
+        fields.forEach(function (field) {
+            var invalid = field.value.trim() === '';
+            markField(field, invalid);
+            if (invalid) {
+                hasInvalid = true;
+                if (!firstInvalid) firstInvalid = field;
+            }
+        });
+
+        if (hasInvalid) {
+            e.preventDefault();
+            firstInvalid.focus();
+        }
+    });
+
+    // Clear the red state as soon as the user starts typing in that field
+    form.querySelectorAll('[required]').forEach(function (field) {
+        field.addEventListener('input', function () {
+            if (field.value.trim() !== '') markField(field, false);
+        });
+    });
+})();
+</script>
 
 <?php include __DIR__ . '/auth/footer.php'; ?>

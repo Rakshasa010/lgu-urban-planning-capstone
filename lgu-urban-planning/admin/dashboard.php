@@ -91,6 +91,21 @@ function dt(string $key, array $translations, string $lang): string {
 
 $pageTitle = dt('page_title', $dashTranslations, $dashLang);
 
+// ── Role-based dashboard heading ─────────────────────────────────────────────
+$dashRoleLabels = [
+    'admin'         => 'Admin Dashboard',
+    'inspector'     => 'Inspector Dashboard',
+    'zoning'        => 'Zoning Dashboard',
+    'zoning_officer'=> 'Zoning Officer Dashboard',
+    'staff'         => 'Staff Dashboard',
+];
+$dashCurrentRole = $_SESSION['role'] ?? '';
+$dashRoleHeading = $dashRoleLabels[$dashCurrentRole]
+    ?? (ucwords(str_replace('_', ' ', $dashCurrentRole)) . ' Dashboard');
+if ($dashCurrentRole === '') {
+    $dashRoleHeading = 'Dashboard';
+}
+
 // Load locale settings for date/time display
 $localeSettings   = $db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('locale_time_format', 'locale_timezone', 'locale_date_format')");
 $localeMap        = array_column($localeSettings, 'setting_value', 'setting_key');
@@ -453,7 +468,7 @@ if ($_SESSION['role'] === 'inspector') {
                 <span class="d-inline-flex align-items-center justify-content-center rounded-circle">
                     <i class="bi bi-speedometer2" style="color:#10b981;font-size:1.9rem;"></i>
                 </span>
-                Admin Dashboard
+                <?php echo htmlspecialchars($dashRoleHeading); ?>
             </h2>
             <p class="text-muted mb-0"><?php echo dt('subtitle', $dashTranslations, $dashLang); ?></p>
         </div>
@@ -685,7 +700,7 @@ if ($_SESSION['role'] === 'inspector') {
                     <?php else: ?>
                         <?php foreach ($recentApps as $app): ?>
                         <tr>
-                            <td class="ps-4 fw-bold text-primary">#<?php echo htmlspecialchars($app['application_number']); ?></td>
+                            <td class="ps-4 fw-bold text-dark">#<?php echo htmlspecialchars($app['application_number']); ?></td>
                             <td><?php echo htmlspecialchars($app['project_name']); ?></td>
                             <td><?php echo htmlspecialchars(($app['first_name'] ?? '') . ' ' . ($app['last_name'] ?? '')); ?></td>
                             <td>
@@ -695,7 +710,7 @@ if ($_SESSION['role'] === 'inspector') {
                             </td>
                             <td class="text-muted"><?php echo Helper::formatDate($app['created_at']); ?></td>
                             <td class="text-end pe-4">
-                                <a href="/lgu-urban-planning/permit/view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-outline-primary px-3"><?php echo dt('view', $dashTranslations, $dashLang); ?></a>
+                                <a href="/lgu-urban-planning/permit/view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-primary px-3"><?php echo dt('view', $dashTranslations, $dashLang); ?></a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
