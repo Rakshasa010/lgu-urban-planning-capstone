@@ -535,7 +535,7 @@ if ($_POST['action'] === 'update_compliance') {
         $messageBody .= "Quezon City Urban Planning Department";
 
         // 5. INSERT IN-SYSTEM MESSAGE (still inside the transaction)
-        $stmtMsg = $dbConn->prepare("INSERT INTO messages (application_id, sender_id, receiver_id, subject, message, message_type, created_at) VALUES (?, ?, ?, ?, ?, 'system_notification', NOW())");
+        $stmtMsg = $dbConn->prepare("INSERT INTO messages (application_id, sender_id, receiver_id, subject, message, message_type, created_at) VALUES (?, ?, ?, ?, ?, 'system', NOW())");
         $stmtMsg->execute([$applicationId, $officerId, $applicantId, $subject, $messageBody]);
 
         // 6. COMMIT everything (status + history + inspection row + message)
