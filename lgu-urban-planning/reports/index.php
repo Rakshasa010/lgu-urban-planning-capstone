@@ -101,6 +101,11 @@ $isAuthPage = true;
 // --- Inspector Workload snapshot (always shown, all-time — not tied to selected report/year) ---
 $inspectorWorkload = $documentController->getInspectorWorkloadSnapshot();
 
+// --- AI-generated narrative insights (uses aggregated $chartData only, no raw records) ---
+require_once __DIR__ . '/../core/ollamainsights.php';
+$aiInsights = new ollamainsights();
+$aiNarrative = $aiInsights->generate($chartData, $inspectorWorkload, $selectedYear ?? (int)date('Y'));
+
 include __DIR__ . '/../admin/header.php';
 ?>
 
@@ -470,6 +475,19 @@ include __DIR__ . '/../admin/header.php';
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if (!empty($aiNarrative)): ?>
+    <div class="card shadow-sm mb-4" style="border-left: 4px solid #6366f1;">
+        <div class="card-body">
+            <h6 class="fw-bold mb-2 text-uppercase small text-muted">
+                <i class="bi bi-stars"></i> AI Insights
+            </h6>
+            <div style="white-space: pre-line; font-size: 0.92rem; line-height: 1.6;">
+                <?php echo htmlspecialchars($aiNarrative); ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="analytics-section">
         <div class="row g-4">

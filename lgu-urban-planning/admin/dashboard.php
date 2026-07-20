@@ -229,6 +229,42 @@ if ($_SESSION['role'] === 'inspector') {
     .metric-card { border-radius: 15px; transition: transform 0.2s, box-shadow 0.2s; }
     .metric-card:hover { transform: translateY(-5px); box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important; }
 
+    /* Table "View" button — gradient blue */
+    .btn-view-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-view-gradient:hover,
+    .btn-view-gradient:focus,
+    .btn-view-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
+    }
+
+    /* Red gradient variant (e.g. Review Overdue) */
+    .btn-view-gradient-red {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-view-gradient-red:hover,
+    .btn-view-gradient-red:focus,
+    .btn-view-gradient-red:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(220, 38, 38, 0.4);
+    }
+
     /* ================================================
        MOBILE RESPONSIVE
        768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
@@ -580,7 +616,7 @@ if ($_SESSION['role'] === 'inspector') {
                 </div>
             </div>
 
-            <a href="/lgu-urban-planning/permit/applications.php?status=submitted&filter=overdue" class="btn btn-danger px-4 shadow-sm" style="border-radius: 10px; font-weight: 600;">
+            <a href="/lgu-urban-planning/permit/applications.php?status=submitted&filter=overdue" class="btn btn-view-gradient-red px-4">
                 <?php echo dt('review_overdue', $dashTranslations, $dashLang); ?> <i class="bi bi-arrow-right ms-2"></i>
             </a>
         </div>
@@ -710,7 +746,7 @@ if ($_SESSION['role'] === 'inspector') {
                             </td>
                             <td class="text-muted"><?php echo Helper::formatDate($app['created_at']); ?></td>
                             <td class="text-end pe-4">
-                                <a href="/lgu-urban-planning/permit/view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-primary px-3"><?php echo dt('view', $dashTranslations, $dashLang); ?></a>
+                                <a href="/lgu-urban-planning/permit/view.php?id=<?php echo $app['id']; ?>" class="btn btn-sm btn-view-gradient px-3"><?php echo dt('view', $dashTranslations, $dashLang); ?></a>
                             </td>
                         </tr>
                         <?php endforeach; ?>

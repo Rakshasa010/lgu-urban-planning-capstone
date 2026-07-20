@@ -153,7 +153,7 @@ $_translations = [
         'js_prereq_tech'        => '<strong>Technical Assessment</strong> — Go to the <em>Technical Assessment</em> tab and click <em>Request New Inspection (Simulate)</em>.',
         'js_prereq_zone'        => '<strong>Zoning &amp; Land Verification</strong> — Go to the <em>Zoning &amp; Actions</em> tab and verify the parcel on the GIS Map.',
         // Back button
-        'btn_back'              => 'Back to Dashboard',
+        'btn_back'              => 'Back to Development Permits',
         // Doc viewer modal
         'doc_viewer_title'      => 'Document Viewer',
     ],

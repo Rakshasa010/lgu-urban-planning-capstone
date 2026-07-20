@@ -68,9 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $allApplicants = $db->fetchAll("SELECT id, first_name, last_name FROM users WHERE role = 'applicant' ORDER BY last_name ASC");
 
 $filters = [
-    'status' => $_GET['status'] ?? '',
-    'search' => $_GET['search'] ?? '',
-    'filter' => $_GET['filter'] ?? '' 
+    'status'    => $_GET['status'] ?? '',
+    'search'    => $_GET['search'] ?? '',
+    'filter'    => $_GET['filter'] ?? '',
+    'date_from' => $_GET['date_from'] ?? '',
+    'date_to'   => $_GET['date_to'] ?? '',
+    'sort'      => $_GET['sort'] ?? 'newest'
 ];
 
 if ($filters['status'] === 'overdue') {
@@ -78,6 +81,46 @@ if ($filters['status'] === 'overdue') {
 }
 
 $applications = $permitController->getApplications($filters);
+
+// --- DATE RANGE FILTER ---
+if (!empty($filters['date_from'])) {
+    $dateFromTs = strtotime($filters['date_from'] . ' 00:00:00');
+    $applications = array_filter($applications, function ($app) use ($dateFromTs) {
+        return strtotime($app['created_at']) >= $dateFromTs;
+    });
+}
+if (!empty($filters['date_to'])) {
+    $dateToTs = strtotime($filters['date_to'] . ' 23:59:59');
+    $applications = array_filter($applications, function ($app) use ($dateToTs) {
+        return strtotime($app['created_at']) <= $dateToTs;
+    });
+}
+$applications = array_values($applications);
+
+// --- SORTING ---
+switch ($filters['sort']) {
+    case 'oldest':
+        usort($applications, function ($a, $b) {
+            return strtotime($a['created_at']) <=> strtotime($b['created_at']);
+        });
+        break;
+    case 'name_asc':
+        usort($applications, function ($a, $b) {
+            return strcasecmp($a['project_name'], $b['project_name']);
+        });
+        break;
+    case 'status':
+        usort($applications, function ($a, $b) {
+            return strcasecmp($a['status'], $b['status']);
+        });
+        break;
+    case 'newest':
+    default:
+        usort($applications, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+        break;
+}
 
 // --- PAGINATION CONFIGURATION (style matches audit-logs.php) ---
 $limit = 15;
@@ -101,6 +144,7 @@ include __DIR__ . '/../admin/header.php';
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
     #map-container { height: 300px; width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; }
@@ -344,7 +388,8 @@ include __DIR__ . '/../admin/header.php';
         /* Filter form: stack inputs */
         .card-body .row.g-3 .col-md-4,
         .card-body .row.g-3 .col-md-3,
-        .card-body .row.g-3 .col-md-2 {
+        .card-body .row.g-3 .col-md-2,
+        .card-body .row.g-3 .col-md-1 {
             width: 100%;
             flex: 0 0 100%;
         }
@@ -573,7 +618,7 @@ include __DIR__ . '/../admin/header.php';
     <div class="card mb-3 shadow-sm border-0">
         <div class="card-body">
             <form method="GET" class="row g-3" id="filterForm">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted" id="appSearchIcon"></i></span>
                         <input type="text" class="form-control border-start-0 border-end-0" name="search" id="appSearchInput"
@@ -585,7 +630,7 @@ include __DIR__ . '/../admin/header.php';
                         </button>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select class="form-select" name="status" id="appStatusSelect">
                         <option value="">All Status</option>
                         <option value="submitted" <?php echo $filters['status'] === 'submitted' ? 'selected' : ''; ?>>Submitted</option>
@@ -596,8 +641,30 @@ include __DIR__ . '/../admin/header.php';
                         <option value="overdue" <?php echo ($filters['status'] === 'overdue') ? 'selected' : ''; ?> style="color: #dc3545; font-weight: bold;">Overdue (3+ Days)</option>
                     </select>
                 </div>
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar3 text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 border-end-0" id="appDateRangeInput"
+                               placeholder="Date range" autocomplete="off" readonly>
+                        <button type="button" id="appClearDateRange"
+                                class="btn btn-outline-secondary <?php echo (empty($filters['date_from']) && empty($filters['date_to'])) ? 'd-none' : ''; ?>"
+                                title="Clear">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" name="date_from" id="appDateFrom" value="<?php echo htmlspecialchars($filters['date_from']); ?>">
+                    <input type="hidden" name="date_to" id="appDateTo" value="<?php echo htmlspecialchars($filters['date_to']); ?>">
+                </div>
                 <div class="col-md-2">
-                    <a href="applications.php" class="btn btn-outline-secondary w-100 shadow-sm">Reset</a>
+                    <select class="form-select" name="sort" id="appSortSelect">
+                        <option value="newest" <?php echo ($filters['sort'] === 'newest' || $filters['sort'] === '') ? 'selected' : ''; ?>>Newest</option>
+                        <option value="oldest" <?php echo $filters['sort'] === 'oldest' ? 'selected' : ''; ?>>Oldest</option>
+                        <option value="name_asc" <?php echo $filters['sort'] === 'name_asc' ? 'selected' : ''; ?>>Name A-Z</option>
+                        <option value="status" <?php echo $filters['sort'] === 'status' ? 'selected' : ''; ?>>Status</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <a href="applications.php" class="btn btn-outline-secondary w-100 shadow-sm"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</a>
                 </div>
             </form>
         </div>
@@ -823,6 +890,7 @@ include __DIR__ . '/../admin/header.php';
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -962,7 +1030,12 @@ include __DIR__ . '/../admin/header.php';
     const clearBtn     = document.getElementById('appClearSearch');
     const searchIcon   = document.getElementById('appSearchIcon');
     const statusSelect = document.getElementById('appStatusSelect');
-    const form         = document.getElementById('filterForm');
+    const dateRangeInput = document.getElementById('appDateRangeInput');
+    const dateFromHidden = document.getElementById('appDateFrom');
+    const dateToHidden   = document.getElementById('appDateTo');
+    const clearDateBtn   = document.getElementById('appClearDateRange');
+    const sortSelect    = document.getElementById('appSortSelect');
+    const form          = document.getElementById('filterForm');
     if (!searchInput || !form) return;
 
     let debounceTimer = null;
@@ -1011,6 +1084,45 @@ include __DIR__ . '/../admin/header.php';
         clearTimeout(debounceTimer);
         submitForm();
     });
+
+    // Date range picker — single clickable field showing "from - to"
+    if (dateRangeInput && window.flatpickr) {
+        const initialDates = [];
+        if (dateFromHidden.value) initialDates.push(dateFromHidden.value);
+        if (dateToHidden.value)   initialDates.push(dateToHidden.value);
+
+        const dateRangePicker = flatpickr(dateRangeInput, {
+            mode: 'range',
+            dateFormat: 'M j, Y',
+            defaultDate: initialDates.length ? initialDates : undefined,
+            onClose: function (selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    dateFromHidden.value = instance.formatDate(selectedDates[0], 'Y-m-d');
+                    dateToHidden.value   = instance.formatDate(selectedDates[1], 'Y-m-d');
+                    clearDateBtn.classList.remove('d-none');
+                    clearTimeout(debounceTimer);
+                    submitForm();
+                }
+            }
+        });
+
+        clearDateBtn.addEventListener('click', function () {
+            dateRangePicker.clear();
+            dateFromHidden.value = '';
+            dateToHidden.value = '';
+            clearDateBtn.classList.add('d-none');
+            clearTimeout(debounceTimer);
+            submitForm();
+        });
+    }
+
+    // Sort — submit immediately on change
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function () {
+            clearTimeout(debounceTimer);
+            submitForm();
+        });
+    }
 })();
 </script>
 

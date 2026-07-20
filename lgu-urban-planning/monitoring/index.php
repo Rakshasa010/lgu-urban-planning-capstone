@@ -55,6 +55,70 @@ include __DIR__ . '/../admin/header.php';
     .fc-event-title { font-weight: 600 !important; font-size: 0.75rem !important; padding: 1px 3px; }
     .fc-daygrid-event { border-radius: 4px !important; margin: 1px 2px !important; white-space: nowrap !important; }
 
+    /* ── CALENDAR CARD (modern / professional) ── */
+    .calendar-card-header {
+        background: #fff;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #eef0f3;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .calendar-card-header i { color: #0d6efd; font-size: 1.05rem; }
+    .calendar-card-header h6 { margin: 0; font-weight: 700; color: #1e293b; }
+
+    .fc .fc-toolbar-title { color: #1c4e9e; font-weight: 700; }
+    .fc .fc-button {
+        background: #ffffff;
+        border: 1.5px solid #e2e6ec;
+        color: #5a6474;
+        border-radius: 8px !important;
+        font-weight: 600;
+        box-shadow: none !important;
+        text-transform: capitalize;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .fc .fc-button:hover {
+        background: #f0f6ff;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+    .fc .fc-button-primary:not(:disabled).fc-button-active,
+    .fc .fc-button-primary:not(:disabled):active {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%) !important;
+        border-color: transparent !important;
+        color: #fff !important;
+    }
+    .fc .fc-today-button {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%) !important;
+        border: none !important;
+        color: #fff !important;
+        opacity: 1 !important;
+    }
+    .fc .fc-today-button:disabled {
+        background: #eef0f3 !important;
+        color: #adb5bd !important;
+    }
+    .fc .fc-col-header-cell-cushion {
+        color: #1c4e9e;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.03em;
+        text-decoration: none;
+        padding: 8px 4px;
+    }
+    .fc .fc-daygrid-day-number {
+        color: #334155;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .fc .fc-day-today { background: rgba(13, 110, 253, 0.06) !important; }
+    .fc .fc-day-today .fc-daygrid-day-number { color: #0d6efd; font-weight: 700; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #eef0f3; }
+    .fc-theme-standard .fc-scrollgrid { border-color: #eef0f3; }
+
+
     /* ================================================
        MOBILE RESPONSIVE
        768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
@@ -90,6 +154,7 @@ include __DIR__ . '/../admin/header.php';
             align-items: flex-start !important;
             gap: 8px;
         }
+        .calendar-card-header { padding: 0.85rem 1rem; }
         /* Filter tab pills: scrollable row */
         #monitoringTabs {
             width: 100%;
@@ -113,6 +178,10 @@ include __DIR__ . '/../admin/header.php';
         /* Schedule modal */
         .modal-dialog.modal-dialog-centered { margin: 0.75rem; }
         .modal-body.p-4 { padding: 1rem !important; }
+        #scheduleModal .modal-body { padding: 1.1rem !important; }
+        #scheduleModal .form-section { padding: 1rem 1.1rem 1.2rem; margin-bottom: 1rem; }
+        #scheduleModal .modal-footer { padding: 0.85rem 1.1rem; }
+        #scheduleModal .modal-footer .btn { padding: 0.5rem 1.2rem; font-size: 0.85rem; }
 
         /* View modal (xl) */
         .modal-dialog.modal-xl {
@@ -149,6 +218,9 @@ include __DIR__ . '/../admin/header.php';
         .card-header h6 { font-size: 0.82rem; }
         #monitoringTabs { font-size: 0.68rem !important; }
         #monitoringTabs .nav-link { padding: 2px 8px !important; font-size: 0.68rem; }
+        .calendar-card-header { padding: 0.65rem 0.75rem; }
+        .calendar-card-header h6 { font-size: 0.82rem; }
+        .calendar-card-header i { font-size: 0.95rem; }
 
         /* Table: hide Inspector col */
         .table { font-size: 0.74rem; }
@@ -185,6 +257,18 @@ include __DIR__ . '/../admin/header.php';
         .modal-body .form-select { font-size: 0.82rem; padding: 6px 9px; }
         .modal-body .mb-3 { margin-bottom: 0.6rem !important; }
         .modal-footer { padding: 0.6rem 0.75rem; }
+        #scheduleModal .modal-header { padding: 0.85rem 1rem; }
+        #scheduleModal .modal-title { font-size: 1rem; }
+        #scheduleModal .modal-header-subtitle { font-size: 0.72rem; }
+        #scheduleModal .modal-body { padding: 0.85rem !important; }
+        #scheduleModal .form-section { padding: 0.85rem 0.9rem 1rem; margin-bottom: 0.85rem; }
+        #scheduleModal .form-section-title { font-size: 0.72rem; margin-bottom: 0.8rem; }
+        #scheduleModal .modal-body .form-label { font-size: 0.7rem; }
+        #scheduleModal .modal-body .form-control,
+        #scheduleModal .modal-body .form-select,
+        #scheduleModal .sd-input-wrap { font-size: 0.82rem; padding: 6px 9px; }
+        #scheduleModal .modal-footer { padding: 0.7rem 0.9rem; }
+        #scheduleModal .modal-footer .btn { padding: 7px 16px; font-size: 0.82rem; }
 
         /* View modal */
         #viewModal .modal-body { padding: 0.75rem !important; }
@@ -242,6 +326,299 @@ include __DIR__ . '/../admin/header.php';
     .sd-item.selected { background: #d1ecf1; font-weight: 600; }
     .sd-no-results { padding: 10px 12px; color: #6c757d; font-size: 0.8rem; font-style: italic; }
 
+    /* Schedule Inspection — gradient trigger button (green variant, mirrors .btn-manual-add) */
+    .btn-schedule-inspection {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 0.55rem 1.4rem;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-schedule-inspection:hover {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-schedule-inspection:active,
+    .btn-schedule-inspection:focus {
+        color: #fff;
+    }
+
+    /* Table "View" button — gradient blue */
+    .btn-view-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-view-gradient:hover,
+    .btn-view-gradient:focus,
+    .btn-view-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
+    }
+
+    /* ================================================
+       SCHEDULE INSPECTION MODAL — modern / professional redesign
+       (mirrors #manualAddModal in applications.php)
+       ================================================ */
+    #scheduleModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #scheduleModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #scheduleModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #scheduleModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #scheduleModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #scheduleModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #scheduleModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #scheduleModal .form-section:last-child { margin-bottom: 0; }
+
+    #scheduleModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #scheduleModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #scheduleModal .modal-body .form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+    }
+
+    #scheduleModal .modal-body .form-control,
+    #scheduleModal .modal-body .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #scheduleModal .modal-body .form-control:focus,
+    #scheduleModal .modal-body .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #scheduleModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+    #scheduleModal .modal-body textarea.form-control { resize: vertical; }
+
+    /* Searchable dropdown — match the modernized input style */
+    #scheduleModal .sd-input-wrap {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        background-color: #fcfdfe;
+    }
+    #scheduleModal .sd-input-wrap:focus-within {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #scheduleModal .sd-input { font-size: 0.9rem; }
+
+    #scheduleModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #scheduleModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #scheduleModal .modal-footer .btn-primary {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #scheduleModal .modal-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+    }
+    #scheduleModal .modal-footer .btn-outline-secondary,
+    #scheduleModal .modal-footer .btn-link {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+        text-decoration: none;
+    }
+    #scheduleModal .modal-footer .btn-outline-secondary:hover,
+    #scheduleModal .modal-footer .btn-link:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+        color: #5a6474;
+    }
+
+    /* ================================================
+       INSPECTION DETAILS (VIEW) MODAL — modern / professional redesign
+       (mirrors #scheduleModal / #manualAddModal)
+       ================================================ */
+    #viewModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #viewModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #viewModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #viewModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #viewModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #viewModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    /* Project summary card */
+    #viewModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #viewModal .form-section .text-muted.small.fw-bold {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474 !important;
+    }
+    #viewModal .form-section label.form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+    }
+    #viewModal #view_project_name { color: #1c4e9e !important; }
+
+    #viewModal .view-info-box {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        background-color: #fcfdfe;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    #viewModal .view-info-box.notes-box {
+        font-weight: 400;
+        font-style: italic;
+        color: #495057;
+    }
+
+    /* Checklist / Violation panels */
+    #viewModal .view-panel {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #eaeef3;
+    }
+    #viewModal .view-panel-header {
+        padding: 0.85rem 1.1rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #fff;
+        border-bottom: none;
+    }
+    #viewModal .checklist-header {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+    }
+    #viewModal .violation-header {
+        background: linear-gradient(135deg, #b02a37 0%, #dc3545 100%);
+    }
+    #viewModal .view-panel .card-body {
+        background: #ffffff;
+        padding: 1.25rem 1.4rem;
+    }
+    #viewModal .view-panel h6.fw-bold.text-primary {
+        color: #1c4e9e !important;
+    }
+
     /* Pagination — same style as audit-logs.php */
     .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
     .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
@@ -263,6 +640,8 @@ include __DIR__ . '/../admin/header.php';
         .card-header h6 { font-size: 0.75rem; }
         #monitoringTabs { font-size: 0.62rem !important; gap: 2px; }
         #monitoringTabs .nav-link { padding: 2px 6px !important; font-size: 0.62rem; }
+        .calendar-card-header { padding: 0.5rem 0.6rem; }
+        .calendar-card-header h6 { font-size: 0.75rem; }
 
         /* Table: hide Inspector + Date, keep APP ID, Status, Action */
         .table { font-size: 0.65rem; }
@@ -304,6 +683,18 @@ include __DIR__ . '/../admin/header.php';
             gap: 6px;
         }
         .modal-footer .btn { flex: 1; text-align: center; font-size: 0.78rem; padding: 6px 8px; }
+        #scheduleModal .modal-header { padding: 0.65rem 0.8rem; }
+        #scheduleModal .modal-title { font-size: 0.9rem; }
+        #scheduleModal .modal-header-subtitle { font-size: 0.66rem; }
+        #scheduleModal .modal-body { padding: 0.65rem !important; }
+        #scheduleModal .form-section { padding: 0.7rem 0.75rem 0.85rem; margin-bottom: 0.7rem; }
+        #scheduleModal .form-section-title { font-size: 0.66rem; margin-bottom: 0.65rem; }
+        #scheduleModal .modal-body .form-label { font-size: 0.64rem; }
+        #scheduleModal .modal-body .form-control,
+        #scheduleModal .modal-body .form-select,
+        #scheduleModal .sd-input-wrap { font-size: 0.78rem; padding: 5px 8px; }
+        #scheduleModal .modal-footer { padding: 0.55rem 0.75rem; gap: 6px; }
+        #scheduleModal .modal-footer .btn { padding: 6px 10px; font-size: 0.76rem; }
 
         /* View modal */
         #viewModal .modal-body { padding: 0.6rem !important; }
@@ -342,7 +733,7 @@ include __DIR__ . '/../admin/header.php';
             <p class="text-muted mb-0">Real-time inspection tracking and scheduling.</p>
         </div>
         <?php if ($_SESSION['role'] !== 'inspector'): ?>
-        <button class="btn btn-primary px-4 shadow-sm fw-bold" onclick="openScheduleModal()">
+        <button class="btn btn-schedule-inspection px-4" onclick="openScheduleModal()">
             <i class="bi bi-calendar-plus me-2"></i>Schedule Inspection
         </button>
         <?php endif; ?>
@@ -424,7 +815,7 @@ include __DIR__ . '/../admin/header.php';
             </span>
         </td>
             <td class="text-center">
-                <button class="btn btn-sm btn-outline-primary fw-bold px-3 shadow-sm" 
+                <button class="btn btn-sm btn-view-gradient fw-bold px-3" 
                         onclick='viewInspectionDetails(<?= json_encode($log) ?>)'>
                     <i class="bi bi-eye me-1"></i> View
                 </button>
@@ -481,6 +872,10 @@ include __DIR__ . '/../admin/header.php';
 
         <div class="col-xl-5">
             <div class="card shadow-sm border-0 h-100">
+                <div class="calendar-card-header">
+                    <i class="bi bi-calendar3"></i>
+                    <h6>Inspection Calendar</h6>
+                </div>
                 <div class="card-body">
                     <div id="inspectionCalendar"></div>
                 </div>
@@ -489,118 +884,141 @@ include __DIR__ . '/../admin/header.php';
     </div>
 </div>
 
-<div class="modal fade" id="scheduleModal" tabindex="-1">
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true" aria-labelledby="scheduleModalLabel">
     <div class="modal-dialog modal-dialog-centered">
         <form id="inspectionForm" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold">New Inspection Schedule</h5>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-calendar-plus"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="scheduleModalLabel">New Inspection Schedule</h5>
+                        <div class="modal-header-subtitle">Assign an inspector and set a site visit schedule</div>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <!-- SELECT APPLICATION (searchable) -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">SELECT APPLICATION</label>
-                    <input type="hidden" name="application_id" id="application_id_val" required>
-                    <div class="searchable-dropdown" id="appDropdown">
-                        <div class="sd-input-wrap shadow-sm">
-                            <i class="bi bi-search sd-icon"></i>
-                            <input type="text" class="sd-input" id="appSearch" placeholder="Search project..." autocomplete="off">
-                            <span class="sd-clear" onclick="clearSD('appDropdown','application_id_val','appSearch')">&times;</span>
-                        </div>
-                        <div class="sd-list" id="appList">
-                            <div class="sd-item" data-value="" data-label="-- Choose Project --"><em class="text-muted">-- Choose Project --</em></div>
-                            <?php foreach($apps as $app): ?>
-                                <div class="sd-item" data-value="<?= $app['id'] ?>" data-label="#<?= htmlspecialchars($app['application_number']) ?> - <?= htmlspecialchars($app['project_name']) ?>">
-                                    #<?= htmlspecialchars($app['application_number']) ?> &mdash; <?= htmlspecialchars($app['project_name']) ?>
+            <div class="modal-body">
+
+                <!-- Application & Inspector -->
+                <div class="form-section">
+                    <div class="form-section-title"><i class="bi bi-person-badge"></i> Application &amp; Inspector</div>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Select Application</label>
+                            <input type="hidden" name="application_id" id="application_id_val" required>
+                            <div class="searchable-dropdown" id="appDropdown">
+                                <div class="sd-input-wrap">
+                                    <i class="bi bi-search sd-icon"></i>
+                                    <input type="text" class="sd-input" id="appSearch" placeholder="Search project..." autocomplete="off">
+                                    <span class="sd-clear" onclick="clearSD('appDropdown','application_id_val','appSearch')">&times;</span>
                                 </div>
-                            <?php endforeach; ?>
+                                <div class="sd-list" id="appList">
+                                    <div class="sd-item" data-value="" data-label="-- Choose Project --"><em class="text-muted">-- Choose Project --</em></div>
+                                    <?php foreach($apps as $app): ?>
+                                        <div class="sd-item" data-value="<?= $app['id'] ?>" data-label="#<?= htmlspecialchars($app['application_number']) ?> - <?= htmlspecialchars($app['project_name']) ?>">
+                                            #<?= htmlspecialchars($app['application_number']) ?> &mdash; <?= htmlspecialchars($app['project_name']) ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label">Assign Inspector</label>
+                            <input type="hidden" name="inspector_id" id="inspector_id_val" required>
+                            <div class="searchable-dropdown" id="inspDropdown">
+                                <div class="sd-input-wrap">
+                                    <i class="bi bi-search sd-icon"></i>
+                                    <input type="text" class="sd-input" id="inspSearch" placeholder="Search inspector..." autocomplete="off">
+                                    <span class="sd-clear" onclick="clearSD('inspDropdown','inspector_id_val','inspSearch')">&times;</span>
+                                </div>
+                                <div class="sd-list" id="inspList">
+                                    <div class="sd-item" data-value="" data-label="-- Choose Inspector --"><em class="text-muted">-- Choose Inspector --</em></div>
+                                    <?php foreach($staffs as $s):
+                                        $userRole = strtolower($s['role']);
+                                        if($userRole === 'inspector'): ?>
+                                            <div class="sd-item" data-value="<?= $s['id'] ?>" data-label="<?= htmlspecialchars($s['first_name'] . ' ' . $s['last_name']) ?>">
+                                                <?= htmlspecialchars($s['first_name'] . ' ' . $s['last_name']) ?>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.65rem;">Inspector</span>
+                                            </div>
+                                    <?php endif; endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ASSIGN INSPECTOR (searchable, inspector-only) -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">ASSIGN INSPECTOR</label>
-                    <input type="hidden" name="inspector_id" id="inspector_id_val" required>
-                    <div class="searchable-dropdown" id="inspDropdown">
-                        <div class="sd-input-wrap shadow-sm">
-                            <i class="bi bi-search sd-icon"></i>
-                            <input type="text" class="sd-input" id="inspSearch" placeholder="Search inspector..." autocomplete="off">
-                            <span class="sd-clear" onclick="clearSD('inspDropdown','inspector_id_val','inspSearch')">&times;</span>
+                <!-- Schedule Details -->
+                <div class="form-section">
+                    <div class="form-section-title"><i class="bi bi-calendar-event"></i> Schedule Details</div>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Inspection Date &amp; Time</label>
+                            <input type="datetime-local" name="scheduled_at" class="form-control" required min="<?= date('Y-m-d\TH:i') ?>">
                         </div>
-                        <div class="sd-list" id="inspList">
-                            <div class="sd-item" data-value="" data-label="-- Choose Inspector --"><em class="text-muted">-- Choose Inspector --</em></div>
-                            <?php foreach($staffs as $s):
-                                $userRole = strtolower($s['role']);
-                                if($userRole === 'inspector'): ?>
-                                    <div class="sd-item" data-value="<?= $s['id'] ?>" data-label="<?= htmlspecialchars($s['first_name'] . ' ' . $s['last_name']) ?>">
-                                        <?= htmlspecialchars($s['first_name'] . ' ' . $s['last_name']) ?>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.65rem;">Inspector</span>
-                                    </div>
-                            <?php endif; endforeach; ?>
+                        <div class="col-md-12">
+                            <label class="form-label">Remarks / Notes</label>
+                            <textarea name="notes" class="form-control" rows="2" placeholder="Specific items to monitor..."></textarea>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">INSPECTION DATE</label>
-                    <input type="datetime-local" name="scheduled_at" class="form-control shadow-sm" required min="<?= date('Y-m-d\TH:i') ?>">
-                </div>
-
-                <div class="mb-0">
-                    <label class="form-label fw-bold small">REMARKS / NOTES</label>
-                    <textarea name="notes" class="form-control shadow-sm" rows="2" placeholder="Specific items to monitor..."></textarea>
-                </div>
             </div>
-            <div class="modal-footer bg-light border-0 px-4">
-                <button type="button" class="btn btn-link text-muted fw-bold text-decoration-none" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold" id="btnSaveSchedule">Save Schedule</button>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary px-4" id="btnSaveSchedule">
+                    <i class="bi bi-check-lg me-1"></i> Save Schedule
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="modal fade" id="viewModal" tabindex="-1">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true" aria-labelledby="viewModalLabel">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-info-circle me-2"></i>Inspection Details & Checklist</h5>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-info-circle"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="viewModalLabel">Inspection Details &amp; Checklist</h5>
+                        <div class="modal-header-subtitle">Review project info, checklist, and file a violation if needed</div>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="mb-4 text-center">
-                    <h6 class="text-muted small fw-bold mb-1">PROJECT NAME</h6>
-                    <h4 id="view_project_name" class="fw-bold text-primary mb-0"></h4>
-                    <span id="view_app_number" class="badge bg-light text-secondary border mt-2"></span>
-                </div>
-                
-                <div class="row g-3 mb-4">
-                    <div class="col-6">
-                        <div class="p-2 border rounded bg-light">
-                            <label class="text-muted small fw-bold d-block">INSPECTOR</label>
-                            <span id="view_inspector" class="text-dark fw-semibold"></span>
-                        </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <div class="mb-4 text-center">
+                        <h6 class="text-muted small fw-bold mb-1">PROJECT NAME</h6>
+                        <h4 id="view_project_name" class="fw-bold text-primary mb-0"></h4>
+                        <span id="view_app_number" class="badge bg-light text-secondary border mt-2"></span>
                     </div>
-                    <div class="col-6">
-                        <div class="p-2 border rounded bg-light">
-                            <label class="text-muted small fw-bold d-block">DATE & TIME</label>
-                            <span id="view_date" class="text-dark fw-semibold"></span>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="mb-4">
-                    <label class="text-muted small fw-bold mb-1">REMARKS / NOTES FROM SCHEDULER</label>
-                    <div id="view_notes" class="p-3 border rounded bg-white small italic shadow-sm" style="min-height: 60px;"></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label mb-1">INSPECTOR</label>
+                            <div class="view-info-box"><span id="view_inspector"></span></div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1">DATE &amp; TIME</label>
+                            <div class="view-info-box"><span id="view_date"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label mb-1">REMARKS / NOTES FROM SCHEDULER</label>
+                        <div id="view_notes" class="view-info-box notes-box" style="min-height: 60px;"></div>
+                    </div>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card border-success shadow-sm h-100">
-                            <div class="card-header bg-success text-white py-2 small fw-bold">
+                        <div class="card border-0 shadow-sm h-100 view-panel">
+                            <div class="card-header view-panel-header checklist-header">
                                 <i class="bi bi-card-checklist me-2"></i>INSPECTION CHECKLIST
                             </div>
-                            <div class="card-body bg-light">
+                            <div class="card-body">
     <form id="checklistForm">
         <input type="hidden" name="inspection_id" id="checklist_ins_id">
 
@@ -670,12 +1088,12 @@ include __DIR__ . '/../admin/header.php';
                     </div>
 
 <div class="col-md-6">
-    <div class="card border-danger shadow-sm h-100" id="violationSection">
-        <div class="card-header bg-danger text-white py-2 small fw-bold d-flex justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm h-100 view-panel" id="violationSection">
+        <div class="card-header view-panel-header violation-header d-flex justify-content-between align-items-center">
             <span><i class="bi bi-exclamation-triangle-fill me-2"></i>OFFICIAL VIOLATION REPORT</span>
             <span class="badge bg-white text-danger">LEGAL ACTION</span>
         </div>
-        <div class="card-body bg-danger-subtle">
+        <div class="card-body">
             <form id="violationForm" enctype="multipart/form-data">
                 <input type="hidden" name="inspection_id" id="viol_ins_id">
                 <input type="hidden" name="application_id" id="viol_app_id">
