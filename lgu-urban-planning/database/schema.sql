@@ -904,10 +904,10 @@ CREATE TABLE `impact_assessments` (
   `id` int(11) NOT NULL,
   `application_id` int(11) NOT NULL,
   `traffic_score` decimal(10,2) DEFAULT NULL,
-  `traffic_flag` enum('ok','high') DEFAULT 'ok',
+  `traffic_flag` enum('ok','high','awaiting','pending','violation') DEFAULT 'ok',
   `traffic_notes` text DEFAULT NULL,
   `energy_score` decimal(10,2) DEFAULT NULL,
-  `energy_flag` enum('ok','high') DEFAULT 'ok',
+  `energy_flag` enum('ok','high','awaiting','pending','violation') DEFAULT 'ok',
   `energy_notes` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `assessed_by` int(11) DEFAULT NULL,
@@ -1253,6 +1253,34 @@ INSERT INTO `reports` (`id`, `report_type`, `report_name`, `generated_by`, `file
 (150, 'inspector_performance', 'Inspector Workload Summary (2026)', 1, NULL, '{\"year\":2026}', '2026-02-25 18:03:40'),
 (151, 'applications_summary', 'Applications Summary (2026)', 1, NULL, '{\"year\":2026}', '2026-05-02 17:25:47'),
 (152, 'applications_summary', 'Applications Summary (2026)', 1, NULL, '{\"year\":2026}', '2026-05-03 08:15:05');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `road_inspection_requests`
+--
+-- Tracks outbound road inspection requests sent to IPMS
+-- (lgu-urban-planning/ipms-integration/RoadsIntegrationService.php) and the
+-- completed results pulled back by the poller
+-- (lgu-urban-planning/ipms-integration/ipms_inspection_result.php).
+--
+
+CREATE TABLE `road_inspection_requests` (
+  `id` int(11) NOT NULL,
+  `application_id` int(11) NOT NULL,
+  `status` enum('pending','sent','failed','completed') NOT NULL DEFAULT 'pending',
+  `request_payload` text DEFAULT NULL,
+  `requested_by` int(11) DEFAULT NULL,
+  `requested_at` datetime DEFAULT NULL,
+  `external_ref_id` varchar(64) DEFAULT NULL,
+  `response_payload` text DEFAULT NULL,
+  `responded_at` datetime DEFAULT NULL,
+  `overall_condition` enum('Excellent','Good','Fair','Poor','Critical') DEFAULT NULL,
+  `severity` enum('low','medium','high','critical') DEFAULT NULL,
+  `recommendation` enum('Routine Maintenance','Repair','Rehabilitation','Road Reconstruction','Further Investigation','No Action Needed') DEFAULT NULL,
+  `engineer_assigned` varchar(150) DEFAULT NULL,
+  `inspection_date` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1709,7 +1737,7 @@ ALTER TABLE `gis_layers`
 ALTER TABLE `impact_assessments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `assessed_by` (`assessed_by`),
-  ADD KEY `idx_app` (`application_id`);
+  ADD UNIQUE KEY `idx_app` (`application_id`);
 
 --
 -- Indexes for table `inspections`
@@ -1755,6 +1783,14 @@ ALTER TABLE `reports`
   ADD KEY `generated_by` (`generated_by`),
   ADD KEY `idx_report_type` (`report_type`),
   ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `road_inspection_requests`
+--
+ALTER TABLE `road_inspection_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_application_id` (`application_id`),
+  ADD KEY `requested_by` (`requested_by`);
 
 --
 -- Indexes for table `role_permissions`
@@ -1890,6 +1926,12 @@ ALTER TABLE `reports`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
 
 --
+-- AUTO_INCREMENT for table `road_inspection_requests`
+--
+ALTER TABLE `road_inspection_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
@@ -2007,6 +2049,13 @@ ALTER TABLE `permitted_uses`
 --
 ALTER TABLE `reports`
   ADD CONSTRAINT `reports_ibfk_1` FOREIGN KEY (`generated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `road_inspection_requests`
+--
+ALTER TABLE `road_inspection_requests`
+  ADD CONSTRAINT `road_inspection_requests_ibfk_1` FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `road_inspection_requests_ibfk_2` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `violations`

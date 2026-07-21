@@ -341,20 +341,23 @@ if ($_POST['action'] === 'request_inspection') {
     $officerId = $_SESSION['user_id'] ?? 0;
 
     require_once __DIR__ . '/../ipms-integration/RoadsIntegrationService.php'; // ⚠️ adjust to wherever you place the ipms-integration folder
+    require_once __DIR__ . '/../ipms-integration/qc-barangay-districts.php';
 
     try {
         $roadsService = new RoadsIntegrationService();
         $result = $roadsService->requestInspection(
             $applicationId,
             [
-                'applicant_name' => $application['applicant_name'] ?? null,
-                'project_type'   => $application['project_type']   ?? null,
-                'address'        => $application['street']         ?? null,
-                'lot'            => $application['lot']            ?? null,
-                'block'          => $application['block']          ?? null,
-                'barangay'       => $application['barangay']       ?? null,
-                'lat'            => $application['lat']            ?? null,
-                'lng'            => $application['lng']            ?? null,
+                // IPMS requires road_name/barangay/district — district isn't
+                // a column we store, so it's derived from barangay via the
+                // QC congressional district lookup (null if it doesn't match
+                // a canonical barangay name, which IPMS will then reject
+                // with a clear 422 rather than us guessing wrong).
+                'road_name'      => $application['street']    ?? null,
+                'barangay'       => $application['barangay']  ?? null,
+                'district'       => resolveDistrictForBarangay($application['barangay'] ?? null),
+                'road_latitude'  => $application['latitude']  ?? null,
+                'road_longitude' => $application['longitude'] ?? null,
             ],
             (int) $officerId
         );
