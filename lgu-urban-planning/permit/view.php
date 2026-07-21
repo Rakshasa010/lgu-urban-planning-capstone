@@ -82,14 +82,14 @@ $_translations = [
         'impact_inspector_end'  => 'tab.',
         'impact_heading'        => 'Departmental Inspection Results',
         'impact_subtitle'       => 'Assessment data provided by Roads and Energy departments.',
-        'btn_simulate'          => 'Request New Inspection (Simulate)',
+        'btn_simulate'          => 'Request New Inspection',
         'roads_title'           => 'Roads & Traffic',
         'roads_subtitle'        => 'Infrastructure Impact',
         'utilities_title'       => 'Utilities',
         'utilities_subtitle'    => 'Grid Capacity Load',
         'awaiting_inspection'   => 'AWAITING INSPECTION',
         'assessment_data'       => 'Assessment Data:',
-        'no_roads_data'         => 'No data submitted yet by the Roads department inspector.',
+        'no_roads_data'         => 'No data submitted yet by IPMS (Infrastructure Project Management System).',
         'no_energy_data'        => 'No data submitted yet by the Energy/Utilities department.',
         // Docs tab
         'docs_heading'          => 'Submitted Requirements',
@@ -150,7 +150,7 @@ $_translations = [
         'pagination_prev'       => 'Previous',
         'pagination_next'       => 'Next',
         // Prereq modal JS strings
-        'js_prereq_tech'        => '<strong>Technical Assessment</strong> — Go to the <em>Technical Assessment</em> tab and click <em>Request New Inspection (Simulate)</em>.',
+        'js_prereq_tech'        => '<strong>Technical Assessment</strong> — Go to the <em>Technical Assessment</em> tab and click <em>Request New Inspection</em>.',
         'js_prereq_zone'        => '<strong>Zoning &amp; Land Verification</strong> — Go to the <em>Zoning &amp; Actions</em> tab and verify the parcel on the GIS Map.',
         // Back button
         'btn_back'              => 'Back to Development Permits',
@@ -194,7 +194,7 @@ $_translations = [
         'impact_inspector_end'  => 'tab.',
         'impact_heading'        => 'Mga Resulta ng Departmental na Inspeksyon',
         'impact_subtitle'       => 'Datos ng pagsusuri mula sa mga departamento ng Kalsada at Enerhiya.',
-        'btn_simulate'          => 'Humiling ng Bagong Inspeksyon (Simulate)',
+        'btn_simulate'          => 'Humiling ng Bagong Inspeksyon',
         'roads_title'           => 'Kalsada at Trapiko',
         'roads_subtitle'        => 'Epekto sa Imprastraktura',
         'utilities_title'       => 'Mga Utility',
@@ -262,7 +262,7 @@ $_translations = [
         'pagination_prev'       => 'Nakaraan',
         'pagination_next'       => 'Susunod',
         // Prereq modal JS strings
-        'js_prereq_tech'        => '<strong>Teknikal na Pagsusuri</strong> — Pumunta sa tab na <em>Teknikal na Pagsusuri</em> at i-click ang <em>Humiling ng Bagong Inspeksyon (Simulate)</em>.',
+        'js_prereq_tech'        => '<strong>Teknikal na Pagsusuri</strong> — Pumunta sa tab na <em>Teknikal na Pagsusuri</em> at i-click ang <em>Humiling ng Bagong Inspeksyon</em>.',
         'js_prereq_zone'        => '<strong>Zoning at Pag-verify ng Lupa</strong> — Pumunta sa tab na <em>Zoning at Aksyon</em> at i-verify ang parcel sa GIS Map.',
         // Back button
         'btn_back'              => 'Bumalik sa Dashboard',
@@ -335,52 +335,56 @@ if ($_POST['action'] === 'assign_inspection' && $auth->hasRole(['admin', 'zoning
     }
 }
 
-// 2. DUMMY INSPECTION: Roads & Utilities Simulation
+// 2. ROADS: real IPMS integration. ENERGY/UTILITIES: still the old dummy
+//    simulation for now — swap that out next once Roads is confirmed working.
 if ($_POST['action'] === 'request_inspection') {
     $officerId = $_SESSION['user_id'] ?? 0;
 
-    // Dummy data strings
-    $trafficNotes = "AUTOMATED SIMULATION: Traffic impact study completed. Proposed project entrance meets road safety standards. No major congestion expected.";
-    $energyNotes = "AUTOMATED SIMULATION: Grid capacity verified. Local transformer can handle the projected electrical load of the new development.";
+    require_once __DIR__ . '/../ipms-integration/RoadsIntegrationService.php'; // ⚠️ adjust to wherever you place the ipms-integration folder
 
-    /**
-     * Ginagamit natin ang '?' para maiwasan ang 'Invalid parameter number' 
-     * dahil sa pag-uulit ng placeholders sa ON DUPLICATE KEY UPDATE.
-     */
-    $sqlImpact = "INSERT INTO impact_assessments 
-                    (application_id, traffic_flag, traffic_notes, energy_flag, energy_notes, checked_at) 
-                  VALUES (?, 'ok', ?, 'ok', ?, NOW())
-                  ON DUPLICATE KEY UPDATE 
-                    traffic_flag = 'ok', 
-                    traffic_notes = ?, 
-                    energy_flag = 'ok', 
-                    energy_notes = ?, 
-                    checked_at = NOW()";
-    
     try {
-        $stmt = $dbConn->prepare($sqlImpact);
-        
-        // Dapat magtugma ang bilang ng '?' (lima lahat) sa bilang ng array elements sa ibaba
-        $stmt->execute([
-            $applicationId, // 1st ? (application_id)
-            $trafficNotes,  // 2nd ? (traffic_notes sa VALUES)
-            $energyNotes,   // 3rd ? (energy_notes sa VALUES)
-            $trafficNotes,  // 4th ? (traffic_notes sa UPDATE)
-            $energyNotes    // 5th ? (energy_notes sa UPDATE)
-        ]);
+        $roadsService = new RoadsIntegrationService();
+        $result = $roadsService->requestInspection(
+            $applicationId,
+            [
+                'applicant_name' => $application['applicant_name'] ?? null,
+                'project_type'   => $application['project_type']   ?? null,
+                'address'        => $application['street']         ?? null,
+                'lot'            => $application['lot']            ?? null,
+                'block'          => $application['block']          ?? null,
+                'barangay'       => $application['barangay']       ?? null,
+                'lat'            => $application['lat']            ?? null,
+                'lng'            => $application['lng']            ?? null,
+            ],
+            (int) $officerId
+        );
 
-        // Mag-dagdag sa history
+        if ($result['sent']) {
+            $success = "Road inspection request sent to IPMS. Awaiting their response.";
+        } else {
+            // Still recorded locally as 'pending' even if IPMS couldn't be reached —
+            // nothing is lost, it just needs retrying or manual follow-up.
+            $error = "Request saved, but could not reach IPMS: " . ($result['error'] ?? 'unknown error');
+        }
+
+        logAudit($dbConn, (int) $officerId, 'request_inspection', 'application', $applicationId,
+            "Road inspection request sent to IPMS (request_id: {$result['request_id']}).");
+
         $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)")
-               ->execute([$applicationId, $application['status'], "Departmental simulations triggered for Roads & Energy.", $officerId]);
+               ->execute([$applicationId, $application['status'], "Road inspection requested from IPMS.", $officerId]);
 
-        $success = "Departmental simulation successful! Roads and Energy data generated.";
-        logAudit($dbConn, (int)$officerId, 'request_inspection', 'application', $applicationId,
-            "Impact assessment simulation triggered for Roads & Energy departments.");
-        
-        // Refresh variable para lumabas agad sa UI
+        // --- ENERGY/UTILITIES: still the old dummy simulation, unchanged for now ---
+        $energyNotes = "AUTOMATED SIMULATION: Grid capacity verified. Local transformer can handle the projected electrical load of the new development.";
+        $dbConn->prepare(
+            "INSERT INTO impact_assessments (application_id, energy_flag, energy_notes, checked_at)
+             VALUES (?, 'ok', ?, NOW())
+             ON DUPLICATE KEY UPDATE energy_flag = 'ok', energy_notes = ?, checked_at = NOW()"
+        )->execute([$applicationId, $energyNotes, $energyNotes]);
+
+        // Refresh so the UI reflects the latest state immediately
         $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ?", [$applicationId]);
     } catch (Exception $e) {
-        $error = "Simulation failed: " . $e->getMessage();
+        $error = "Request failed: " . $e->getMessage();
     }
 }
 
@@ -1306,7 +1310,13 @@ include __DIR__ . '/../admin/header.php';
                             <small class="text-muted"><?php echo htmlspecialchars($_t('roads_subtitle')); ?></small>
                         </div>
                         <?php if ($impactAssessment && !empty($impactAssessment['traffic_flag'])): ?>
-                            <span class="badge bg-<?php echo ($impactAssessment['traffic_flag'] === 'ok' || $impactAssessment['traffic_flag'] === 'approved') ? 'success' : 'danger'; ?>"><?php echo strtoupper($impactAssessment['traffic_flag']); ?></span>
+                            <?php
+                                $trafficFlag = $impactAssessment['traffic_flag'];
+                                $badgeClass = $trafficFlag === 'pending'
+                                    ? 'warning'
+                                    : (($trafficFlag === 'ok' || $trafficFlag === 'approved') ? 'success' : 'danger');
+                            ?>
+                            <span class="badge bg-<?php echo $badgeClass; ?>"><?php echo strtoupper($trafficFlag); ?></span>
                         <?php else: ?>
                             <span class="badge bg-secondary"><?php echo htmlspecialchars($_t('awaiting_inspection')); ?></span>
                         <?php endif; ?>
