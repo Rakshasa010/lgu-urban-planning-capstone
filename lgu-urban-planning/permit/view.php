@@ -278,7 +278,7 @@ $_t = fn(string $key) => _vt($key, $_translations, $_lang);
 
 // --- STEP 1: FETCH FRESH DATA --- 
 $zoningCheck = $db->fetchOne("SELECT * FROM zoning_compliance_checks WHERE application_id = ?", [$applicationId]);
-$impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ?", [$applicationId]);
+$impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ? ORDER BY checked_at DESC LIMIT 1", [$applicationId]);
 $application = $permitController->getApplicationDetails($applicationId);
 
 if (!$application) {
@@ -385,7 +385,7 @@ if ($_POST['action'] === 'request_inspection') {
         )->execute([$applicationId, $energyNotes, $energyNotes]);
 
         // Refresh so the UI reflects the latest state immediately
-        $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ?", [$applicationId]);
+        $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ? ORDER BY checked_at DESC LIMIT 1", [$applicationId]);
     } catch (Exception $e) {
         $error = "Request failed: " . $e->getMessage();
     }
