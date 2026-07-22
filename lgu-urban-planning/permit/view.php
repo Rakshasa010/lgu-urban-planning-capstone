@@ -38,6 +38,52 @@ function logAudit(PDO $pdo, int $userId, string $action, string $entityType, int
 }
 // ────────────────────────────────────────────────────────────────────────────
 
+// ── Parse "Label: Value | Label: Value" style assessment notes into a
+//    clean associative array for structured display instead of one long
+//    paragraph. Returns null if the text doesn't match the expected
+//    format (e.g. plain status messages like "Awaiting result"), so the
+//    caller can fall back to showing the raw text.
+function parse_assessment_notes(?string $notes): ?array {
+    if (!$notes || stripos($notes, ':') === false || stripos($notes, 'Overall:') === false) {
+        return null;
+    }
+
+    $pairs = [];
+    foreach (explode("\n", $notes) as $line) {
+        $line = trim($line);
+        if ($line === '') continue;
+
+        // "Remarks:" often contains its own punctuation/colons in free text,
+        // so treat it as a single field rather than splitting on "|".
+        if (stripos($line, 'Remarks:') === 0) {
+            $pairs['Remarks'] = trim(substr($line, strlen('Remarks:')));
+            continue;
+        }
+
+        foreach (explode('|', $line) as $segment) {
+            if (strpos($segment, ':') === false) continue;
+            [$label, $value] = array_map('trim', explode(':', $segment, 2));
+            if ($label !== '' && $value !== '') {
+                $pairs[$label] = $value;
+            }
+        }
+    }
+
+    return $pairs ?: null;
+}
+
+// ── Maps a condition/severity word to a Bootstrap badge color ──────────────
+function assessment_badge_class(string $value): ?string {
+    $v = strtolower($value);
+    return match (true) {
+        in_array($v, ['excellent', 'good', 'low', 'ok'], true)        => 'success',
+        in_array($v, ['fair', 'medium'], true)                        => 'warning',
+        in_array($v, ['poor', 'high', 'critical', 'urgent'], true)    => 'danger',
+        default                                                       => null,
+    };
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 $error = '';
 $success = '';
 
@@ -341,23 +387,20 @@ if ($_POST['action'] === 'request_inspection') {
     $officerId = $_SESSION['user_id'] ?? 0;
 
     require_once __DIR__ . '/../ipms-integration/RoadsIntegrationService.php'; // ⚠️ adjust to wherever you place the ipms-integration folder
-    require_once __DIR__ . '/../ipms-integration/qc-barangay-districts.php';
 
     try {
         $roadsService = new RoadsIntegrationService();
         $result = $roadsService->requestInspection(
             $applicationId,
             [
-                // IPMS requires road_name/barangay/district — district isn't
-                // a column we store, so it's derived from barangay via the
-                // QC congressional district lookup (null if it doesn't match
-                // a canonical barangay name, which IPMS will then reject
-                // with a clear 422 rather than us guessing wrong).
-                'road_name'      => $application['street']    ?? null,
-                'barangay'       => $application['barangay']  ?? null,
-                'district'       => resolveDistrictForBarangay($application['barangay'] ?? null),
-                'road_latitude'  => $application['latitude']  ?? null,
-                'road_longitude' => $application['longitude'] ?? null,
+                'applicant_name' => $application['applicant_name'] ?? null,
+                'project_type'   => $application['project_type']   ?? null,
+                'address'        => $application['street']         ?? null,
+                'lot'            => $application['lot']            ?? null,
+                'block'          => $application['block']          ?? null,
+                'barangay'       => $application['barangay']       ?? null,
+                'lat'            => $application['lat']            ?? null,
+                'lng'            => $application['lng']            ?? null,
             ],
             (int) $officerId
         );
@@ -1325,10 +1368,36 @@ include __DIR__ . '/../admin/header.php';
                         <?php endif; ?>
                     </div>
                     <div class="bg-white p-3 rounded border">
-                        <p class="mb-1 small fw-bold text-muted"><?php echo htmlspecialchars($_t('assessment_data')); ?></p>
-                        <p class="small mb-0 text-dark italic">
-                            <?php echo htmlspecialchars($impactAssessment['traffic_notes'] ?? $_t('no_roads_data')); ?>
-                        </p>
+                        <p class="mb-2 small fw-bold text-muted text-uppercase" style="letter-spacing:.03em;"><?php echo htmlspecialchars($_t('assessment_data')); ?></p>
+                        <?php
+                            $trafficPairs = parse_assessment_notes($impactAssessment['traffic_notes'] ?? null);
+                            $trafficRemarks = $trafficPairs['Remarks'] ?? null;
+                            if ($trafficPairs) unset($trafficPairs['Remarks']);
+                        ?>
+                        <?php if ($trafficPairs): ?>
+                            <div class="row row-cols-2 g-3 mb-2">
+                                <?php foreach ($trafficPairs as $label => $value): $badge = assessment_badge_class($value); ?>
+                                    <div class="col">
+                                        <div class="text-muted" style="font-size:.72rem;"><?php echo htmlspecialchars($label); ?></div>
+                                        <?php if ($badge): ?>
+                                            <span class="badge bg-<?php echo $badge; ?> fw-semibold"><?php echo htmlspecialchars($value); ?></span>
+                                        <?php else: ?>
+                                            <div class="fw-semibold text-dark small"><?php echo htmlspecialchars($value); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php if ($trafficRemarks): ?>
+                                <div class="pt-2 border-top">
+                                    <div class="text-muted" style="font-size:.72rem;">Remarks</div>
+                                    <div class="small text-dark"><?php echo htmlspecialchars($trafficRemarks); ?></div>
+                                </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <p class="small mb-0 text-dark">
+                                <?php echo htmlspecialchars($impactAssessment['traffic_notes'] ?? $_t('no_roads_data')); ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -1349,10 +1418,36 @@ include __DIR__ . '/../admin/header.php';
                         <?php endif; ?>
                     </div>
                     <div class="bg-white p-3 rounded border">
-                        <p class="mb-1 small fw-bold text-muted"><?php echo htmlspecialchars($_t('assessment_data')); ?></p>
-                        <p class="small mb-0 text-dark italic">
-                            <?php echo htmlspecialchars($impactAssessment['energy_notes'] ?? $_t('no_energy_data')); ?>
-                        </p>
+                        <p class="mb-2 small fw-bold text-muted text-uppercase" style="letter-spacing:.03em;"><?php echo htmlspecialchars($_t('assessment_data')); ?></p>
+                        <?php
+                            $energyPairs = parse_assessment_notes($impactAssessment['energy_notes'] ?? null);
+                            $energyRemarks = $energyPairs['Remarks'] ?? null;
+                            if ($energyPairs) unset($energyPairs['Remarks']);
+                        ?>
+                        <?php if ($energyPairs): ?>
+                            <div class="row row-cols-2 g-3 mb-2">
+                                <?php foreach ($energyPairs as $label => $value): $badge = assessment_badge_class($value); ?>
+                                    <div class="col">
+                                        <div class="text-muted" style="font-size:.72rem;"><?php echo htmlspecialchars($label); ?></div>
+                                        <?php if ($badge): ?>
+                                            <span class="badge bg-<?php echo $badge; ?> fw-semibold"><?php echo htmlspecialchars($value); ?></span>
+                                        <?php else: ?>
+                                            <div class="fw-semibold text-dark small"><?php echo htmlspecialchars($value); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php if ($energyRemarks): ?>
+                                <div class="pt-2 border-top">
+                                    <div class="text-muted" style="font-size:.72rem;">Remarks</div>
+                                    <div class="small text-dark"><?php echo htmlspecialchars($energyRemarks); ?></div>
+                                </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <p class="small mb-0 text-dark">
+                                <?php echo htmlspecialchars($impactAssessment['energy_notes'] ?? $_t('no_energy_data')); ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
