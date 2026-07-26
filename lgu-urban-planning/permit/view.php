@@ -129,6 +129,15 @@ $_translations = [
         'impact_heading'        => 'Departmental Inspection Results',
         'impact_subtitle'       => 'Assessment data provided by Roads and Energy departments.',
         'btn_simulate'          => 'Request New Inspection',
+        'btn_export_csv'        => 'Export CSV',
+        'export_modal_title'    => 'Secure Export Verification',
+        'export_warning'        => 'You are about to export sensitive assessment records. Please confirm your identity to proceed.',
+        'export_purpose_label'  => 'Purpose of Export',
+        'export_purpose_ph'     => '— Select a reason —',
+        'export_password_label' => 'Admin Password',
+        'export_password_ph'    => 'Re-enter your account password',
+        'btn_verify_download'   => 'Verify & Download',
+        'btn_cancel'            => 'Cancel',
         'roads_title'           => 'Roads & Traffic',
         'roads_subtitle'        => 'Infrastructure Impact',
         'utilities_title'       => 'Utilities',
@@ -241,6 +250,15 @@ $_translations = [
         'impact_heading'        => 'Mga Resulta ng Departmental na Inspeksyon',
         'impact_subtitle'       => 'Datos ng pagsusuri mula sa mga departamento ng Kalsada at Enerhiya.',
         'btn_simulate'          => 'Humiling ng Bagong Inspeksyon',
+        'btn_export_csv'        => 'I-export ang CSV',
+        'export_modal_title'    => 'Secure na Pag-verify ng Export',
+        'export_warning'        => 'Mag-e-export ka ng sensitibong datos ng pagsusuri. Mangyaring kumpirmahin ang iyong pagkakakilanlan upang magpatuloy.',
+        'export_purpose_label'  => 'Layunin ng Export',
+        'export_purpose_ph'     => '— Pumili ng dahilan —',
+        'export_password_label' => 'Password ng Admin',
+        'export_password_ph'    => 'Muling ilagay ang iyong password',
+        'btn_verify_download'   => 'I-verify at I-download',
+        'btn_cancel'            => 'Kanselahin',
         'roads_title'           => 'Kalsada at Trapiko',
         'roads_subtitle'        => 'Epekto sa Imprastraktura',
         'utilities_title'       => 'Mga Utility',
@@ -329,6 +347,58 @@ $application = $permitController->getApplicationDetails($applicationId);
 
 if (!$application) {
     header('Location: /lgu-urban-planning/permit/applications.php');
+    exit;
+}
+
+// --- TECHNICAL ASSESSMENT EXPORT HANDLER (token-gated) ---
+// Mirrors the password-verified export flow in admin/users.php: the button
+// opens the shared export verification modal, which posts to
+// admin/verify_action.php to confirm the staff member's password before a
+// one-time token is issued. Only then do we stream the CSV.
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    $submittedToken = $_GET['export_token'] ?? '';
+    $sessionToken   = $_SESSION['export_token'] ?? '';
+    $tokenExpiry    = $_SESSION['export_token_expires'] ?? '';
+    $tokenTable     = $_SESSION['export_token_table'] ?? '';
+
+    $tokenValid = (
+        !empty($submittedToken) &&
+        !empty($sessionToken) &&
+        hash_equals($sessionToken, $submittedToken) &&
+        $tokenTable === 'technical_assessment' &&
+        strtotime($tokenExpiry) >= time()
+    );
+
+    // Invalidate token immediately (one-time use)
+    unset($_SESSION['export_token'], $_SESSION['export_token_expires'],
+          $_SESSION['export_token_table'], $_SESSION['export_token_type']);
+
+    if (!$tokenValid) {
+        http_response_code(403);
+        die('<div style="font-family:sans-serif;padding:2rem;text-align:center;">
+             <h3>&#128274; Export Denied</h3>
+             <p>Invalid or expired export token. Please use the Export CSV button and complete verification.</p>
+             <a href="view.php?id=' . (int)$applicationId . '">Go back</a></div>');
+    }
+
+    while (ob_get_level()) { ob_end_clean(); }
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=technical_assessment_' . $applicationId . '_' . date('Ymd_His') . '.csv');
+
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Field', 'Value']);
+    fputcsv($output, ['Application Number', $application['application_number'] ?? '']);
+    fputcsv($output, ['Project Name', $application['project_name'] ?? '']);
+    fputcsv($output, ['Barangay', $application['barangay'] ?? '']);
+    fputcsv($output, ['Roads & Traffic Status', $impactAssessment['traffic_flag'] ?? 'Awaiting Inspection']);
+    fputcsv($output, ['Roads & Traffic Assessment Data', $impactAssessment['traffic_notes'] ?? '']);
+    fputcsv($output, ['Utilities / Grid Status', $impactAssessment['energy_flag'] ?? 'Awaiting Inspection']);
+    fputcsv($output, ['Utilities / Grid Assessment Data', $impactAssessment['energy_notes'] ?? '']);
+    fputcsv($output, ['Last Checked At', $impactAssessment['checked_at'] ?? 'N/A']);
+    fclose($output);
+
+    logAudit($dbConn, (int)($_SESSION['user_id'] ?? 0), 'export_technical_assessment', 'application', $applicationId,
+        'Exported Technical Assessment CSV.');
     exit;
 }
 
@@ -1336,14 +1406,20 @@ include __DIR__ . '/../admin/header.php';
             <h6 class="fw-bold mb-0"><?php echo htmlspecialchars($_t('impact_heading')); ?></h6>
             <small class="text-muted"><?php echo htmlspecialchars($_t('impact_subtitle')); ?></small>
         </div>
-        <?php if ($_SESSION['role'] !== 'inspector' && $_SESSION['role'] !== 'zoning_officer' && $_SESSION['role'] !== 'assessor'): ?>
-            <form method="POST">
-                <input type="hidden" name="action" value="request_inspection">
-                <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
-                    <i class="bi bi-megaphone-fill me-1"></i> <?php echo htmlspecialchars($_t('btn_simulate')); ?>
-                </button>
-            </form>
-        <?php endif; ?>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success btn-sm px-3 shadow-sm"
+                onclick="openExportModal('csv', 'technical_assessment', '?id=<?php echo (int)$applicationId; ?>&export=csv')">
+                <i class="bi bi-download me-1"></i> <?php echo htmlspecialchars($_t('btn_export_csv')); ?>
+            </button>
+            <?php if ($_SESSION['role'] !== 'inspector' && $_SESSION['role'] !== 'zoning_officer' && $_SESSION['role'] !== 'assessor'): ?>
+                <form method="POST" class="m-0">
+                    <input type="hidden" name="action" value="request_inspection">
+                    <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                        <i class="bi bi-megaphone-fill me-1"></i> <?php echo htmlspecialchars($_t('btn_simulate')); ?>
+                    </button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="row g-4">
@@ -2058,6 +2134,236 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 });
+</script>
+
+<!-- ===== TOAST NOTIFICATION CONTAINER ===== -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="exportToast" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2" id="exportToastBody">
+                <i class="bi" id="exportToastIcon" style="font-size:1.1rem;flex-shrink:0;"></i>
+                <span id="exportToastMsg"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SECURE EXPORT VERIFICATION MODAL ===== -->
+<div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="exportVerifyModalLabel">
+                    <i class="bi bi-shield-lock-fill me-2"></i><?php echo htmlspecialchars($_t('export_modal_title')); ?>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                    <span><?php echo htmlspecialchars($_t('export_warning')); ?></span>
+                </div>
+
+                <div id="exportVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold"><?php echo htmlspecialchars($_t('export_purpose_label')); ?> <span class="text-danger">*</span></label>
+                    <select id="exportReason" class="form-select">
+                        <option value=""><?php echo htmlspecialchars($_t('export_purpose_ph')); ?></option>
+                        <option value="Reporting">Reporting</option>
+                        <option value="Auditing">Auditing</option>
+                        <option value="Archiving">Archiving</option>
+                        <option value="Compliance Review">Compliance Review</option>
+                        <option value="Data Backup">Data Backup</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-1">
+                    <label class="form-label small fw-bold"><?php echo htmlspecialchars($_t('export_password_label')); ?> <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="password" id="exportPassword" class="form-control"
+                               placeholder="<?php echo htmlspecialchars($_t('export_password_ph')); ?>">
+                        <span class="input-group-text bg-white" style="cursor:pointer;"
+                              onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
+                            <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?php echo htmlspecialchars($_t('btn_cancel')); ?></button>
+                <button type="button" class="btn btn-primary px-4" id="exportVerifyBtn">
+                    <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
+                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?php echo htmlspecialchars($_t('btn_verify_download')); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== EXPORT VERIFICATION LOGIC =====
+// Same password-gated flow as admin/users.php: verify the staff member's
+// password via admin/verify_action.php, get a one-time token, then trigger
+// the token-gated CSV download from this page.
+const _exportModalEl = document.getElementById('exportVerifyModal');
+let _exportType = '', _exportTable = '', _exportUrl = '';
+
+function _elmt(id) { return document.getElementById(id); }
+
+function _resetExportModal() {
+    _elmt('exportPassword').value   = '';
+    _elmt('exportPassword').type    = 'password';
+    _elmt('exportReason').value     = '';
+    _elmt('exportEyeIcon').className = 'bi bi-eye-slash';
+    _elmt('exportVerifyBtn').disabled = false;
+    _elmt('exportBtnSpinner').classList.add('d-none');
+    _elmt('exportBtnIcon').classList.remove('d-none');
+    _hideAlert();
+}
+
+function _getAlertEl() {
+    return document.getElementById('exportVerifyAlert');
+}
+
+function _hideAlert() {
+    var el = _getAlertEl();
+    if (!el) return;
+    el.style.display = 'none';
+    el.className = 'alert small py-2 mb-3';
+    el.innerText = '';
+}
+
+function _showAlert(msg, type) {
+    var el = _getAlertEl();
+    if (!el) return;
+    el.style.display = 'none';
+    el.innerHTML = '';
+    void el.offsetHeight;
+    el.className = 'alert alert-' + type + ' small py-2 mb-3';
+    el.innerText = msg;
+    el.style.display = 'block';
+}
+
+function _setBtnLoading(on) {
+    _elmt('exportVerifyBtn').disabled = on;
+    _elmt('exportBtnSpinner').classList.toggle('d-none', !on);
+    _elmt('exportBtnIcon').classList.toggle('d-none', on);
+}
+
+function _showToast(msg, type) {
+    var toastEl   = _elmt('exportToast');
+    var toastMsg  = _elmt('exportToastMsg');
+    var toastIcon = _elmt('exportToastIcon');
+
+    var config = {
+        warning: { bg: 'bg-warning',  text: 'text-dark',  icon: 'bi-exclamation-triangle-fill' },
+        danger:  { bg: 'bg-danger',   text: 'text-white', icon: 'bi-x-circle-fill'              },
+        success: { bg: 'bg-success',  text: 'text-white', icon: 'bi-check-circle-fill'          },
+        info:    { bg: 'bg-info',     text: 'text-dark',  icon: 'bi-info-circle-fill'           }
+    };
+    var c = config[type] || config['info'];
+
+    toastEl.className = 'toast align-items-center border-0 shadow ' + c.bg + ' ' + c.text;
+    toastIcon.className = 'bi ' + c.icon;
+    toastMsg.innerText = msg;
+
+    var bsToast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 });
+    bsToast.show();
+}
+
+function openExportModal(type, table, downloadUrl) {
+    _exportType  = type.toUpperCase();
+    _exportTable = table;
+    _exportUrl   = new URL(downloadUrl, window.location.href).href;
+
+    _resetExportModal();
+    _hideAlert();
+
+    bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
+}
+
+_exportModalEl.addEventListener('hide.bs.modal', function () {
+    var focused = _exportModalEl.querySelector(':focus');
+    if (focused) focused.blur();
+});
+
+_exportModalEl.addEventListener('hidden.bs.modal', function () {
+    _hideAlert();
+});
+
+function submitExportVerification() {
+    var password = _elmt('exportPassword').value.trim();
+    var reason   = _elmt('exportReason').value;
+
+    if (!reason) {
+        _showToast('Please select a purpose for this export.', 'warning');
+        return;
+    }
+
+    if (!password) {
+        _showToast('Please enter your password to continue.', 'warning');
+        return;
+    }
+
+    _setBtnLoading(true);
+    _hideAlert();
+
+    var fd = new FormData();
+    fd.append('password',    password);
+    fd.append('reason',      reason);
+    fd.append('export_type', _exportType);
+    fd.append('table_name',  _exportTable);
+
+    fetch('../admin/verify_action.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function(res) {
+            if (!res.ok) throw new Error('Server error: ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            if (!data.success) {
+                _setBtnLoading(false);
+                _showAlert(data.message || 'Incorrect password. Export denied.', 'danger');
+                return;
+            }
+
+            _showAlert('Verification successful. Starting download...', 'success');
+            var sep         = _exportUrl.includes('?') ? '&' : '?';
+            var downloadUrl = _exportUrl + sep + 'export_token=' + encodeURIComponent(data.token);
+
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = downloadUrl;
+            document.body.appendChild(iframe);
+
+            setTimeout(function() {
+                document.body.removeChild(iframe);
+                _setBtnLoading(false);
+                bootstrap.Modal.getOrCreateInstance(_exportModalEl).hide();
+            }, 3000);
+        })
+        .catch(function() {
+            _setBtnLoading(false);
+            _showAlert('Network error. Please try again.', 'danger');
+        });
+}
+
+_elmt('exportVerifyBtn').onclick = submitExportVerification;
+
+function togglePasswordVisibility(inputId, eyeId) {
+    const input = document.getElementById(inputId);
+    const eye = document.getElementById(eyeId);
+    if (input.type === "password") {
+        input.type = "text";
+        eye.classList.replace("bi-eye-slash", "bi-eye");
+    } else {
+        input.type = "password";
+        eye.classList.replace("bi-eye", "bi-eye-slash");
+    }
+}
+// ===== END EXPORT VERIFICATION LOGIC =====
 </script>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
