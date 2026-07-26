@@ -87,6 +87,7 @@ $_SESSION['user_id'] = (int) $user['id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['role'] = $user['role'];
 $_SESSION['full_name'] = $user['first_name'] . ' ' . $user['last_name'];
+$_SESSION['sso_from_mainlgu'] = true;
 
 $db->query('UPDATE users SET last_activity = NOW() WHERE id = ?', [$user['id']]);
 $auth->logActivity($user['id'], 'login', 'user', $user['id'], 'Logged in via Main LGU SSO');
