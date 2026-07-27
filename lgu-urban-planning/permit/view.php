@@ -415,6 +415,7 @@ if ($_POST['action'] === 'update_parcel_info' && in_array($_SESSION['role'] ?? '
     $block    = trim($_POST['block']       ?? '');
     $street   = trim($_POST['street']      ?? '');
     $barangay = trim($_POST['barangay']    ?? '');
+    $district = trim($_POST['district']    ?? '');
     $parcelId = trim($_POST['parcel_id']   ?? '');
     $lat      = trim($_POST['latitude']    ?? '');
     $lng      = trim($_POST['longitude']   ?? '');
@@ -422,10 +423,10 @@ if ($_POST['action'] === 'update_parcel_info' && in_array($_SESSION['role'] ?? '
 
     $db->query(
         "UPDATE applications SET 
-            lot_number = ?, block = ?, street = ?, barangay = ?, 
+            lot_number = ?, block = ?, street = ?, barangay = ?, district = ?,
             parcel_id = ?, latitude = ?, longitude = ?
          WHERE id = ?",
-        [$lot, $block, $street, $barangay, $parcelId, $lat, $lng, $applicationId]
+        [$lot, $block, $street, $barangay, $district, $parcelId, $lat, $lng, $applicationId]
     );
 
     // Log to history
@@ -437,7 +438,7 @@ if ($_POST['action'] === 'update_parcel_info' && in_array($_SESSION['role'] ?? '
 
     $success = "Parcel information updated successfully.";
     logAudit($dbConn, (int)($_SESSION['user_id'] ?? 0), 'update_parcel_info', 'application', $applicationId,
-        "Parcel info updated — Lot: $lot, Block: $block, Street: $street, Barangay: $barangay, Parcel ID: $parcelId, Lat: $lat, Lng: $lng");
+        "Parcel info updated — Lot: $lot, Block: $block, Street: $street, Barangay: $barangay, District: $district, Parcel ID: $parcelId, Lat: $lat, Lng: $lng");
     // Refresh application data using controller to preserve joined fields
     $application = $permitController->getApplicationDetails($applicationId);
 }
@@ -475,6 +476,7 @@ if ($_POST['action'] === 'request_inspection') {
                 'lot'            => $application['lot']            ?? null,
                 'block'          => $application['block']          ?? null,
                 'barangay'       => $application['barangay']       ?? null,
+                'district'       => $application['district']       ?? null,
                 'lat'            => $application['lat']            ?? null,
                 'lng'            => $application['lng']            ?? null,
             ],
@@ -503,6 +505,7 @@ if ($_POST['action'] === 'request_inspection') {
                 'project_name' => $application['project_type']   ?? null,
                 'address'      => $application['street']         ?? null,
                 'barangay'     => $application['barangay']       ?? null,
+                'district'     => $application['district']       ?? null,
                 'lat'          => $application['lat']            ?? null,
                 'lng'          => $application['lng']            ?? null,
             ],
@@ -2648,6 +2651,12 @@ function togglePasswordVisibility(inputId, eyeId) {
                             <input type="text" class="form-control" name="barangay"
                                 value="<?php echo htmlspecialchars($application['barangay'] ?? ''); ?>"
                                 placeholder="e.g. Socorro">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">District</label>
+                            <input type="text" class="form-control" name="district"
+                                value="<?php echo htmlspecialchars($application['district'] ?? ''); ?>"
+                                placeholder="e.g. District 1">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">GIS Parcel ID</label>
