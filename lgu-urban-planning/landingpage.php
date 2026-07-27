@@ -155,6 +155,19 @@ function lp_status_badge(string $status): array {
     font-weight:600; font-size:0.88rem; margin-left:28px !important;
   }
   .btn-nav-login:hover{background:#eef2ff; color:var(--navy-2) !important;}
+  .btn-nav-back{
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,0.08); color:#fff !important;
+    padding:9px 18px; border-radius:8px; border:1px solid rgba(255,255,255,0.35);
+    font-weight:600; font-size:0.88rem; margin-left:28px !important;
+    backdrop-filter:blur(4px);
+    transition:background .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .btn-nav-back i{font-size:0.95rem;}
+  .btn-nav-back:hover{
+    background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.6);
+    color:#fff !important; transform:translateY(-1px);
+  }
   .navbar-toggle-btn{color:#fff; background:none; border:none; font-size:1.5rem; display:none; transition:transform .25s ease;}
   .navbar-toggle-btn.is-open{transform:rotate(90deg);}
 
@@ -591,6 +604,7 @@ function lp_status_badge(string $status): array {
     .top-navbar .brand-text .name{font-size:0.72rem;}
     .top-navbar .brand-text .sub{font-size:0.55rem;}
     .btn-nav-login{padding:7px 14px; font-size:0.8rem;}
+    .btn-nav-back{padding:7px 12px; font-size:0.8rem;}
 
     .hero h1{font-size:1.32rem;}
     .hero p.lede{font-size:0.85rem; margin-bottom:20px;}
@@ -650,6 +664,7 @@ function lp_status_badge(string $status): array {
       <a href="#features">Features</a>
       <a href="#process">How it Works</a>
       <a href="#roles">Who it's For</a>
+      <a href="https://infragovservices.com/" class="btn-nav-back"><i class="bi bi-arrow-left-short"></i> Back to InfraGov</a>
       <a href="login.php" class="btn-nav-login">Log In</a>
     </nav>
     <button class="navbar-toggle-btn" id="navToggleBtn" aria-expanded="false" aria-controls="mobileNav"><i class="bi bi-list"></i></button>
@@ -658,6 +673,7 @@ function lp_status_badge(string $status): array {
     <a href="#features">Features</a>
     <a href="#process">How it Works</a>
     <a href="#roles">Who it's For</a>
+    <a href="https://infragovservices.com/"><i class="bi bi-arrow-left-short"></i> Back to InfraGov</a>
     <a href="login.php">Log In</a>
   </div>
 </div>

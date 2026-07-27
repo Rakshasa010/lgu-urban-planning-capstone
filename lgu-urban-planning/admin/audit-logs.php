@@ -12,7 +12,28 @@ $auth->requirePermission('view_audit_logs');
 $auth->requireRole(['admin', 'super_admin']);
 
 $userController = new UserController();
-$db = Database::getInstance();
+$db     = Database::getInstance();
+$dbConn = $db->getConnection();
+
+// ── Audit log helper (mirrors users.php / modules/PermitProcessing/view.php) ─
+function logAudit(PDO $pdo, int $userId, string $action, string $entityType, int $entityId, string $details): void {
+    try {
+        $pdo->prepare(
+            "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
+        )->execute([
+            $userId,
+            $action,
+            $entityType,
+            $entityId,
+            $details,
+            $_SERVER['REMOTE_ADDR']  ?? '0.0.0.0',
+            $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
+        ]);
+    } catch (Exception $e) {
+        // Silent fail — auditing should never block the main action
+    }
+}
 
 // ── Load language from session (written by settings.php on every save) ────────
 $lang = $_SESSION['locale_language'] ?? 'en_PH';
@@ -25,8 +46,7 @@ $translations = [
         'page_heading'          => 'Audit Logs',
         'page_subtitle'         => 'Official activity logs for transparency and administrative monitoring.',
         // Header buttons
-        'btn_purge_settings'    => 'PURGE SETTINGS',
-        'btn_generate_report'   => 'GENERATE EXCEL REPORT',
+        'btn_generate_report'   => 'EXPORT CSV',
         // Filter labels & buttons
         'filter_action_label'   => 'Action Type',
         'filter_action_ph'      => 'Search action...',
@@ -71,25 +91,16 @@ $translations = [
         'export_password_ph'    => 'Re-enter your account password',
         'btn_cancel'            => 'Cancel',
         'btn_verify_download'   => 'Verify & Download',
-        // Purge modal
-        'purge_modal_title'     => 'Secure Purge Verification',
-        'purge_warning'         => 'You are about to permanently delete audit logs. This action cannot be undone. Please confirm your identity to proceed.',
-        'purge_older_than'      => 'Delete Logs Older Than',
-        'purge_1yr'             => '1 Year',
-        'purge_2yr'             => '2 Years',
-        'purge_3yr'             => '3 Years',
-        'purge_5yr'             => '5 Years',
-        'btn_verify_purge'      => 'Verify & Purge',
-        // Purge success message
-        'purge_success'         => 'Successfully purged %d logs older than %d year(s).',
+        'btn_print'             => 'Print',
+        'btn_verify_print'      => 'Verify & Print',
         // JS toast / alert strings (passed to JS via json_encode)
         'js_export_select_reason'   => 'Please select a purpose for this export.',
         'js_export_enter_password'  => 'Please enter your password to continue.',
         'js_export_success'         => 'Verification successful. Starting download...',
         'js_export_network_error'   => 'Network error. Please try again.',
-        'js_purge_enter_password'   => 'Please enter your password to confirm the purge.',
-        'js_purge_success'          => 'Identity confirmed. Executing purge...',
-        'js_network_error'          => 'Network error. Please try again.',
+        'js_print_subtitle'         => 'Verify your identity to print these records',
+        'js_print_warning'          => 'You are about to print official audit records. Please confirm your identity to proceed.',
+        'js_print_success'          => 'Verification successful. Opening print dialog...',
     ],
     'fil' => [
         // Page
@@ -97,8 +108,7 @@ $translations = [
         'page_heading'          => 'Mga Audit Log',
         'page_subtitle'         => 'Mga opisyal na log ng aktibidad para sa transparency at administratibong pagmamatyag.',
         // Header buttons
-        'btn_purge_settings'    => 'MGA SETTING NG PURGE',
-        'btn_generate_report'   => 'GUMAWA NG ULAT SA EXCEL',
+        'btn_generate_report'   => 'I-EXPORT ANG CSV',
         // Filter labels & buttons
         'filter_action_label'   => 'Uri ng Aksyon',
         'filter_action_ph'      => 'Maghanap ng aksyon...',
@@ -143,25 +153,16 @@ $translations = [
         'export_password_ph'    => 'Muling ilagay ang iyong password',
         'btn_cancel'            => 'Kanselahin',
         'btn_verify_download'   => 'I-verify at I-download',
-        // Purge modal
-        'purge_modal_title'     => 'Secure na Pag-verify ng Purge',
-        'purge_warning'         => 'Permanenteng mabubura ang mga audit log. Hindi na ito mababawi. Mangyaring kumpirmahin ang iyong pagkakakilanlan upang magpatuloy.',
-        'purge_older_than'      => 'Burahin ang mga Log na Mas Matanda Sa',
-        'purge_1yr'             => '1 Taon',
-        'purge_2yr'             => '2 Taon',
-        'purge_3yr'             => '3 Taon',
-        'purge_5yr'             => '5 Taon',
-        'btn_verify_purge'      => 'I-verify at I-purge',
-        // Purge success message
-        'purge_success'         => 'Matagumpay na nabura ang %d na log na mas matanda sa %d taon.',
+        'btn_print'             => 'I-print',
+        'btn_verify_print'      => 'I-verify at I-print',
         // JS toast / alert strings
         'js_export_select_reason'   => 'Mangyaring pumili ng layunin para sa export na ito.',
         'js_export_enter_password'  => 'Mangyaring ilagay ang iyong password upang magpatuloy.',
         'js_export_success'         => 'Matagumpay na na-verify. Nagsisimula na ang pag-download...',
         'js_export_network_error'   => 'Error sa network. Mangyaring subukan ulit.',
-        'js_purge_enter_password'   => 'Mangyaring ilagay ang iyong password upang kumpirmahin ang purge.',
-        'js_purge_success'          => 'Nakumpirma ang pagkakakilanlan. Isinasagawa ang purge...',
-        'js_network_error'          => 'Error sa network. Mangyaring subukan ulit.',
+        'js_print_subtitle'         => 'I-verify ang iyong pagkakakilanlan upang i-print ang mga rekord na ito',
+        'js_print_warning'          => 'Mag-i-print ka ng mga opisyal na audit record. Mangyaring kumpirmahin ang iyong pagkakakilanlan upang magpatuloy.',
+        'js_print_success'          => 'Matagumpay na na-verify. Bubuksan na ang print dialog...',
     ],
 ];
 
@@ -170,26 +171,20 @@ function t_audit(string $key, array $translations, string $lang): string {
     return $translations[$lang][$key] ?? $translations['en_PH'][$key] ?? $key;
 }
 
-// --- AUTO-PURGE LOGIC ---
-$purgeMessage = "";
-if (isset($_POST['purge_logs'])) {
-    $years = (int)$_POST['purge_years'];
-    if ($years >= 1) {
-        $pdo = $db->getConnection(); 
-        $stmt = $pdo->prepare("DELETE FROM audit_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL ? YEAR)");
-        
-        if ($stmt->execute([$years])) {
-            $deletedCount = $stmt->rowCount();
-            $purgeMsg = sprintf(t_audit('purge_success', $translations, $lang), $deletedCount, $years);
-            $purgeMessage = "<div class='alert alert-success alert-dismissible fade show small mx-4 mt-3' role='alert'>
-                                <i class='bi bi-check-circle-fill me-2'></i>" . htmlspecialchars($purgeMsg) . "
-                                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-                             </div>";
-        }
-    }
-}
-
 // Helper Function
+
+// Same classification as getSeverityTag(), but returns a plain key so the
+// live-search JS can build the badge markup client-side without re-sending HTML.
+function getSeverityKey($action) {
+    $action = strtolower($action);
+    if (strpos($action, 'delete') !== false || strpos($action, 'remove') !== false || strpos($action, 'config') !== false || strpos($action, 'setting') !== false) {
+        return 'critical';
+    }
+    if (strpos($action, 'update') !== false || strpos($action, 'edit') !== false || strpos($action, 'password') !== false || strpos($action, 'profile') !== false || strpos($action, 'change') !== false) {
+        return 'warning';
+    }
+    return 'info';
+}
 
 function getSeverityTag($action, $translations, $lang) {
     $action = strtolower($action);
@@ -217,6 +212,69 @@ $filters = [
     'date_from' => $_GET['date_from'] ?? '',
     'date_to'   => $_GET['date_to'] ?? ''
 ];
+
+// --- AJAX LIVE SEARCH HANDLER (mirrors admin/users.php's ?action=search_users) ---
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'search_logs') {
+    while (ob_get_level()) { ob_end_clean(); }
+    header('Content-Type: application/json');
+
+    try {
+        $searchPage   = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+        if ($searchPage < 1) $searchPage = 1;
+        $searchLimit  = 15;
+        $searchOffset = ($searchPage - 1) * $searchLimit;
+
+        $searchFilters = [
+            'action'    => $_GET['action'] ?? '',
+            'date_from' => $_GET['date_from'] ?? '',
+            'date_to'   => $_GET['date_to'] ?? ''
+        ];
+
+        $searchTotal      = $userController->getTotalAuditLogsCount($searchFilters);
+        $searchTotalPages = max(1, ceil($searchTotal / $searchLimit));
+        $searchLogs       = $userController->getAuditLogs($searchFilters, $searchLimit, $searchOffset);
+
+        $rows = [];
+        foreach ($searchLogs as $log) {
+            $rows[] = [
+                'user'        => $log['username'] ?? 'SYSTEM',
+                'action'      => $log['action'],
+                'time'        => Helper::formatDateTime($log['created_at']),
+                'details'     => $log['details'],
+                'ip'          => $log['ip_address'],
+                'agent'       => $log['user_agent'] ?? 'Unknown Device',
+                'entity_type' => $log['entity_type'] ?? '',
+                'entity_id'   => $log['entity_id'] ?? '',
+                'severity'    => getSeverityKey($log['action']),
+            ];
+        }
+
+        echo json_encode([
+            'success'    => true,
+            'rows'       => $rows,
+            'totalLogs'  => (int)$searchTotal,
+            'totalPages' => (int)$searchTotalPages,
+            'page'       => $searchPage,
+            'limit'      => $searchLimit,
+            'offset'     => $searchOffset,
+            'labels'     => [
+                'no_records'         => t_audit('no_records', $translations, $lang),
+                'showing'            => t_audit('pg_showing', $translations, $lang),
+                'to'                 => t_audit('pg_to', $translations, $lang),
+                'of'                 => t_audit('pg_of', $translations, $lang),
+                'entries'            => t_audit('pg_entries', $translations, $lang),
+                'prev'               => t_audit('pg_prev', $translations, $lang),
+                'next'               => t_audit('pg_next', $translations, $lang),
+                'severity_critical'  => t_audit('severity_critical', $translations, $lang),
+                'severity_warning'   => t_audit('severity_warning', $translations, $lang),
+                'severity_info'      => t_audit('severity_info', $translations, $lang),
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
 
 // --- 1. EXPORT HANDLER (token-gated) ---
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -268,6 +326,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         ]);
     }
     fclose($output);
+
+    logAudit($dbConn, (int)($_SESSION['user_id'] ?? 0), 'export_audit_logs', 'audit_log', 0,
+        'Exported Audit Logs CSV.');
     exit;
 }
 
@@ -289,37 +350,41 @@ $isAuthPage = true;
 include __DIR__ . '/header.php';
 ?>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <style>
-    .btn-export-lgu {
-        background-color: #1a5c2b;
-        color: #ffffff !important;
-        font-weight: 600;
-        font-size: 0.85rem;
+    /* ── Gradient action button (copied from users.php style) ── */
+    .btn-export-gradient {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
         border: none;
-        padding: 8px 20px;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .btn-export-lgu:hover {
-        background-color: #144621;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-    }
-    .btn-purge {
-        background-color: #f8f9fa;
-        color: #dc3545;
-        border: 1px solid #dee2e6;
+        color: #fff;
+        border-radius: 9px;
         font-weight: 600;
-        font-size: 0.85rem;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
     }
-    .btn-purge:hover {
-        background-color: #dc3545;
-        color: white;
+    .btn-export-gradient:hover,
+    .btn-export-gradient:focus,
+    .btn-export-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-simulate-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-simulate-gradient:hover,
+    .btn-simulate-gradient:focus,
+    .btn-simulate-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
     }
     .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
     .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: white; }
@@ -347,7 +412,7 @@ include __DIR__ . '/header.php';
             gap: 8px;
         }
         .row.align-items-center.mb-4 h2 { font-size: 1.3rem; }
-        .btn-purge, .btn-export-lgu { font-size: 0.78rem; padding: 7px 12px; }
+        .btn-export-gradient { font-size: 0.78rem; padding: 7px 12px; }
 
         /* Filter card: full-width fields */
         .card .row.g-2 .col-md-3,
@@ -378,7 +443,7 @@ include __DIR__ . '/header.php';
         /* Header */
         .row.align-items-center.mb-4 h2 { font-size: 1.1rem; }
         .row.align-items-center.mb-4 p { font-size: 0.75rem; }
-        .btn-purge, .btn-export-lgu {
+        .btn-export-gradient {
             font-size: 0.72rem;
             padding: 6px 10px;
             width: 100%;
@@ -432,7 +497,7 @@ include __DIR__ . '/header.php';
         /* Header */
         .row.align-items-center.mb-4 h2 { font-size: 0.95rem; }
         .row.align-items-center.mb-4 p { font-size: 0.68rem; }
-        .btn-purge, .btn-export-lgu { font-size: 0.68rem; padding: 5px 8px; }
+        .btn-export-gradient { font-size: 0.68rem; padding: 5px 8px; }
 
         /* Filter */
         .card.border-0.shadow-sm.mb-4 .card-body { padding: 0.5rem !important; }
@@ -473,6 +538,268 @@ include __DIR__ . '/header.php';
         .modal-footer { padding: 0.4rem 0.6rem; }
         .modal-footer .btn { font-size: 0.68rem; padding: 4px 8px; }
     }
+
+    /* ================================================
+       EXPORT VERIFY MODAL — style copied from users.php
+       ================================================ */
+    #exportVerifyModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    #exportVerifyModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #exportVerifyModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #exportVerifyModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #exportVerifyModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+    #exportVerifyModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+    #exportVerifyModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 0;
+    }
+    #exportVerifyModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #exportVerifyModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+    #exportVerifyModal .modal-body .form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+    #exportVerifyModal .modal-body .form-control,
+    #exportVerifyModal .modal-body .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #exportVerifyModal .modal-body .form-control:focus,
+    #exportVerifyModal .modal-body .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #exportVerifyModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+    #exportVerifyModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #exportVerifyModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #exportVerifyModal .modal-footer .btn-primary {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #exportVerifyModal .modal-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+        color: #fff;
+    }
+    #exportVerifyModal .modal-footer .btn-light {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #exportVerifyModal .modal-footer .btn-light:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+    }
+    #exportVerifyModal .modal-body .form-control.is-invalid,
+    #exportVerifyModal .modal-body .form-select.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff;
+    }
+    #exportVerifyModal .modal-body .form-control.is-invalid:focus,
+    #exportVerifyModal .modal-body .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+    #exportVerifyModal .modal-body .input-group:has(.form-control.is-invalid) .input-group-text {
+        border-color: #dc3545;
+    }
+
+    /* ================================================
+       LOG DETAIL MODAL — restyled to match #createUserModal
+       in admin/users.php
+       ================================================ */
+    #logModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    #logModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #logModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #logModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #logModal .header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #logModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #logModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #logModal .form-section:last-child { margin-bottom: 0; }
+
+    #logModal .form-section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #logModal .form-section-label i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #logModal label.field-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+
+    #logModal .field-value {
+        font-size: 0.9rem;
+        color: #1e2530;
+    }
+
+    #logModal .device-box {
+        background: #fcfdfe;
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.7rem 0.9rem;
+    }
+
+    #logModal .changes-box {
+        background: #1e2530;
+        color: #e7eaf0;
+        border-radius: 9px;
+        padding: 0.9rem 1rem;
+        font-family: monospace;
+        font-size: 0.82rem;
+        white-space: pre-wrap;
+    }
+
+    #logModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #logModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #logModal .modal-footer .btn-outline-secondary {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #logModal .modal-footer .btn-outline-secondary:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+    }
+
+    /* ── Print styles (Audit Logs "Print" button) ── */
+    @media print {
+        .d-print-none { display: none !important; }
+        .card, .shadow-sm { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+        body { background: #fff !important; }
+    }
 </style>
 
 <div class="p-4 page-container">
@@ -484,39 +811,45 @@ include __DIR__ . '/header.php';
             </h2>
             <p class="text-muted small mb-0"><?= t_audit('page_subtitle', $translations, $lang) ?></p>
         </div>
-        <div class="col-md-6 text-md-end">
-            <button type="button" class="btn btn-purge shadow-sm me-2" onclick="openPurgeModal()">
-                <i class="bi bi-trash3-fill me-1"></i> <?= t_audit('btn_purge_settings', $translations, $lang) ?>
-            </button>
-            <button type="button" class="btn-export-lgu shadow-sm"
+        <div class="col-md-6 text-md-end d-print-none">
+            <button type="button" class="btn btn-export-gradient shadow-sm"
                 onclick="openExportModal('csv', 'audit_logs', '?export=csv&<?= $query_string ?>')">
-                <i class="bi bi-file-earmark-excel-fill"></i>
-                <span><?= t_audit('btn_generate_report', $translations, $lang) ?></span>
+                <i class="bi bi-download"></i> <?= t_audit('btn_generate_report', $translations, $lang) ?>
+            </button>
+            <button type="button" class="btn btn-simulate-gradient shadow-sm"
+                onclick="openExportModal('print', 'audit_logs', null)">
+                <i class="bi bi-printer"></i> <?= t_audit('btn_print', $translations, $lang) ?>
             </button>
         </div>
     </div>
 
-    <?= $purgeMessage ?>
-
-    <div class="card border-0 shadow-sm mb-4" style="border-left: 5px solid #1a5c2b !important;">
+    <div class="card border-0 shadow-sm mb-4 d-print-none">
         <div class="card-body p-3">
-            <form method="GET" class="row g-2 align-items-end">
+            <form method="GET" class="row g-2 align-items-end" id="auditFilterForm" onsubmit="return false;">
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem;"><?= t_audit('filter_action_label', $translations, $lang) ?></label>
-                    <input type="text" class="form-control form-control-sm" name="action" placeholder="<?= t_audit('filter_action_ph', $translations, $lang) ?>" value="<?= htmlspecialchars($filters['action']) ?>">
+                    <div class="position-relative">
+                        <input type="text" class="form-control form-control-sm" id="searchInput" name="action" placeholder="<?= t_audit('filter_action_ph', $translations, $lang) ?>" value="<?= htmlspecialchars($filters['action']) ?>">
+                        <span id="searchSpinner" class="spinner-border spinner-border-sm text-primary" style="display:none; position:absolute; right:10px; top:50%; transform:translateY(-50%);"></span>
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem;"><?= t_audit('filter_date_from', $translations, $lang) ?></label>
-                    <input type="date" class="form-control form-control-sm" name="date_from" value="<?= htmlspecialchars($filters['date_from']) ?>">
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar3 text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 border-end-0" id="auditDateRangeInput"
+                               placeholder="Date range" autocomplete="off" readonly>
+                        <button type="button" id="auditClearDateRange"
+                                class="btn btn-outline-secondary <?= (empty($filters['date_from']) && empty($filters['date_to'])) ? 'd-none' : '' ?>"
+                                title="Clear">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" name="date_from" id="dateFromFilter" value="<?= htmlspecialchars($filters['date_from']) ?>">
+                    <input type="hidden" name="date_to" id="dateToFilter" value="<?= htmlspecialchars($filters['date_to']) ?>">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem;"><?= t_audit('filter_date_to', $translations, $lang) ?></label>
-                    <input type="date" class="form-control form-control-sm" name="date_to" value="<?= htmlspecialchars($filters['date_to']) ?>">
-                </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <div class="btn-group w-100 shadow-sm">
-                        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold"><?= t_audit('btn_apply_filters', $translations, $lang) ?></button>
-                        <a href="audit-logs.php" class="btn btn-sm border fw-bold text-muted"><?= t_audit('btn_reset', $translations, $lang) ?></a>
+                        <button type="submit" class="btn btn-simulate-gradient btn-sm px-4 fw-bold"><?= t_audit('btn_apply_filters', $translations, $lang) ?></button>
+                        <a href="audit-logs.php" class="btn btn-outline-secondary btn-sm fw-bold"><i class="bi bi-arrow-counterclockwise me-1"></i><?= t_audit('btn_reset', $translations, $lang) ?></a>
                     </div>
                 </div>
             </form>
@@ -537,7 +870,7 @@ include __DIR__ . '/header.php';
                             <th class="text-muted small text-uppercase"><?= t_audit('th_ref_id', $translations, $lang) ?></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="auditTableBody">
                         <?php if (empty($logs)): ?>
                             <tr><td colspan="6" class="text-center py-5 text-muted small italic"><?= t_audit('no_records', $translations, $lang) ?></td></tr>
                         <?php else: ?>
@@ -567,10 +900,10 @@ include __DIR__ . '/header.php';
             </div>
         </div>
 
-        <div class="card-footer py-3 border-0">
+        <div class="card-footer py-3 border-0 d-print-none">
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    <span class="info-text text-muted">
+                    <span class="info-text text-muted" id="paginationInfo">
                         <?= t_audit('pg_showing', $translations, $lang) ?> <strong><?= ($offset + 1) ?></strong> <?= t_audit('pg_to', $translations, $lang) ?> 
                         <strong><?= min($offset + $limit, $totalLogs) ?></strong> <?= t_audit('pg_of', $translations, $lang) ?> 
                         <strong><?= $totalLogs ?></strong> <?= t_audit('pg_entries', $translations, $lang) ?>
@@ -578,7 +911,7 @@ include __DIR__ . '/header.php';
                 </div>
                 <div class="col-md-6 text-md-end">
                     <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0">
+                        <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0" id="paginationNav">
                             <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
                                 <a class="page-link" href="?p=1&<?= $query_string ?>"><i class="bi bi-chevron-double-left"></i></a>
                             </li>
@@ -608,98 +941,55 @@ include __DIR__ . '/header.php';
     </div>
 </div>
 
-<!-- Hidden purge form — submitted programmatically after password is verified -->
-<form id="purgeForm" method="POST" style="display:none;">
-    <input type="hidden" name="purge_logs" value="1">
-    <input type="hidden" name="purge_years" id="purgeYearsHidden" value="2">
-</form>
-
-<!-- ===== PURGE VERIFY MODAL ===== -->
-<div class="modal fade" id="purgeVerifyModal" tabindex="-1" aria-labelledby="purgeVerifyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="purgeVerifyModalLabel">
-                    <i class="bi bi-shield-lock-fill me-2"></i><?= t_audit('purge_modal_title', $translations, $lang) ?>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div style="background:#f8d7da;border:1px solid #f5c2c7;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
-                    <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
-                    <span><?= t_audit('purge_warning', $translations, $lang) ?></span>
-                </div>
-
-                <div id="purgeVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold"><?= t_audit('purge_older_than', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <select id="purgeYearsSelect" class="form-select">
-                        <option value="1"><?= t_audit('purge_1yr', $translations, $lang) ?></option>
-                        <option value="2" selected><?= t_audit('purge_2yr', $translations, $lang) ?></option>
-                        <option value="3"><?= t_audit('purge_3yr', $translations, $lang) ?></option>
-                        <option value="5"><?= t_audit('purge_5yr', $translations, $lang) ?></option>
-                    </select>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label small fw-bold"><?= t_audit('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input type="password" id="purgePassword" class="form-control"
-                               placeholder="<?= t_audit('export_password_ph', $translations, $lang) ?>">
-                        <span class="input-group-text bg-white" style="cursor:pointer;"
-                              onclick="togglePasswordVisibility('purgePassword', 'purgeEyeIcon')">
-                            <i class="bi bi-eye-slash" id="purgeEyeIcon"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?= t_audit('btn_cancel', $translations, $lang) ?></button>
-                <button type="button" class="btn btn-danger px-4" id="purgeVerifyBtn">
-                    <span id="purgeBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
-                    <i class="bi bi-trash3-fill me-1" id="purgeBtnIcon"></i> <?= t_audit('btn_verify_purge', $translations, $lang) ?>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade" id="logModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="modalTitle">Activity Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <label class="text-uppercase small fw-bold text-muted d-block"><?= t_audit('modal_log_performed', $translations, $lang) ?></label>
-                        <span id="modalUser" class="fw-bold text-primary"></span>
-                    </div>
-                    <div class="col-6 text-end">
-                        <label class="text-uppercase small fw-bold text-muted d-block"><?= t_audit('modal_log_ip', $translations, $lang) ?></label>
-                        <span id="modalIP" class="text-dark font-monospace small"></span>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="modalTitle">Activity Details</h5>
+                        <div class="header-subtitle">Full record of this audit log entry</div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label class="text-uppercase small fw-bold text-muted d-block"><?= t_audit('modal_log_timestamp', $translations, $lang) ?></label>
-                    <span id="modalTime" class="text-dark"></span>
-                </div>
-                <div class="mb-3 p-2 bg-light border rounded">
-                    <label class="text-uppercase small fw-bold text-muted d-block" style="font-size: 0.65rem;"><?= t_audit('modal_log_device', $translations, $lang) ?></label>
-                    <span id="modalAgentDisplay" class="fw-bold d-block"></span>
-                    <span id="modalAgentRaw" class="text-muted small italic" style="font-size: 0.7rem;"></span>
-                </div>
-                <hr>
-                <div class="mb-0">
-                    <label class="text-uppercase small fw-bold text-muted d-block mb-2"><?= t_audit('modal_log_changes', $translations, $lang) ?></label>
-                    <div id="modalDetails" class="p-3 bg-dark text-light border rounded small italic" style="white-space: pre-wrap; font-family: monospace;"></div>
-                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal"><?= t_audit('btn_close', $translations, $lang) ?></button>
+            <div class="modal-body">
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-person-vcard"></i> Activity Overview</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_audit('modal_log_performed', $translations, $lang) ?></label>
+                            <span id="modalUser" class="field-value fw-bold text-primary d-block"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label"><?= t_audit('modal_log_ip', $translations, $lang) ?></label>
+                            <span id="modalIP" class="field-value font-monospace d-block"></span>
+                        </div>
+                        <div class="col-12">
+                            <label class="field-label"><?= t_audit('modal_log_timestamp', $translations, $lang) ?></label>
+                            <span id="modalTime" class="field-value d-block"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-display"></i> <?= t_audit('modal_log_device', $translations, $lang) ?></div>
+                    <div class="device-box">
+                        <span id="modalAgentDisplay" class="fw-bold d-block mb-1"></span>
+                        <span id="modalAgentRaw" class="text-muted small" style="font-size: 0.72rem;"></span>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-label"><i class="bi bi-file-diff"></i> <?= t_audit('modal_log_changes', $translations, $lang) ?></div>
+                    <div id="modalDetails" class="changes-box"></div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"><?= t_audit('btn_close', $translations, $lang) ?></button>
             </div>
         </div>
     </div>
@@ -722,56 +1012,67 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header text-white" style="background-color:#1a5c2b;">
-                <h5 class="modal-title" id="exportVerifyModalLabel">
-                    <i class="bi bi-shield-lock-fill me-2"></i><?= t_audit('export_modal_title', $translations, $lang) ?>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
-                    <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
-                    <span><?= t_audit('export_warning', $translations, $lang) ?></span>
-                </div>
-
-                <div id="exportVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold"><?= t_audit('export_purpose_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <select id="exportReason" class="form-select">
-                        <option value=""><?= t_audit('export_purpose_ph', $translations, $lang) ?></option>
-                        <option value="Reporting">Reporting</option>
-                        <option value="Auditing">Auditing</option>
-                        <option value="Archiving">Archiving</option>
-                        <option value="Compliance Review">Compliance Review</option>
-                        <option value="Data Backup">Data Backup</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label small fw-bold"><?= t_audit('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input type="password" id="exportPassword" class="form-control"
-                               placeholder="<?= t_audit('export_password_ph', $translations, $lang) ?>">
-                        <span class="input-group-text bg-white" style="cursor:pointer;"
-                              onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
-                            <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
-                        </span>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="exportVerifyModalLabel"><?= t_audit('export_modal_title', $translations, $lang) ?></h5>
+                        <div class="modal-header-subtitle" id="exportVerifySubtitle">Verify your identity to download this export</div>
                     </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-footer border-0 pt-0">
+            <div class="modal-body">
+
+                <div class="form-section">
+                    <div class="form-section-title" id="exportVerifySectionTitle"><i class="bi bi-file-earmark-arrow-down" id="exportVerifySectionIcon"></i> Export Details</div>
+
+                    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                        <span id="exportWarningText"><?= t_audit('export_warning', $translations, $lang) ?></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label"><?= t_audit('export_purpose_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                            <select id="exportReason" class="form-select">
+                                <option value=""><?= t_audit('export_purpose_ph', $translations, $lang) ?></option>
+                                <option value="Reporting">Reporting</option>
+                                <option value="Auditing">Auditing</option>
+                                <option value="Archiving">Archiving</option>
+                                <option value="Compliance Review">Compliance Review</option>
+                                <option value="Data Backup">Data Backup</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label"><?= t_audit('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" id="exportPassword" class="form-control"
+                                       placeholder="<?= t_audit('export_password_ph', $translations, $lang) ?>">
+                                <span class="input-group-text bg-white" style="cursor:pointer;"
+                                      onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
+                                    <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0">
                 <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?= t_audit('btn_cancel', $translations, $lang) ?></button>
-                <button type="button" class="btn text-white px-4" id="exportVerifyBtn"
-                        style="background-color:#1a5c2b;">
+                <button type="button" class="btn btn-primary px-4" id="exportVerifyBtn">
                     <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
-                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?= t_audit('btn_verify_download', $translations, $lang) ?>
+                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <span id="exportBtnLabel"><?= t_audit('btn_verify_download', $translations, $lang) ?></span>
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
 // ── Translations passed from PHP ──────────────────────────────────────────────
@@ -780,15 +1081,197 @@ const AUDIT_T = <?php echo json_encode([
     'export_enter_password' => t_audit('js_export_enter_password', $translations, $lang),
     'export_success'        => t_audit('js_export_success',        $translations, $lang),
     'export_network_error'  => t_audit('js_export_network_error',  $translations, $lang),
-    'purge_enter_password'  => t_audit('js_purge_enter_password',  $translations, $lang),
-    'purge_success'         => t_audit('js_purge_success',         $translations, $lang),
-    'network_error'         => t_audit('js_network_error',         $translations, $lang),
     'no_changes'            => t_audit('modal_log_no_changes',     $translations, $lang),
+    'export_warning'        => t_audit('export_warning',           $translations, $lang),
+    'btn_verify_download'   => t_audit('btn_verify_download',      $translations, $lang),
+    'btn_verify_print'      => t_audit('btn_verify_print',         $translations, $lang),
+    'print_subtitle'        => t_audit('js_print_subtitle',        $translations, $lang),
+    'print_warning'         => t_audit('js_print_warning',         $translations, $lang),
+    'print_success'         => t_audit('js_print_success',         $translations, $lang),
 ]); ?>;
+
+const CURRENT_FILE = window.location.pathname.split('/').pop() || 'audit-logs.php';
+
+// ===== LIVE SEARCH LOGIC (mirrors admin/users.php) =====
+(function () {
+    const searchInput    = document.getElementById('searchInput');
+    const dateFromFilter = document.getElementById('dateFromFilter');
+    const dateToFilter   = document.getElementById('dateToFilter');
+    const searchSpinner  = document.getElementById('searchSpinner');
+    const tbody          = document.getElementById('auditTableBody');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationNav  = document.getElementById('paginationNav');
+    const filterForm     = document.getElementById('auditFilterForm');
+
+    let debounceTimer = null;
+    let currentPage   = 1;
+    let requestSeq    = 0; // guards against out-of-order responses
+
+    function esc(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function buildUrl(page) {
+        const params = new URLSearchParams();
+        params.set('ajax', 'search_logs');
+        params.set('action', searchInput.value.trim());
+        params.set('date_from', dateFromFilter.value);
+        params.set('date_to', dateToFilter.value);
+        params.set('p', page);
+        return `${CURRENT_FILE}?${params.toString()}`;
+    }
+
+    function severityBadge(severity, labels) {
+        const config = {
+            critical: { cls: 'bg-danger text-white',  icon: 'bi-exclamation-octagon', label: labels.severity_critical },
+            warning:  { cls: 'bg-warning text-dark',   icon: 'bi-exclamation-triangle', label: labels.severity_warning },
+            info:     { cls: 'bg-info text-white',     icon: 'bi-info-circle',          label: labels.severity_info }
+        };
+        const c = config[severity] || config.info;
+        return `<span class="badge ${c.cls} border-0 shadow-sm px-2 py-1"><i class="bi ${c.icon} me-1"></i>${esc(c.label)}</span>`;
+    }
+
+    function rowHtml(log, labels) {
+        const refCell = log.entity_type
+            ? `${esc(log.entity_type)} <span class="text-secondary fw-bold">#${esc(log.entity_id)}</span>`
+            : `<span class="text-muted opacity-50">-</span>`;
+
+        return `<tr onclick="showLogDetails(this)"
+            data-user="${esc(log.user)}"
+            data-action="${esc(log.action)}"
+            data-time="${esc(log.time)}"
+            data-details="${esc(log.details)}"
+            data-ip="${esc(log.ip)}"
+            data-agent="${esc(log.agent)}">
+            <td class="ps-4">${severityBadge(log.severity, labels)}</td>
+            <td class="small text-secondary">${esc(log.time)}</td>
+            <td><div class="fw-bold text-primary small">${esc(log.user)}</div></td>
+            <td><span class="badge bg-light text-dark border fw-normal px-2 py-1">${esc(log.action)}</span></td>
+            <td class="small font-monospace text-muted">${esc(log.ip)}</td>
+            <td class="small text-muted">${refCell}</td>
+        </tr>`;
+    }
+
+    function renderPagination(data) {
+        const { page, totalPages, labels } = data;
+        const items = [];
+        const item = (label, targetPage, disabled, active) => `
+            <li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${targetPage}">${label}</a>
+            </li>`;
+
+        items.push(item('<i class="bi bi-chevron-double-left"></i>', 1, page <= 1, false));
+        items.push(item(esc(labels.prev), page - 1, page <= 1, false));
+        const start = Math.max(1, page - 2);
+        const end = Math.min(totalPages, page + 2);
+        for (let i = start; i <= end; i++) {
+            items.push(item(i, i, false, page === i));
+        }
+        items.push(item(esc(labels.next), page + 1, page >= totalPages, false));
+        items.push(item('<i class="bi bi-chevron-double-right"></i>', totalPages, page >= totalPages, false));
+
+        paginationNav.innerHTML = items.join('');
+        paginationNav.querySelectorAll('a.page-link').forEach(a => {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                const p = parseInt(this.dataset.page, 10);
+                if (!isNaN(p) && p >= 1) doSearch(p);
+            });
+        });
+    }
+
+    function renderInfo(data) {
+        const { totalLogs, offset, limit, labels } = data;
+        const from = totalLogs > 0 ? offset + 1 : 0;
+        const to = Math.min(offset + limit, totalLogs);
+        paginationInfo.innerHTML = `${esc(labels.showing)} <strong>${from}</strong> ${esc(labels.to)}
+            <strong>${to}</strong> ${esc(labels.of)}
+            <strong>${totalLogs}</strong> ${esc(labels.entries)}`;
+    }
+
+    function doSearch(page) {
+        currentPage = page || 1;
+        const seq = ++requestSeq;
+        searchSpinner.style.display = 'inline-block';
+
+        fetch(buildUrl(currentPage))
+            .then(res => res.json())
+            .then(data => {
+                if (seq !== requestSeq) return; // stale response, ignore
+                if (!data.success) return;
+
+                if (!data.rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted small italic">${esc(data.labels.no_records)}</td></tr>`;
+                } else {
+                    tbody.innerHTML = data.rows.map(log => rowHtml(log, data.labels)).join('');
+                }
+                renderInfo(data);
+                renderPagination(data);
+
+                // Reflect state in the URL for shareable/bookmarkable links, without reloading
+                const qp = new URLSearchParams();
+                if (searchInput.value.trim()) qp.set('action', searchInput.value.trim());
+                if (dateFromFilter.value) qp.set('date_from', dateFromFilter.value);
+                if (dateToFilter.value) qp.set('date_to', dateToFilter.value);
+                if (currentPage > 1) qp.set('p', currentPage);
+                const newUrl = window.location.pathname + (qp.toString() ? '?' + qp.toString() : '');
+                history.replaceState(null, '', newUrl);
+            })
+            .catch(() => { /* silently ignore network hiccups */ })
+            .finally(() => { searchSpinner.style.display = 'none'; });
+    }
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => doSearch(1), 350);
+    });
+
+    // Date range picker — single clickable field showing "from - to" (mirrors applications.php)
+    const dateRangeInput = document.getElementById('auditDateRangeInput');
+    const clearDateBtn   = document.getElementById('auditClearDateRange');
+
+    if (dateRangeInput && window.flatpickr) {
+        const initialDates = [];
+        if (dateFromFilter.value) initialDates.push(dateFromFilter.value);
+        if (dateToFilter.value)   initialDates.push(dateToFilter.value);
+
+        const dateRangePicker = flatpickr(dateRangeInput, {
+            mode: 'range',
+            dateFormat: 'M j, Y',
+            defaultDate: initialDates.length ? initialDates : undefined,
+            onClose: function (selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    dateFromFilter.value = instance.formatDate(selectedDates[0], 'Y-m-d');
+                    dateToFilter.value   = instance.formatDate(selectedDates[1], 'Y-m-d');
+                    clearDateBtn.classList.remove('d-none');
+                    clearTimeout(debounceTimer);
+                    doSearch(1);
+                }
+            }
+        });
+
+        clearDateBtn.addEventListener('click', function () {
+            dateRangePicker.clear();
+            dateFromFilter.value = '';
+            dateToFilter.value   = '';
+            clearDateBtn.classList.add('d-none');
+            clearTimeout(debounceTimer);
+            doSearch(1);
+        });
+    }
+
+    // "Apply Filters" button still works, just without a full page reload
+    filterForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        doSearch(1);
+    });
+})();
 
 // ===== EXPORT VERIFICATION LOGIC =====
 const _exportModalEl = document.getElementById('exportVerifyModal');
-const _purgeModalEl  = document.getElementById('purgeVerifyModal');
 let _exportType = '', _exportTable = '', _exportUrl = '';
 
 /* ---- shared helper ---- */
@@ -825,75 +1308,56 @@ function _showToast(msg, type) {
     bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 }).show();
 }
 
-/* ---- shared inline alert (for server responses inside modal) ---- */
-function _showAlert(alertId, msg, type) {
-    var el = _elmt(alertId);
-    if (!el) return;
-    el.style.display = 'none';
-    el.innerHTML = '';
-    void el.offsetHeight; // force reflow
-    el.className = 'alert alert-' + type + ' small py-2 mb-3';
-    el.innerText = msg;
-    el.style.display = 'block';
-}
-
-function _hideAlert(alertId) {
-    var el = _elmt(alertId);
-    if (!el) return;
-    el.style.display = 'none';
-    el.className = 'alert small py-2 mb-3';
-    el.innerText = '';
-}
-
 /* ---- export: reset modal ---- */
 function _resetExportModal() {
     _elmt('exportPassword').value    = '';
     _elmt('exportPassword').type     = 'password';
     _elmt('exportReason').value      = '';
+    _elmt('exportPassword').classList.remove('is-invalid');
+    _elmt('exportReason').classList.remove('is-invalid');
     _elmt('exportEyeIcon').className = 'bi bi-eye-slash';
     _elmt('exportVerifyBtn').disabled = false;
     _elmt('exportBtnSpinner').classList.add('d-none');
     _elmt('exportBtnIcon').classList.remove('d-none');
-    _hideAlert('exportVerifyAlert');
 }
 
-/* ---- purge: reset modal ---- */
-function _resetPurgeModal() {
-    _elmt('purgePassword').value      = '';
-    _elmt('purgePassword').type       = 'password';
-    _elmt('purgeYearsSelect').value   = '2';
-    _elmt('purgeEyeIcon').className   = 'bi bi-eye-slash';
-    _elmt('purgeVerifyBtn').disabled  = false;
-    _elmt('purgeBtnSpinner').classList.add('d-none');
-    _elmt('purgeBtnIcon').classList.remove('d-none');
-    _hideAlert('purgeVerifyAlert');
-}
+_elmt('exportReason').addEventListener('change', function () {
+    if (this.value) this.classList.remove('is-invalid');
+});
+_elmt('exportPassword').addEventListener('input', function () {
+    if (this.value.trim()) this.classList.remove('is-invalid');
+});
 
 /* ---- export: open modal ---- */
 function openExportModal(type, table, downloadUrl) {
     _exportType  = type.toUpperCase();
     _exportTable = table;
-    _exportUrl   = new URL(downloadUrl, window.location.href).href;
-    _resetExportModal();
-    bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
-}
+    _exportUrl   = downloadUrl ? new URL(downloadUrl, window.location.href).href : null;
 
-/* ---- purge: open modal ---- */
-function openPurgeModal() {
-    _resetPurgeModal();
-    bootstrap.Modal.getOrCreateInstance(_purgeModalEl).show();
+    _resetExportModal();
+
+    var isPrint = _exportType === 'PRINT';
+    _elmt('exportVerifySubtitle').textContent = isPrint
+        ? AUDIT_T.print_subtitle
+        : 'Verify your identity to download this export';
+    _elmt('exportVerifySectionTitle').innerHTML =
+        '<i class="bi ' + (isPrint ? 'bi-printer' : 'bi-file-earmark-arrow-down') + '" id="exportVerifySectionIcon"></i> ' +
+        (isPrint ? 'Print Details' : 'Export Details');
+    _elmt('exportWarningText').textContent = isPrint
+        ? AUDIT_T.print_warning
+        : AUDIT_T.export_warning;
+    _elmt('exportBtnLabel').textContent = isPrint
+        ? AUDIT_T.btn_verify_print
+        : AUDIT_T.btn_verify_download;
+    _elmt('exportBtnIcon').className = isPrint ? 'bi bi-printer me-1' : 'bi bi-download me-1';
+
+    bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
 }
 
 /* ---- clean up on close ---- */
 _exportModalEl.addEventListener('hide.bs.modal', function () {
     var f = _exportModalEl.querySelector(':focus'); if (f) f.blur();
 });
-_exportModalEl.addEventListener('hidden.bs.modal', function () { _hideAlert('exportVerifyAlert'); });
-
-_purgeModalEl.addEventListener('hide.bs.modal', function () {
-    var f = _purgeModalEl.querySelector(':focus'); if (f) f.blur();
-});
-_purgeModalEl.addEventListener('hidden.bs.modal', function () { _hideAlert('purgeVerifyAlert'); });
 
 /* ---- export: loading state ---- */
 function _setExportBtnLoading(on) {
@@ -902,29 +1366,38 @@ function _setExportBtnLoading(on) {
     _elmt('exportBtnIcon').classList.toggle('d-none', on);
 }
 
-/* ---- purge: loading state ---- */
-function _setPurgeBtnLoading(on) {
-    _elmt('purgeVerifyBtn').disabled = on;
-    _elmt('purgeBtnSpinner').classList.toggle('d-none', !on);
-    _elmt('purgeBtnIcon').classList.toggle('d-none', on);
-}
-
 /* ---- export: submit ---- */
 function submitExportVerification() {
-    var password = _elmt('exportPassword').value.trim();
-    var reason   = _elmt('exportReason').value;
+    var password    = _elmt('exportPassword').value.trim();
+    var reason      = _elmt('exportReason').value;
+    var reasonEl    = _elmt('exportReason');
+    var passwordEl  = _elmt('exportPassword');
+    var missing     = false;
+
+    reasonEl.classList.remove('is-invalid');
+    passwordEl.classList.remove('is-invalid');
 
     if (!reason) {
-        _showToast(AUDIT_T.export_select_reason, 'warning');
-        return;
+        reasonEl.classList.add('is-invalid');
+        missing = true;
     }
     if (!password) {
-        _showToast(AUDIT_T.export_enter_password, 'warning');
+        passwordEl.classList.add('is-invalid');
+        missing = true;
+    }
+
+    if (missing) {
+        if (!reason && !password) {
+            _showToast('Please select a purpose and enter your password to continue.', 'warning');
+        } else if (!reason) {
+            _showToast(AUDIT_T.export_select_reason, 'warning');
+        } else {
+            _showToast(AUDIT_T.export_enter_password, 'warning');
+        }
         return;
     }
 
     _setExportBtnLoading(true);
-    _hideAlert('exportVerifyAlert');
 
     var basePath   = window.location.pathname.replace(/\/[^/]+$/, '/');
     var verifyPath = basePath + 'verify_action.php';
@@ -939,10 +1412,21 @@ function submitExportVerification() {
         .then(function(data) {
             if (!data.success) {
                 _setExportBtnLoading(false);
-                _showAlert('exportVerifyAlert', data.message || AUDIT_T.export_select_reason, 'danger');
+                _showToast(data.message || AUDIT_T.export_select_reason, 'danger');
                 return;
             }
-            _showAlert('exportVerifyAlert', AUDIT_T.export_success, 'success');
+
+            if (_exportType === 'PRINT') {
+                _showToast(AUDIT_T.print_success, 'success');
+                setTimeout(function() {
+                    _setExportBtnLoading(false);
+                    bootstrap.Modal.getOrCreateInstance(_exportModalEl).hide();
+                    setTimeout(function() { window.print(); }, 300);
+                }, 800);
+                return;
+            }
+
+            _showToast(AUDIT_T.export_success, 'success');
             var sep         = _exportUrl.includes('?') ? '&' : '?';
             var downloadUrl = _exportUrl + sep + 'export_token=' + encodeURIComponent(data.token);
             var iframe = document.createElement('iframe');
@@ -957,54 +1441,11 @@ function submitExportVerification() {
         })
         .catch(function() {
             _setExportBtnLoading(false);
-            _showAlert('exportVerifyAlert', AUDIT_T.export_network_error, 'danger');
-        });
-}
-
-/* ---- purge: submit ---- */
-function submitPurgeVerification() {
-    var password = _elmt('purgePassword').value.trim();
-    var years    = _elmt('purgeYearsSelect').value;
-
-    if (!password) {
-        _showToast(AUDIT_T.purge_enter_password, 'warning');
-        return;
-    }
-
-    _setPurgeBtnLoading(true);
-    _hideAlert('purgeVerifyAlert');
-
-    var basePath   = window.location.pathname.replace(/\/[^/]+$/, '/');
-    var verifyPath = basePath + 'verify_action.php';
-    var fd = new FormData();
-    fd.append('password',    password);
-    fd.append('reason',      'Purge audit_logs older than ' + years + ' year(s)');
-    fd.append('export_type', 'PURGE');
-    fd.append('table_name',  'audit_logs');
-
-    fetch(verifyPath, { method: 'POST', body: fd, credentials: 'same-origin' })
-        .then(function(res) { if (!res.ok) throw new Error('Server error: ' + res.status); return res.json(); })
-        .then(function(data) {
-            if (!data.success) {
-                _setPurgeBtnLoading(false);
-                _showAlert('purgeVerifyAlert', data.message || AUDIT_T.purge_enter_password, 'danger');
-                return;
-            }
-            _showAlert('purgeVerifyAlert', AUDIT_T.purge_success, 'success');
-            _elmt('purgeYearsHidden').value = years;
-            setTimeout(function() {
-                bootstrap.Modal.getOrCreateInstance(_purgeModalEl).hide();
-                _elmt('purgeForm').submit();
-            }, 1200);
-        })
-        .catch(function() {
-            _setPurgeBtnLoading(false);
-            _showAlert('purgeVerifyAlert', AUDIT_T.network_error, 'danger');
+            _showToast(AUDIT_T.export_network_error, 'danger');
         });
 }
 
 _elmt('exportVerifyBtn').onclick = submitExportVerification;
-_elmt('purgeVerifyBtn').onclick  = submitPurgeVerification;
 // ===== END VERIFICATION LOGIC =====
 
 

@@ -73,7 +73,6 @@ $translations = [
         'analysis_placeholder'  => 'Select a point on the map to analyze zoning.',
         'overlay_title'         => 'Zoning Overlay',
         'overlay_show_all'      => 'Show All Zoning Types',
-        'overlay_boundary'      => 'Boundary Lines',
         'map_card_title'        => 'GEOSPATIAL INTERFACE',
         'map_card_badge'        => 'Active GIS Node',
         'compliance_title'      => 'Spatial Zoning Compliance',
@@ -111,7 +110,6 @@ $translations = [
         'analysis_placeholder'  => 'Pumili ng punto sa mapa para suriin ang zoning.',
         'overlay_title'         => 'Zoning Overlay',
         'overlay_show_all'      => 'Ipakita ang Lahat ng Uri ng Zoning',
-        'overlay_boundary'      => 'Mga Hangganan',
         'map_card_title'        => 'GEOSPATIAL INTERFACE',
         'map_card_badge'        => 'Aktibong GIS Node',
         'compliance_title'      => 'Spatial na Pagsunod sa Zoning',
@@ -154,8 +152,57 @@ include __DIR__ . '/../admin/header.php';
     .section-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #5c6bc0; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
     .form-control-lgu { border: 1px solid #ced4da; border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; background-color: var(--bg-light); }
     .form-control-lgu:focus { background-color: #fff; border-color: var(--lgu-blue); box-shadow: none; }
-    .btn-lgu-search { background: var(--lgu-blue); color: white; font-weight: 600; border: none; padding: 10px; transition: 0.3s; }
-    .btn-lgu-search:hover { background: #0d1442; color: #fff; }
+    .btn-lgu-search {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        color: white;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-lgu-search:hover,
+    .btn-lgu-search:focus,
+    .btn-lgu-search:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
+    }
+
+    /* Compliance confirm/send button — gradient variants (matches applications.php / view.php gradient style) */
+    .btn-compliant-gradient {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-compliant-gradient:hover,
+    .btn-compliant-gradient:focus,
+    .btn-compliant-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-noncompliant-gradient {
+        background: linear-gradient(135deg, #a52834 0%, #dc3545 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-noncompliant-gradient:hover,
+    .btn-noncompliant-gradient:focus,
+    .btn-noncompliant-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+    }
     .analysis-inner { background: var(--bg-light); border-radius: 10px; border-left: 4px solid #4e73df; padding: 15px; }
     .table-analysis td { padding: 8px 0; font-size: 0.85rem; border-bottom: 1px solid #eef0f7; }
     .table-analysis tr:last-child td { border-bottom: none; }
@@ -181,7 +228,7 @@ include __DIR__ . '/../admin/header.php';
 
     .lgu-layer-popup {
         position: absolute;
-        bottom: 52px;
+        top: 52px;
         right: 0;
         background: #fff;
         border-radius: 12px;
@@ -189,7 +236,7 @@ include __DIR__ . '/../admin/header.php';
         border: 1px solid rgba(26,35,126,0.09);
         overflow: hidden;
         min-width: 170px;
-        transform-origin: bottom right;
+        transform-origin: top right;
         transform: scale(0.85);
         opacity: 0;
         pointer-events: none;
@@ -533,12 +580,6 @@ include __DIR__ . '/../admin/header.php';
                         </select>
                     </div>
                     <div class="form-check form-switch overlay-item d-flex align-items-center justify-content-between p-2 mb-1 rounded hover-bg">
-                        <label class="form-check-label small fw-bold text-muted mb-0 cursor-pointer" for="toggleParcels">
-                            <?php echo t_map('overlay_boundary', $translations, $lang); ?>
-                        </label>
-                        <input class="form-check-input cursor-pointer" type="checkbox" id="toggleParcels" checked>
-                    </div>
-                    <div class="form-check form-switch overlay-item d-flex align-items-center justify-content-between p-2 mb-1 rounded hover-bg">
                         <label class="form-check-label small fw-bold text-muted mb-0 cursor-pointer" for="toggleQCBoundary">
                             <i class="bi bi-geo-alt me-1" style="color:#1a237e;"></i>
                             <?php echo ($lang === 'fil') ? 'Hangganan ng Quezon City' : 'QC City Boundary'; ?>
@@ -696,7 +737,7 @@ function getZoneDetails($code) {
 
     // ── COLLAPSIBLE LAYER PICKER (Google Maps style) ────────────────────────
     const LGULayerPicker = L.Control.extend({
-        options: { position: 'bottomright' },
+        options: { position: 'topright' },
         onAdd: function () {
             const layers = [
                 { key: 'road',      label: 'Road',      icon: 'bi-map',      layer: tileRoad      },
@@ -1066,12 +1107,6 @@ function getZoneDetails($code) {
         fillOpacity: 0.05         // Very subtle fill — just a tint inside the boundary
     }).addTo(map);
 
-    qcBoundaryLayer.bindTooltip('Quezon City Boundary', {
-        permanent: false,
-        direction: 'center',
-        className: 'fw-bold'
-    });
-
     // Main Parcel Layer with Dynamic Zoning Colors
     var parcelLayer = L.geoJSON(null, {
         style: function(feature) {
@@ -1179,7 +1214,7 @@ function checkSpatialCompliance(lat, lng, clickedFeature) {
                     <input type="hidden" name="zoning_type" value="${zoneName}">
                     <input type="hidden" name="parcel_id" value="${parcelDatabaseId}"> 
                     <input type="hidden" name="technical_analysis" value="${analysisText}">
-                    <button type="submit" class="btn ${isCompliant === 'compliant' ? 'btn-success' : 'btn-danger'} fw-bold px-4 shadow-sm">
+                    <button type="submit" class="btn ${isCompliant === 'compliant' ? 'btn-compliant-gradient' : 'btn-noncompliant-gradient'} fw-bold px-4 shadow-sm">
                         ${LANG.confirmSend}
                     </button>
                 </form>`;

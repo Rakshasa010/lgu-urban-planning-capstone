@@ -14,6 +14,29 @@ $auth->requirePermission('manage_users');
 $auth->requireRole(['admin', 'super_admin']);
 $userController = new UserController();
 
+$db     = Database::getInstance();
+$dbConn = $db->getConnection();
+
+// ── Audit log helper (mirrors modules/PermitProcessing/view.php) ────────────
+function logAudit(PDO $pdo, int $userId, string $action, string $entityType, int $entityId, string $details): void {
+    try {
+        $pdo->prepare(
+            "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
+        )->execute([
+            $userId,
+            $action,
+            $entityType,
+            $entityId,
+            $details,
+            $_SERVER['REMOTE_ADDR']  ?? '0.0.0.0',
+            $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
+        ]);
+    } catch (Exception $e) {
+        // Silent fail — auditing should never block the main action
+    }
+}
+
 // ── Load language from session (written by settings.php on every save) ────────
 $lang = $_SESSION['locale_language'] ?? 'en_PH';
 
@@ -25,6 +48,8 @@ $translations = [
         'page_subtitle'         => 'Manage accounts and verify applicant identities.',
         // Action buttons
         'btn_export_csv'        => 'Export CSV',
+        'btn_print'             => 'Print',
+        'btn_verify_print'      => 'Verify & Print',
         'btn_create_user'       => 'Create User',
         'btn_apply_filter'      => 'Apply Filter',
         'btn_edit'              => 'Edit',
@@ -115,6 +140,8 @@ $translations = [
         'page_subtitle'         => 'Pamahalaan ang mga account at i-verify ang pagkakakilanlan ng mga aplikante.',
         // Action buttons
         'btn_export_csv'        => 'I-export ang CSV',
+        'btn_print'             => 'I-print',
+        'btn_verify_print'      => 'I-verify at I-print',
         'btn_create_user'       => 'Lumikha ng Gumagamit',
         'btn_apply_filter'      => 'Ilapat ang Filter',
         'btn_edit'              => 'I-edit',
@@ -264,6 +291,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         ]);
     }
     fclose($output);
+
+    logAudit($dbConn, (int)($_SESSION['user_id'] ?? 0), 'export_users', 'user', 0,
+        'Exported Users CSV.');
     exit;
 }
 
@@ -483,6 +513,211 @@ include __DIR__ . '/header.php';
     #fullImagePreview { max-width: 100%; height: auto; border-radius: 4px; }
     .online-dot { height: 10px; width: 10px; background-color: #198754; border-radius: 50%; display: inline-block; margin-right: 5px; border: 2px solid var(--bs-body-bg); box-shadow: 0 0 0 1px #198754; }
     .offline-dot { height: 10px; width: 10px; background-color: #adb5bd; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+    /* ── Gradient action buttons (matches applications.php / view.php / map.php style) ── */
+    .btn-export-gradient {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-export-gradient:hover,
+    .btn-export-gradient:focus,
+    .btn-export-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-simulate-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-simulate-gradient:hover,
+    .btn-simulate-gradient:focus,
+    .btn-simulate-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
+    }
+
+    /* ================================================
+       EXPORT CSV MODAL — modern / professional redesign
+       (mirrors #exportVerifyModal in applications/view.php)
+       ================================================ */
+    #exportVerifyModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #exportVerifyModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #exportVerifyModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #exportVerifyModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #exportVerifyModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #exportVerifyModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #exportVerifyModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #exportVerifyModal .form-section:last-child { margin-bottom: 0; }
+
+    #exportVerifyModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #exportVerifyModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #exportVerifyModal .modal-body .form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+    }
+
+    #exportVerifyModal .modal-body .form-control,
+    #exportVerifyModal .modal-body .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #exportVerifyModal .modal-body .form-control:focus,
+    #exportVerifyModal .modal-body .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #exportVerifyModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+
+    #exportVerifyModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #exportVerifyModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #exportVerifyModal .modal-footer .btn-primary {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #exportVerifyModal .modal-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+    }
+    #exportVerifyModal .modal-footer .btn-light {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #exportVerifyModal .modal-footer .btn-light:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+        color: #5a6474;
+    }
+
+    #exportVerifyModal .modal-body .form-control.is-invalid,
+    #exportVerifyModal .modal-body .form-select.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    #exportVerifyModal .modal-body .form-control.is-invalid:focus,
+    #exportVerifyModal .modal-body .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+    #exportVerifyModal .modal-body .input-group:has(.form-control.is-invalid) .input-group-text {
+        border-color: #dc3545;
+    }
+
+    /* ── Filter form — modern field styling (matches scheduleModal / exportVerifyModal style) ── */
+    #userFilterForm .form-control,
+    #userFilterForm .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #userFilterForm .form-control:focus,
+    #userFilterForm .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #userFilterForm .form-control::placeholder { color: #a7b0bd; }
+    #userFilterForm .btn-filter-reset {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+        border-radius: 9px;
+        transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    #userFilterForm .btn-filter-reset:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+        color: #5a6474;
+    }
     .pagination .page-link { color: #2c3e50; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
     .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
     .pagination .page-link:hover { background-color: #e7f1ff; border-color: #b6d4fe; color: #0d6efd; }
@@ -682,6 +917,13 @@ include __DIR__ . '/header.php';
         #logsModal .table th, #logsModal .table td { padding: 0.28rem 0.25rem; }
         #logsModal .row.g-2 .col-6 { font-size: 0.65rem; }
     }
+
+    /* ── Print styles (User Management "Print" button) ── */
+    @media print {
+        .d-print-none { display: none !important; }
+        .card, .shadow-sm { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+        body { background: #fff !important; }
+    }
 </style>
 
 <div class="p-4">
@@ -695,12 +937,16 @@ include __DIR__ . '/header.php';
             </h2>
             <p class="text-muted small mb-0"><?= t_users('page_subtitle', $translations, $lang) ?></p>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-success shadow-sm"
+        <div class="d-flex gap-2 d-print-none">
+            <button type="button" class="btn btn-export-gradient shadow-sm"
                 onclick="openExportModal('csv', 'users', '?export=csv&<?= http_build_query($filters) ?>')">
                 <i class="bi bi-download"></i> <?= t_users('btn_export_csv', $translations, $lang) ?>
             </button>
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <button type="button" class="btn btn-simulate-gradient shadow-sm"
+                onclick="openExportModal('print', 'users', null)">
+                <i class="bi bi-printer"></i> <?= t_users('btn_print', $translations, $lang) ?>
+            </button>
+            <button type="button" class="btn btn-simulate-gradient shadow-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
                 <i class="bi bi-person-plus"></i> <?= t_users('btn_create_user', $translations, $lang) ?>
             </button>
         </div>
@@ -709,7 +955,7 @@ include __DIR__ . '/header.php';
     <?php if ($error): ?><div class="alert alert-danger alert-dismissible fade show"><?= htmlspecialchars($error) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
     <?php if ($success): ?><div class="alert alert-success alert-dismissible fade show"><?= htmlspecialchars($success) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
     
-    <div class="card mb-3 border-0 shadow-sm">
+    <div class="card mb-3 border-0 shadow-sm d-print-none">
         <div class="card-body">
             <form method="GET" class="row g-3" id="userFilterForm" onsubmit="return false;">
                 <div class="col-md-5">
@@ -732,9 +978,9 @@ include __DIR__ . '/header.php';
                 </div>
                 <div class="col-md-5">
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary w-100"><?= t_users('btn_apply_filter', $translations, $lang) ?></button>
+                        <button type="submit" class="btn btn-simulate-gradient w-100"><?= t_users('btn_apply_filter', $translations, $lang) ?></button>
                         
-                        <a href="users.php" class="btn btn-outline-secondary px-3 shadow-sm d-flex align-items-center justify-content-center" title="Reset Filters">
+                        <a href="users.php" class="btn btn-filter-reset px-3 d-flex align-items-center justify-content-center" title="Reset Filters">
                             <i class="bi bi-arrow-clockwise"></i>
                         </a>
                     </div>
@@ -753,7 +999,7 @@ include __DIR__ . '/header.php';
                                 <th><?= t_users('th_role', $translations, $lang) ?></th>
                                 <th><?= t_users('th_system_status', $translations, $lang) ?></th>
                                 <th><?= t_users('th_id_verification', $translations, $lang) ?></th>
-                                <th class="text-center"><?= t_users('th_actions', $translations, $lang) ?></th>
+                                <th class="text-center d-print-none"><?= t_users('th_actions', $translations, $lang) ?></th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
@@ -794,7 +1040,7 @@ include __DIR__ . '/header.php';
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center d-print-none">
                                     <button type="button" class="btn btn-sm btn-outline-dark" onclick="viewLogs(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>')"><i class="bi bi-clock-history"></i></button>
                                     <button type="button" class="btn btn-sm btn-light border" onclick='editUser(<?= json_encode($user) ?>)'><i class="bi bi-pencil-square"></i> <?= t_users('btn_edit', $translations, $lang) ?></button>
                                     <?php if (!$user['is_active']): ?>
@@ -809,7 +1055,7 @@ include __DIR__ . '/header.php';
                     </table>
             </div>
         </div>
-        <div class="card-footer py-3 border-0">
+        <div class="card-footer py-3 border-0 d-print-none">
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
                     <span class="info-text text-muted" id="paginationInfo">
@@ -921,75 +1167,448 @@ include __DIR__ . '/header.php';
 </div>
 
 <style>
-    #createUserModal .modal-content, #editUserModal .modal-content { border-radius: 18px; overflow: hidden; }
-    #createUserModal .modal-header, #editUserModal .modal-header { padding: 1.75rem 2rem 1.5rem; }
-    #createUserModal .modal-header h5, #editUserModal .modal-header h5 { font-size: 1.35rem; letter-spacing: 0.2px; }
-    #createUserModal .modal-header .header-subtitle, #editUserModal .modal-header .header-subtitle { font-size: 0.8rem; opacity: 0.85; font-weight: 400; margin-top: 2px; }
-    #createUserModal .modal-body, #editUserModal .modal-body { padding: 2rem; background: #fbfbfd; }
-    #createUserModal .form-section-label, #editUserModal .form-section-label {
-        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
-        color: #8891a5; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 8px;
+    /* ================================================
+       CREATE USER MODAL — restyled to match the
+       "Manual Add Application" form in applications.php
+       ================================================ */
+    #createUserModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
     }
-    #createUserModal .form-section-label::after, #editUserModal .form-section-label::after { content: ""; flex: 1; height: 1px; background: #e5e7ee; }
-    #createUserModal .form-section + .form-section, #editUserModal .form-section + .form-section { margin-top: 1.6rem; }
-    #createUserModal label.field-label, #editUserModal label.field-label { font-size: 0.78rem; font-weight: 600; color: #3a3f4b; margin-bottom: 0.35rem; display: block; }
-    #createUserModal .input-icon-group, #editUserModal .input-icon-group { position: relative; }
-    #createUserModal .input-icon-group > i.field-icon, #editUserModal .input-icon-group > i.field-icon {
-        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-        color: #9aa1b3; font-size: 0.9rem; pointer-events: none;
+    #createUserModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #createUserModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #createUserModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #createUserModal .header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+        opacity: 1;
+    }
+
+    #createUserModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #createUserModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #createUserModal .form-section:last-child { margin-bottom: 0; }
+    #createUserModal .form-section + .form-section { margin-top: 0; }
+
+    #createUserModal .form-section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #createUserModal .form-section-label::after { content: none; }
+    #createUserModal .form-section-label i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #createUserModal label.field-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+
+    #createUserModal .form-control,
+    #createUserModal .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #createUserModal .form-control:focus,
+    #createUserModal .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #createUserModal .form-control::placeholder { color: #a7b0bd; }
+    #createUserModal .form-control.is-invalid,
+    #createUserModal .form-select.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff;
+    }
+    #createUserModal .form-control.is-invalid:focus,
+    #createUserModal .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+
+    #createUserModal .input-icon-group { position: relative; }
+    #createUserModal .input-icon-group > i.field-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9aa1b3;
+        font-size: 0.9rem;
+        pointer-events: none;
     }
     #createUserModal .input-icon-group .form-control,
-    #createUserModal .input-icon-group .form-select,
+    #createUserModal .input-icon-group .form-select { padding-left: 40px; }
+
+    #createUserModal .input-group .input-group-text {
+        border: 1.5px solid #e2e6ec;
+        border-left: none;
+        border-radius: 0 9px 9px 0;
+        background: #fcfdfe;
+    }
+    #createUserModal .input-group .form-control { border-radius: 9px 0 0 9px; }
+
+    #createUserModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #createUserModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #createUserModal .modal-footer .btn-create-submit {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #createUserModal .modal-footer .btn-create-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+        color: #fff;
+    }
+    #createUserModal .modal-footer .btn-outline-secondary {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #createUserModal .modal-footer .btn-outline-secondary:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+    }
+
+    /* ================================================
+       EDIT USER MODAL — restyled to match applications.php
+       ================================================ */
+    #editUserModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    #editUserModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #editUserModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #editUserModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #editUserModal .header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+        opacity: 1;
+    }
+
+    #editUserModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #editUserModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #editUserModal .form-section:last-child { margin-bottom: 0; }
+    #editUserModal .form-section + .form-section { margin-top: 0; }
+
+    #editUserModal .form-section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #editUserModal .form-section-label::after { content: none; }
+    #editUserModal .form-section-label i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #editUserModal label.field-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+
+    #editUserModal .form-control,
+    #editUserModal .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #editUserModal .form-control:focus,
+    #editUserModal .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #editUserModal .form-control::placeholder { color: #a7b0bd; }
+    #editUserModal .form-control.is-invalid,
+    #editUserModal .form-select.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff;
+    }
+    #editUserModal .form-control.is-invalid:focus,
+    #editUserModal .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+
+    #editUserModal .input-icon-group { position: relative; }
+    #editUserModal .input-icon-group > i.field-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9aa1b3;
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
     #editUserModal .input-icon-group .form-control,
     #editUserModal .input-icon-group .form-select { padding-left: 40px; }
-    #createUserModal .form-control, #createUserModal .form-select,
-    #editUserModal .form-control, #editUserModal .form-select {
-        border-radius: 10px; border: 1px solid #e2e4ea; padding: 0.6rem 0.85rem; font-size: 0.9rem;
-        background: #fff; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    #editUserModal .input-group .input-group-text {
+        border: 1.5px solid #e2e6ec;
+        border-left: none;
+        border-radius: 0 9px 9px 0;
+        background: #fcfdfe;
     }
-    #createUserModal .form-control:focus, #createUserModal .form-select:focus,
-    #editUserModal .form-control:focus, #editUserModal .form-select:focus {
-        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12); border-color: #86b7fe;
+    #editUserModal .input-group .form-control { border-radius: 9px 0 0 9px; }
+
+    #editUserModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
     }
-    #createUserModal .input-group .input-group-text, #editUserModal .input-group .input-group-text {
-        border-radius: 0 10px 10px 0; border: 1px solid #e2e4ea; border-left: none; background: #fff;
+    #editUserModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
     }
-    #createUserModal .input-group .form-control, #editUserModal .input-group .form-control { border-radius: 10px 0 0 10px; }
-    #createUserModal .modal-footer, #editUserModal .modal-footer { padding: 1.25rem 2rem 1.75rem; background: #fbfbfd; gap: 0.6rem; }
-    #createUserModal .btn-create-submit, #editUserModal .btn-edit-submit {
-        border-radius: 10px; padding: 0.7rem 1rem; font-weight: 600; font-size: 0.92rem;
-        letter-spacing: 0.2px;
+    #editUserModal .btn-edit-submit {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #editUserModal .btn-edit-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+        color: #fff;
     }
     #editUserModal .btn-edit-cancel {
-        border-radius: 10px; padding: 0.7rem 1.1rem; font-weight: 600; font-size: 0.92rem;
-        letter-spacing: 0.2px; border: 1px solid #e2e4ea; color: #5a6072; background: #fff;
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
     }
-    #editUserModal .btn-edit-cancel:hover { background: #f4f5f8; }
+    #editUserModal .btn-edit-cancel:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+    }
 
-    /* ---- Edit User modal: compact sizing so it fits the viewport without scrolling ---- */
-    #editUserModal .modal-dialog { max-width: 640px; }
-    #editUserModal .modal-header { padding: 1.1rem 1.75rem 0.9rem; }
-    #editUserModal .modal-header h5 { font-size: 1.15rem; }
-    #editUserModal .modal-header .header-subtitle { font-size: 0.75rem; }
-    #editUserModal .modal-body { padding: 1.25rem 1.75rem; background: #fbfbfd; }
-    #editUserModal .form-section-label { font-size: 0.66rem; margin-bottom: 0.6rem; }
-    #editUserModal .form-section + .form-section { margin-top: 1rem; }
-    #editUserModal label.field-label { font-size: 0.74rem; margin-bottom: 0.25rem; }
-    #editUserModal .form-control, #editUserModal .form-select { padding: 0.5rem 0.75rem; font-size: 0.87rem; }
-    #editUserModal .input-icon-group .form-control, #editUserModal .input-icon-group .form-select { padding-left: 38px; }
-    #editUserModal .modal-footer { padding: 0.9rem 1.75rem 1.25rem; }
-    #editUserModal .row.g-3 { --bs-gutter-y: 0.75rem; }
+    /* ================================================
+       ACTIVITY LOGS MODAL — restyled to match applications.php
+       ================================================ */
+    #logsModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    #logsModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #logsModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #logsModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #logsModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+    #logsModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+    #logsModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #logsModal .form-section:last-child { margin-bottom: 0; }
+    #logsModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #logsModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+    #logsModal .stat-box {
+        background: #fcfdfe;
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    #logsModal .stat-box i {
+        font-size: 1.1rem;
+        color: #0d6efd;
+    }
+    #logsModal .stat-box .stat-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #8891a5;
+        margin-bottom: 1px;
+    }
+    #logsModal .stat-box .stat-value {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #2a2f3a;
+    }
+    #logsModal .table {
+        margin-bottom: 0;
+    }
+    #logsModal .table thead th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #8891a5;
+        font-weight: 700;
+        border-bottom: 1.5px solid #eaeef3;
+        background: #fcfdfe;
+    }
+    #logsModal .table td {
+        font-size: 0.85rem;
+        vertical-align: middle;
+        border-color: #f0f2f5;
+    }
 </style>
 
 <div class="modal fade" id="createUserModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white position-relative justify-content-center">
-                <div class="text-center">
-                    <h5 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i><?= t_users('modal_create_title', $translations, $lang) ?></h5>
-                    <div class="header-subtitle">Add a new staff or applicant account</div>
+        <form method="POST" id="createUserForm" class="modal-content border-0 shadow-lg" novalidate>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-person-plus-fill"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0"><?= t_users('modal_create_title', $translations, $lang) ?></h5>
+                        <div class="header-subtitle">Add a new staff or applicant account</div>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" name="action" value="create">
@@ -1055,7 +1674,8 @@ include __DIR__ . '/header.php';
                 </div>
             </div>
             <div class="modal-footer border-0">
-                <button type="submit" class="btn btn-primary w-100 shadow-sm btn-create-submit">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
+                <button type="submit" class="btn shadow-sm btn-create-submit px-4">
                     <i class="bi bi-check-circle me-1"></i> <?= t_users('btn_create_account', $translations, $lang) ?>
                 </button>
             </div>
@@ -1065,13 +1685,16 @@ include __DIR__ . '/header.php';
 
 <div class="modal fade" id="editUserModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white position-relative justify-content-center">
-                <div class="text-center">
-                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i><?= t_users('modal_edit_title', $translations, $lang) ?></h5>
-                    <div class="header-subtitle">Update account details and permissions</div>
+        <form method="POST" id="editUserForm" class="modal-content border-0 shadow-lg" novalidate>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-pencil-square"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0"><?= t_users('modal_edit_title', $translations, $lang) ?></h5>
+                        <div class="header-subtitle">Update account details and permissions</div>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" name="action" value="update"><input type="hidden" name="user_id" id="e_id">
@@ -1144,8 +1767,8 @@ include __DIR__ . '/header.php';
                 </div>
             </div>
             <div class="modal-footer border-0">
-                <button type="button" class="btn btn-edit-cancel" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
-                <button type="submit" class="btn btn-primary flex-fill shadow-sm btn-edit-submit">
+                <button type="button" class="btn btn-edit-cancel px-4" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
+                <button type="submit" class="btn shadow-sm btn-edit-submit px-4">
                     <i class="bi bi-check-circle me-1"></i> <?= t_users('btn_update_user', $translations, $lang) ?>
                 </button>
             </div>
@@ -1156,7 +1779,16 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="logsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white"><h5 class="modal-title"><?= t_users('modal_logs_title', $translations, $lang) ?>: <span id="log_user_name"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0"><?= t_users('modal_logs_title', $translations, $lang) ?>: <span id="log_user_name"></span></h5>
+                        <div class="modal-header-subtitle">Login history and submitted applications</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body" id="logs_content"></div>
         </div>
     </div>
@@ -1179,50 +1811,60 @@ include __DIR__ . '/header.php';
 <div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="exportVerifyModalLabel">
-                    <i class="bi bi-shield-lock-fill me-2"></i><?= t_users('export_modal_title', $translations, $lang) ?>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
-                    <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
-                    <span><?= t_users('export_warning', $translations, $lang) ?></span>
-                </div>
-
-                <div id="exportVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold"><?= t_users('export_purpose_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <select id="exportReason" class="form-select">
-                        <option value=""><?= t_users('export_purpose_ph', $translations, $lang) ?></option>
-                        <option value="Reporting">Reporting</option>
-                        <option value="Auditing">Auditing</option>
-                        <option value="Archiving">Archiving</option>
-                        <option value="Compliance Review">Compliance Review</option>
-                        <option value="Data Backup">Data Backup</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label small fw-bold"><?= t_users('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input type="password" id="exportPassword" class="form-control"
-                               placeholder="<?= t_users('export_password_ph', $translations, $lang) ?>">
-                        <span class="input-group-text bg-white" style="cursor:pointer;"
-                              onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
-                            <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
-                        </span>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="exportVerifyModalLabel"><?= t_users('export_modal_title', $translations, $lang) ?></h5>
+                        <div class="modal-header-subtitle" id="exportVerifySubtitle">Verify your identity to download this export</div>
                     </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-footer border-0 pt-0">
+            <div class="modal-body">
+
+                <div class="form-section">
+                    <div class="form-section-title" id="exportVerifySectionTitle"><i class="bi bi-file-earmark-arrow-down" id="exportVerifySectionIcon"></i> Export Details</div>
+
+                    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                        <span id="exportWarningText"><?= t_users('export_warning', $translations, $lang) ?></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label"><?= t_users('export_purpose_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                            <select id="exportReason" class="form-select">
+                                <option value=""><?= t_users('export_purpose_ph', $translations, $lang) ?></option>
+                                <option value="Reporting">Reporting</option>
+                                <option value="Auditing">Auditing</option>
+                                <option value="Archiving">Archiving</option>
+                                <option value="Compliance Review">Compliance Review</option>
+                                <option value="Data Backup">Data Backup</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label"><?= t_users('export_password_label', $translations, $lang) ?> <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" id="exportPassword" class="form-control"
+                                       placeholder="<?= t_users('export_password_ph', $translations, $lang) ?>">
+                                <span class="input-group-text bg-white" style="cursor:pointer;"
+                                      onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
+                                    <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0">
                 <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?= t_users('btn_cancel', $translations, $lang) ?></button>
                 <button type="button" class="btn btn-primary px-4" id="exportVerifyBtn">
                     <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
-                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?= t_users('btn_verify_download', $translations, $lang) ?>
+                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <span id="exportBtnLabel"><?= t_users('btn_verify_download', $translations, $lang) ?></span>
                 </button>
             </div>
         </div>
@@ -1302,7 +1944,7 @@ const CURRENT_FILE = window.location.pathname.split('/').pop() || 'users.php';
             <td><span class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;">${esc(u.role)}</span></td>
             <td><span class="badge px-3 ${statusClass}">${esc(statusLabel)}</span></td>
             <td>${idCell}</td>
-            <td class="text-center">
+            <td class="text-center d-print-none">
                 <button type="button" class="btn btn-sm btn-outline-dark" onclick="viewLogs(${u.id}, '${esc(u.first_name + ' ' + u.last_name)}')"><i class="bi bi-clock-history"></i></button>
                 <button type="button" class="btn btn-sm btn-light border" onclick='editUser(${JSON.stringify(userObj)})'><i class="bi bi-pencil-square"></i> ${esc(labels.edit)}</button>
                 ${activateBtn}
@@ -1404,41 +2046,20 @@ function _resetExportModal() {
     _elmt('exportPassword').value   = '';
     _elmt('exportPassword').type    = 'password';
     _elmt('exportReason').value     = '';
+    _elmt('exportPassword').classList.remove('is-invalid');
+    _elmt('exportReason').classList.remove('is-invalid');
     _elmt('exportEyeIcon').className = 'bi bi-eye-slash';
     _elmt('exportVerifyBtn').disabled = false;
     _elmt('exportBtnSpinner').classList.add('d-none');
     _elmt('exportBtnIcon').classList.remove('d-none');
-    _hideAlert();
 }
 
-function _getAlertEl() {
-    return document.getElementById('exportVerifyAlert');
-}
-
-function _hideAlert() {
-    var el = _getAlertEl();
-    if (!el) return;
-    el.style.display = 'none';
-    el.className = 'alert small py-2 mb-3';
-    el.innerText = '';
-}
-
-function _showAlert(msg, type) {
-    var el = _getAlertEl();
-    if (!el) return;
-
-    // FORCE RESET (important fix)
-    el.style.display = 'none';
-    el.innerHTML = '';
-
-    // Force reflow (trick para mag refresh DOM)
-    void el.offsetHeight;
-
-    // Apply new content
-    el.className = 'alert alert-' + type + ' small py-2 mb-3';
-    el.innerText = msg;
-    el.style.display = 'block';
-}
+_elmt('exportReason').addEventListener('change', function () {
+    if (this.value) this.classList.remove('is-invalid');
+});
+_elmt('exportPassword').addEventListener('input', function () {
+    if (this.value.trim()) this.classList.remove('is-invalid');
+});
 
 function _setBtnLoading(on) {
     _elmt('exportVerifyBtn').disabled = on;
@@ -1474,10 +2095,24 @@ function _showToast(msg, type) {
 function openExportModal(type, table, downloadUrl) {
     _exportType  = type.toUpperCase();
     _exportTable = table;
-    _exportUrl   = new URL(downloadUrl, window.location.href).href;
+    _exportUrl   = downloadUrl ? new URL(downloadUrl, window.location.href).href : null;
 
     _resetExportModal();
-    _hideAlert();        
+
+    var isPrint = _exportType === 'PRINT';
+    _elmt('exportVerifySubtitle').textContent = isPrint
+        ? 'Verify your identity to print these records'
+        : 'Verify your identity to download this export';
+    _elmt('exportVerifySectionTitle').innerHTML =
+        '<i class="bi ' + (isPrint ? 'bi-printer' : 'bi-file-earmark-arrow-down') + '" id="exportVerifySectionIcon"></i> ' +
+        (isPrint ? 'Print Details' : 'Export Details');
+    _elmt('exportWarningText').textContent = isPrint
+        ? 'You are about to print sensitive user records. Please confirm your identity to proceed.'
+        : <?= json_encode(t_users('export_warning', $translations, $lang)) ?>;
+    _elmt('exportBtnLabel').textContent = isPrint
+        ? <?= json_encode(t_users('btn_verify_print', $translations, $lang)) ?>
+        : <?= json_encode(t_users('btn_verify_download', $translations, $lang)) ?>;
+    _elmt('exportBtnIcon').className = isPrint ? 'bi bi-printer me-1' : 'bi bi-download me-1';
 
     bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
 }
@@ -1488,29 +2123,38 @@ _exportModalEl.addEventListener('hide.bs.modal', function () {
     if (focused) focused.blur();
 });
 
-_exportModalEl.addEventListener('hidden.bs.modal', function () {
-    _hideAlert();
-});
-
 /* ---- main submit ---- */
 function submitExportVerification() {
-    var password = _elmt('exportPassword').value.trim();
-    var reason   = _elmt('exportReason').value;
+    var password    = _elmt('exportPassword').value.trim();
+    var reason      = _elmt('exportReason').value;
+    var reasonEl    = _elmt('exportReason');
+    var passwordEl  = _elmt('exportPassword');
+    var missing     = false;
 
-    // Validate purpose
+    reasonEl.classList.remove('is-invalid');
+    passwordEl.classList.remove('is-invalid');
+
     if (!reason) {
-        _showToast('Please select a purpose for this export.', 'warning');
-        return;
+        reasonEl.classList.add('is-invalid');
+        missing = true;
+    }
+    if (!password) {
+        passwordEl.classList.add('is-invalid');
+        missing = true;
     }
 
-    // Validate password field not empty
-    if (!password) {
-        _showToast('Please enter your password to continue.', 'warning');
+    if (missing) {
+        if (!reason && !password) {
+            _showToast('Please select a purpose and enter your password to continue.', 'warning');
+        } else if (!reason) {
+            _showToast('Please select a purpose for this export.', 'warning');
+        } else {
+            _showToast('Please enter your password to continue.', 'warning');
+        }
         return;
     }
 
     _setBtnLoading(true);
-    _hideAlert();
 
     var fd = new FormData();
     fd.append('password',    password);
@@ -1527,12 +2171,22 @@ function submitExportVerification() {
             if (!data.success) {
                 // Wrong password or other server rejection
                 _setBtnLoading(false);
-                _showAlert(data.message || 'Incorrect password. Export denied.', 'danger');
+                _showToast(data.message || 'Incorrect password. Export denied.', 'danger');
+                return;
+            }
+
+            if (_exportType === 'PRINT') {
+                _showToast('Verification successful. Opening print dialog...', 'success');
+                setTimeout(function() {
+                    _setBtnLoading(false);
+                    bootstrap.Modal.getOrCreateInstance(_exportModalEl).hide();
+                    setTimeout(function() { window.print(); }, 300);
+                }, 800);
                 return;
             }
 
             // Password verified — trigger download directly via iframe
-            _showAlert('Verification successful. Starting download...', 'success');
+            _showToast('Verification successful. Starting download...', 'success');
             var sep         = _exportUrl.includes('?') ? '&' : '?';
             var downloadUrl = _exportUrl + sep + 'export_token=' + encodeURIComponent(data.token);
 
@@ -1549,7 +2203,7 @@ function submitExportVerification() {
         })
         .catch(function() {
             _setBtnLoading(false);
-            _showAlert('Network error. Please try again.', 'danger');
+            _showToast('Network error. Please try again.', 'danger');
         });
 }
 
@@ -1663,14 +2317,36 @@ function viewLogs(userId, userName) {
                 ).join('') || '<tr><td colspan="4" class="text-center">No applications.</td></tr>';
                 
                 content.innerHTML = `
-                    <div class="row g-2 mb-3">
-                        <div class="col-6"><div class="p-2 border rounded small">LOGIN: <b>${data.last_login}</b></div></div>
-                        <div class="col-6"><div class="p-2 border rounded small">APPS: <b>${data.app_count}</b></div></div>
+                    <div class="form-section">
+                        <div class="form-section-title"><i class="bi bi-graph-up"></i> Account Overview</div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="stat-box">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    <div>
+                                        <div class="stat-label">Last Login</div>
+                                        <div class="stat-value">${data.last_login}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-box">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    <div>
+                                        <div class="stat-label">Applications</div>
+                                        <div class="stat-value">${data.app_count}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm small border">
-                        <thead><tr><th>ID</th><th>Project</th><th>Status</th><th>Date</th></tr></thead>
-                        <tbody>${appRows}</tbody>
-                    </table></div>`;
+                    <div class="form-section">
+                        <div class="form-section-title"><i class="bi bi-list-check"></i> Submitted Applications</div>
+                        <div class="table-responsive"><table class="table table-sm">
+                            <thead><tr><th>ID</th><th>Project</th><th>Status</th><th>Date</th></tr></thead>
+                            <tbody>${appRows}</tbody>
+                        </table></div>
+                    </div>`;
             }
         });
 }
@@ -1687,6 +2363,50 @@ function checkStrength(password, barId) {
         bar.style.backgroundColor = s <= 50 ? "#dc3545" : (s <= 75 ? "#ffc107" : "#198754");
     }
 }
+
+// ===== TOAST-BASED FORM VALIDATION (Create / Edit User) =====
+// Replaces the native browser "Please fill out this field." tooltip with
+// the same toast notification used by the export flow, so feedback is
+// consistent across the page.
+function _validateRequiredFields(form) {
+    const fields = form.querySelectorAll('[required]');
+    let firstInvalid = null;
+
+    fields.forEach(function (field) {
+        const invalid = !field.value || !field.value.trim();
+        field.classList.toggle('is-invalid', invalid);
+        if (invalid && !firstInvalid) firstInvalid = field;
+    });
+
+    return firstInvalid;
+}
+
+function _wireToastValidation(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        const firstInvalid = _validateRequiredFields(form);
+        if (firstInvalid) {
+            e.preventDefault();
+            _showToast('Please fill out all required fields.', 'warning');
+            firstInvalid.focus();
+        }
+    });
+
+    // Clear the red state as soon as the user starts fixing that field
+    form.querySelectorAll('[required]').forEach(function (field) {
+        field.addEventListener('input', function () {
+            if (field.value && field.value.trim()) field.classList.remove('is-invalid');
+        });
+        field.addEventListener('change', function () {
+            if (field.value && field.value.trim()) field.classList.remove('is-invalid');
+        });
+    });
+}
+
+_wireToastValidation('createUserForm');
+_wireToastValidation('editUserForm');
 </script>
 
 <?php include __DIR__ . '/footer.php'; ?>

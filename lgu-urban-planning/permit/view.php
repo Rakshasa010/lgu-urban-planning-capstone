@@ -130,6 +130,7 @@ $_translations = [
         'impact_subtitle'       => 'Assessment data provided by Roads and Energy departments.',
         'btn_simulate'          => 'Request New Inspection',
         'btn_export_csv'        => 'Export CSV',
+        'btn_print'              => 'Print',
         'export_modal_title'    => 'Secure Export Verification',
         'export_warning'        => 'You are about to export sensitive assessment records. Please confirm your identity to proceed.',
         'export_purpose_label'  => 'Purpose of Export',
@@ -137,6 +138,7 @@ $_translations = [
         'export_password_label' => 'Admin Password',
         'export_password_ph'    => 'Re-enter your account password',
         'btn_verify_download'   => 'Verify & Download',
+        'btn_verify_print'      => 'Verify & Print',
         'btn_cancel'            => 'Cancel',
         'roads_title'           => 'Roads & Traffic',
         'roads_subtitle'        => 'Infrastructure Impact',
@@ -251,6 +253,7 @@ $_translations = [
         'impact_subtitle'       => 'Datos ng pagsusuri mula sa mga departamento ng Kalsada at Enerhiya.',
         'btn_simulate'          => 'Humiling ng Bagong Inspeksyon',
         'btn_export_csv'        => 'I-export ang CSV',
+        'btn_print'              => 'I-print',
         'export_modal_title'    => 'Secure na Pag-verify ng Export',
         'export_warning'        => 'Mag-e-export ka ng sensitibong datos ng pagsusuri. Mangyaring kumpirmahin ang iyong pagkakakilanlan upang magpatuloy.',
         'export_purpose_label'  => 'Layunin ng Export',
@@ -258,6 +261,7 @@ $_translations = [
         'export_password_label' => 'Password ng Admin',
         'export_password_ph'    => 'Muling ilagay ang iyong password',
         'btn_verify_download'   => 'I-verify at I-download',
+        'btn_verify_print'      => 'I-verify at I-print',
         'btn_cancel'            => 'Kanselahin',
         'roads_title'           => 'Kalsada at Trapiko',
         'roads_subtitle'        => 'Epekto sa Imprastraktura',
@@ -451,12 +455,14 @@ if ($_POST['action'] === 'assign_inspection' && $auth->hasRole(['admin', 'zoning
     }
 }
 
-// 2. ROADS: real IPMS integration. ENERGY/UTILITIES: still the old dummy
-//    simulation for now — swap that out next once Roads is confirmed working.
+// 2. ROADS: real IPMS integration. ENERGY/UTILITIES: real UMAN integration,
+//    same pattern as Roads — both now send out and wait for the webhook to
+//    fill in the real result instead of writing fake data immediately.
 if ($_POST['action'] === 'request_inspection') {
     $officerId = $_SESSION['user_id'] ?? 0;
 
     require_once __DIR__ . '/../ipms-integration/RoadsIntegrationService.php'; // ⚠️ adjust to wherever you place the ipms-integration folder
+    require_once __DIR__ . '/../uman-integration/UtilitiesIntegrationService.php'; // ⚠️ adjust to wherever you place the uman-integration folder
 
     try {
         $roadsService = new RoadsIntegrationService();
@@ -489,13 +495,32 @@ if ($_POST['action'] === 'request_inspection') {
         $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)")
                ->execute([$applicationId, $application['status'], "Road inspection requested from IPMS.", $officerId]);
 
-        // --- ENERGY/UTILITIES: still the old dummy simulation, unchanged for now ---
-        $energyNotes = "AUTOMATED SIMULATION: Grid capacity verified. Local transformer can handle the projected electrical load of the new development.";
-        $dbConn->prepare(
-            "INSERT INTO impact_assessments (application_id, energy_flag, energy_notes, checked_at)
-             VALUES (?, 'ok', ?, NOW())
-             ON DUPLICATE KEY UPDATE energy_flag = 'ok', energy_notes = ?, checked_at = NOW()"
-        )->execute([$applicationId, $energyNotes, $energyNotes]);
+        // --- ENERGY/UTILITIES: real UMAN integration, mirroring Roads above ---
+        $utilitiesService = new UtilitiesIntegrationService();
+        $energyResult = $utilitiesService->requestInspection(
+            $applicationId,
+            [
+                'project_name' => $application['project_type']   ?? null,
+                'address'      => $application['street']         ?? null,
+                'barangay'     => $application['barangay']       ?? null,
+                'lat'          => $application['lat']            ?? null,
+                'lng'          => $application['lng']            ?? null,
+            ],
+            (int) $officerId
+        );
+
+        if ($energyResult['sent']) {
+            $success .= " Utilities inspection request sent to UMAN. Awaiting their response.";
+        } else {
+            // Still recorded locally as 'pending' even if UMAN couldn't be reached.
+            $error = trim(($error ?? '') . " Request saved, but could not reach UMAN: " . ($energyResult['error'] ?? 'unknown error'));
+        }
+
+        logAudit($dbConn, (int) $officerId, 'request_inspection', 'application', $applicationId,
+            "Utilities inspection request sent to UMAN (request_id: {$energyResult['request_id']}).");
+
+        $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)")
+               ->execute([$applicationId, $application['status'], "Utilities inspection requested from UMAN.", $officerId]);
 
         // Refresh so the UI reflects the latest state immediately
         $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ? ORDER BY checked_at DESC LIMIT 1", [$applicationId]);
@@ -916,6 +941,189 @@ include __DIR__ . '/../admin/header.php';
 ?>
 
 <style>
+    /* ── Gradient action buttons (matches applications.php style; used in Technical Assessment & Actions/Zoning tabs) ── */
+    .btn-export-gradient {
+        background: linear-gradient(135deg, #0f7a4e 0%, #17a566 100%);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(23, 165, 102, 0.32);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-export-gradient:hover,
+    .btn-export-gradient:focus,
+    .btn-export-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(23, 165, 102, 0.4);
+    }
+    .btn-simulate-gradient {
+        background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 3px 8px rgba(28, 78, 158, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    }
+    .btn-simulate-gradient:hover,
+    .btn-simulate-gradient:focus,
+    .btn-simulate-gradient:active {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(28, 78, 158, 0.4);
+    }
+
+    /* ================================================
+       EXPORT CSV MODAL (Technical Assessment) — modern / professional redesign
+       (mirrors #scheduleModal in applications/index.php)
+       ================================================ */
+    #exportVerifyModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #exportVerifyModal .modal-header {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #exportVerifyModal .modal-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.16);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    #exportVerifyModal .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    #exportVerifyModal .modal-header-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 1px;
+    }
+
+    #exportVerifyModal .modal-body {
+        background: #f6f8fb;
+        padding: 1.75rem;
+    }
+
+    #exportVerifyModal .form-section {
+        background: #ffffff;
+        border: 1px solid #eaeef3;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    #exportVerifyModal .form-section:last-child { margin-bottom: 0; }
+
+    #exportVerifyModal .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #1c4e9e;
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    #exportVerifyModal .form-section-title i {
+        font-size: 0.95rem;
+        color: #0d6efd;
+    }
+
+    #exportVerifyModal .modal-body .form-label {
+        font-weight: 600;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: #5a6474;
+        margin-bottom: 0.4rem;
+    }
+
+    #exportVerifyModal .modal-body .form-control,
+    #exportVerifyModal .modal-body .form-select {
+        border: 1.5px solid #e2e6ec;
+        border-radius: 9px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        background-color: #fcfdfe;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    #exportVerifyModal .modal-body .form-control:focus,
+    #exportVerifyModal .modal-body .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        background-color: #ffffff;
+    }
+    #exportVerifyModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+
+    #exportVerifyModal .modal-footer {
+        background: #ffffff;
+        border-top: 1px solid #eef0f3;
+        padding: 1.1rem 1.5rem;
+        gap: 0.6rem;
+    }
+    #exportVerifyModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.4rem;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #exportVerifyModal .modal-footer .btn-primary {
+        background: linear-gradient(135deg, #1c4e9e 0%, #0d6efd 100%);
+        border: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28);
+    }
+    #exportVerifyModal .modal-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35);
+    }
+    #exportVerifyModal .modal-footer .btn-light {
+        border: 1.5px solid #dde1e7;
+        color: #5a6474;
+        background: #fff;
+    }
+    #exportVerifyModal .modal-footer .btn-light:hover {
+        background: #f6f8fb;
+        border-color: #c7cdd6;
+        color: #5a6474;
+    }
+
+    #exportVerifyModal .modal-body .form-control.is-invalid,
+    #exportVerifyModal .modal-body .form-select.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    #exportVerifyModal .modal-body .form-control.is-invalid:focus,
+    #exportVerifyModal .modal-body .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+    }
+    #exportVerifyModal .modal-body .input-group:has(.form-control.is-invalid) .input-group-text {
+        border-color: #dc3545;
+    }
+
+    /* ── Print styles (Technical Assessment "Print" button) ── */
+    @media print {
+        #appTabs, .d-print-none { display: none !important; }
+        .tab-content { padding: 0 !important; }
+        .card, .shadow-sm { box-shadow: none !important; }
+        body { background: #fff !important; }
+    }
+
     /* ── BASE ── */
     .border-dashed {
         border-style: dashed !important;
@@ -1406,15 +1614,19 @@ include __DIR__ . '/../admin/header.php';
             <h6 class="fw-bold mb-0"><?php echo htmlspecialchars($_t('impact_heading')); ?></h6>
             <small class="text-muted"><?php echo htmlspecialchars($_t('impact_subtitle')); ?></small>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-success btn-sm px-3 shadow-sm"
+        <div class="d-flex gap-2 d-print-none">
+            <button type="button" class="btn btn-export-gradient btn-sm px-3 shadow-sm"
                 onclick="openExportModal('csv', 'technical_assessment', '?id=<?php echo (int)$applicationId; ?>&export=csv')">
                 <i class="bi bi-download me-1"></i> <?php echo htmlspecialchars($_t('btn_export_csv')); ?>
+            </button>
+            <button type="button" class="btn btn-simulate-gradient btn-sm px-3 shadow-sm d-print-none"
+                onclick="openExportModal('print', 'technical_assessment', null)">
+                <i class="bi bi-printer me-1"></i> <?php echo htmlspecialchars($_t('btn_print')); ?>
             </button>
             <?php if ($_SESSION['role'] !== 'inspector' && $_SESSION['role'] !== 'zoning_officer' && $_SESSION['role'] !== 'assessor'): ?>
                 <form method="POST" class="m-0">
                     <input type="hidden" name="action" value="request_inspection">
-                    <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                    <button type="submit" class="btn btn-simulate-gradient btn-sm px-3 shadow-sm">
                         <i class="bi bi-megaphone-fill me-1"></i> <?php echo htmlspecialchars($_t('btn_simulate')); ?>
                     </button>
                 </form>
@@ -1688,7 +1900,7 @@ include __DIR__ . '/../admin/header.php';
                                 <!-- ── END PREREQUISITE CHECKLIST ── -->
 
                                 <div class="d-grid">
-                                    <button type="submit" id="confirmWorkflowBtn" class="btn btn-primary shadow">
+                                    <button type="submit" id="confirmWorkflowBtn" class="btn btn-simulate-gradient shadow">
                                         <i class="bi bi-save me-2"></i> <?php echo htmlspecialchars($_t('btn_confirm_workflow')); ?>
                                     </button>
                                 </div>
@@ -1783,7 +1995,7 @@ include __DIR__ . '/../admin/header.php';
                                 </div>
                                 <a href="/lgu-urban-planning/modules/PermitProcessing/generate_permit_pdf.php?id=<?php echo $applicationId; ?>"
                                    target="_blank"
-                                   class="btn btn-success w-100 shadow-sm">
+                                   class="btn btn-export-gradient w-100 shadow-sm">
                                     <i class="bi bi-download me-2"></i> <?php echo htmlspecialchars($_t('btn_download_permit')); ?>
                                 </a>
                             </div>
@@ -1801,7 +2013,7 @@ include __DIR__ . '/../admin/header.php';
                                     $status = strtolower($zoningCheck['compliance_status']);
                                     if ($status === 'compliant') {
                                         $containerClass = 'bg-success-subtle border-success';
-                                    } elseif ($status === 'non-compliant') {
+                                    } else {
                                         $containerClass = 'bg-danger-subtle border-danger';
                                     }
                                 }
@@ -1810,7 +2022,7 @@ include __DIR__ . '/../admin/header.php';
                             <div class="p-3 border rounded-4 shadow-sm mb-1 <?php echo $containerClass; ?>">                                
                                 <div class="text-center mb-3">
                                     <a href="/lgu-urban-planning/gis/map.php?app_id=<?php echo $applicationId; ?>&lat=<?php echo $application['latitude']; ?>&lng=<?php echo $application['longitude']; ?>&brgy=<?php echo urlencode($application['barangay']); ?>&street=<?php echo urlencode($application['street']); ?>&block=<?php echo urlencode($application['block']); ?>&lot=<?php echo urlencode($application['lot_number']); ?>" 
-                                    class="btn btn-primary shadow-sm w-100 py-2">
+                                    class="btn btn-simulate-gradient shadow-sm w-100 py-2">
                                         <i class="bi bi-map-fill me-2"></i> 
                                         <?php echo ($zoningCheck) ? htmlspecialchars($_t('btn_reverify')) : htmlspecialchars($_t('btn_verify')); ?>
                                     </a>
@@ -1905,7 +2117,7 @@ include __DIR__ . '/../admin/header.php';
                                     </div>
                                 </div>
                                 <div class="d-grid">
-                                    <button type="button" class="btn btn-primary shadow" disabled>
+                                    <button type="button" class="btn btn-simulate-gradient shadow" disabled>
                                         <i class="bi bi-save me-2"></i> <?php echo htmlspecialchars($_t('btn_confirm_workflow')); ?>
                                     </button>
                                 </div>
@@ -1926,14 +2138,14 @@ include __DIR__ . '/../admin/header.php';
                                     $status = strtolower($zoningCheck['compliance_status']);
                                     if ($status === 'compliant') {
                                         $containerClass = 'bg-success-subtle border-success';
-                                    } elseif ($status === 'non-compliant') {
+                                    } else {
                                         $containerClass = 'bg-danger-subtle border-danger';
                                     }
                                 }
                             ?>
                             <div class="p-3 border rounded-4 shadow-sm mb-1 <?php echo $containerClass; ?>">
                                 <div class="text-center mb-3" style="pointer-events:none; opacity:0.65;">
-                                    <button type="button" class="btn btn-primary shadow-sm w-100 py-2" disabled>
+                                    <button type="button" class="btn btn-simulate-gradient shadow-sm w-100 py-2" disabled>
                                         <i class="bi bi-map-fill me-2"></i>
                                         <?php echo ($zoningCheck) ? htmlspecialchars($_t('btn_reverify')) : htmlspecialchars($_t('btn_verify')); ?>
                                     </button>
@@ -2153,50 +2365,60 @@ document.addEventListener("DOMContentLoaded", function() {
 <div class="modal fade" id="exportVerifyModal" tabindex="-1" aria-labelledby="exportVerifyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="exportVerifyModalLabel">
-                    <i class="bi bi-shield-lock-fill me-2"></i><?php echo htmlspecialchars($_t('export_modal_title')); ?>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
-                    <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
-                    <span><?php echo htmlspecialchars($_t('export_warning')); ?></span>
-                </div>
-
-                <div id="exportVerifyAlert" class="alert small py-2 mb-3" style="display:none;"></div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold"><?php echo htmlspecialchars($_t('export_purpose_label')); ?> <span class="text-danger">*</span></label>
-                    <select id="exportReason" class="form-select">
-                        <option value=""><?php echo htmlspecialchars($_t('export_purpose_ph')); ?></option>
-                        <option value="Reporting">Reporting</option>
-                        <option value="Auditing">Auditing</option>
-                        <option value="Archiving">Archiving</option>
-                        <option value="Compliance Review">Compliance Review</option>
-                        <option value="Data Backup">Data Backup</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label small fw-bold"><?php echo htmlspecialchars($_t('export_password_label')); ?> <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input type="password" id="exportPassword" class="form-control"
-                               placeholder="<?php echo htmlspecialchars($_t('export_password_ph')); ?>">
-                        <span class="input-group-text bg-white" style="cursor:pointer;"
-                              onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
-                            <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
-                        </span>
+            <div class="modal-header text-white">
+                <div class="d-flex align-items-center">
+                    <span class="modal-header-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                    <div>
+                        <h5 class="modal-title mb-0" id="exportVerifyModalLabel"><?php echo htmlspecialchars($_t('export_modal_title')); ?></h5>
+                        <div class="modal-header-subtitle" id="exportVerifySubtitle">Verify your identity to download this export</div>
                     </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-footer border-0 pt-0">
+            <div class="modal-body">
+
+                <div class="form-section">
+                    <div class="form-section-title" id="exportVerifySectionTitle"><i class="bi bi-file-earmark-arrow-down" id="exportVerifySectionIcon"></i> Export Details</div>
+
+                    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                        <span id="exportWarningText"><?php echo htmlspecialchars($_t('export_warning')); ?></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label"><?php echo htmlspecialchars($_t('export_purpose_label')); ?> <span class="text-danger">*</span></label>
+                            <select id="exportReason" class="form-select">
+                                <option value=""><?php echo htmlspecialchars($_t('export_purpose_ph')); ?></option>
+                                <option value="Reporting">Reporting</option>
+                                <option value="Auditing">Auditing</option>
+                                <option value="Archiving">Archiving</option>
+                                <option value="Compliance Review">Compliance Review</option>
+                                <option value="Data Backup">Data Backup</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label"><?php echo htmlspecialchars($_t('export_password_label')); ?> <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" id="exportPassword" class="form-control"
+                                       placeholder="<?php echo htmlspecialchars($_t('export_password_ph')); ?>">
+                                <span class="input-group-text bg-white" style="cursor:pointer;"
+                                      onclick="togglePasswordVisibility('exportPassword', 'exportEyeIcon')">
+                                    <i class="bi bi-eye-slash" id="exportEyeIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0">
                 <button type="button" class="btn btn-light border" data-bs-dismiss="modal"><?php echo htmlspecialchars($_t('btn_cancel')); ?></button>
                 <button type="button" class="btn btn-primary px-4" id="exportVerifyBtn">
                     <span id="exportBtnSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
-                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <?php echo htmlspecialchars($_t('btn_verify_download')); ?>
+                    <i class="bi bi-download me-1" id="exportBtnIcon"></i> <span id="exportBtnLabel"><?php echo htmlspecialchars($_t('btn_verify_download')); ?></span>
                 </button>
             </div>
         </div>
@@ -2217,35 +2439,21 @@ function _resetExportModal() {
     _elmt('exportPassword').value   = '';
     _elmt('exportPassword').type    = 'password';
     _elmt('exportReason').value     = '';
+    _elmt('exportPassword').classList.remove('is-invalid');
+    _elmt('exportReason').classList.remove('is-invalid');
     _elmt('exportEyeIcon').className = 'bi bi-eye-slash';
     _elmt('exportVerifyBtn').disabled = false;
     _elmt('exportBtnSpinner').classList.add('d-none');
     _elmt('exportBtnIcon').classList.remove('d-none');
-    _hideAlert();
 }
 
-function _getAlertEl() {
-    return document.getElementById('exportVerifyAlert');
-}
+_elmt('exportReason').addEventListener('change', function () {
+    if (this.value) this.classList.remove('is-invalid');
+});
+_elmt('exportPassword').addEventListener('input', function () {
+    if (this.value.trim()) this.classList.remove('is-invalid');
+});
 
-function _hideAlert() {
-    var el = _getAlertEl();
-    if (!el) return;
-    el.style.display = 'none';
-    el.className = 'alert small py-2 mb-3';
-    el.innerText = '';
-}
-
-function _showAlert(msg, type) {
-    var el = _getAlertEl();
-    if (!el) return;
-    el.style.display = 'none';
-    el.innerHTML = '';
-    void el.offsetHeight;
-    el.className = 'alert alert-' + type + ' small py-2 mb-3';
-    el.innerText = msg;
-    el.style.display = 'block';
-}
 
 function _setBtnLoading(on) {
     _elmt('exportVerifyBtn').disabled = on;
@@ -2277,10 +2485,24 @@ function _showToast(msg, type) {
 function openExportModal(type, table, downloadUrl) {
     _exportType  = type.toUpperCase();
     _exportTable = table;
-    _exportUrl   = new URL(downloadUrl, window.location.href).href;
+    _exportUrl   = downloadUrl ? new URL(downloadUrl, window.location.href).href : null;
 
     _resetExportModal();
-    _hideAlert();
+
+    var isPrint = _exportType === 'PRINT';
+    _elmt('exportVerifySubtitle').textContent = isPrint
+        ? 'Verify your identity to print these records'
+        : 'Verify your identity to download this export';
+    _elmt('exportVerifySectionTitle').innerHTML =
+        '<i class="bi ' + (isPrint ? 'bi-printer' : 'bi-file-earmark-arrow-down') + '" id="exportVerifySectionIcon"></i> ' +
+        (isPrint ? 'Print Details' : 'Export Details');
+    _elmt('exportWarningText').textContent = isPrint
+        ? 'You are about to print sensitive assessment records. Please confirm your identity to proceed.'
+        : <?php echo json_encode($_t('export_warning')); ?>;
+    _elmt('exportBtnLabel').textContent = isPrint
+        ? <?php echo json_encode($_t('btn_verify_print')); ?>
+        : <?php echo json_encode($_t('btn_verify_download')); ?>;
+    _elmt('exportBtnIcon').className = isPrint ? 'bi bi-printer me-1' : 'bi bi-download me-1';
 
     bootstrap.Modal.getOrCreateInstance(_exportModalEl).show();
 }
@@ -2290,26 +2512,37 @@ _exportModalEl.addEventListener('hide.bs.modal', function () {
     if (focused) focused.blur();
 });
 
-_exportModalEl.addEventListener('hidden.bs.modal', function () {
-    _hideAlert();
-});
-
 function submitExportVerification() {
-    var password = _elmt('exportPassword').value.trim();
-    var reason   = _elmt('exportReason').value;
+    var password    = _elmt('exportPassword').value.trim();
+    var reason      = _elmt('exportReason').value;
+    var reasonEl    = _elmt('exportReason');
+    var passwordEl  = _elmt('exportPassword');
+    var missing     = false;
+
+    reasonEl.classList.remove('is-invalid');
+    passwordEl.classList.remove('is-invalid');
 
     if (!reason) {
-        _showToast('Please select a purpose for this export.', 'warning');
-        return;
+        reasonEl.classList.add('is-invalid');
+        missing = true;
+    }
+    if (!password) {
+        passwordEl.classList.add('is-invalid');
+        missing = true;
     }
 
-    if (!password) {
-        _showToast('Please enter your password to continue.', 'warning');
+    if (missing) {
+        if (!reason && !password) {
+            _showToast('Please select a purpose and enter your password to continue.', 'warning');
+        } else if (!reason) {
+            _showToast('Please select a purpose for this export.', 'warning');
+        } else {
+            _showToast('Please enter your password to continue.', 'warning');
+        }
         return;
     }
 
     _setBtnLoading(true);
-    _hideAlert();
 
     var fd = new FormData();
     fd.append('password',    password);
@@ -2325,11 +2558,21 @@ function submitExportVerification() {
         .then(function(data) {
             if (!data.success) {
                 _setBtnLoading(false);
-                _showAlert(data.message || 'Incorrect password. Export denied.', 'danger');
+                _showToast(data.message || 'Incorrect password. Export denied.', 'danger');
                 return;
             }
 
-            _showAlert('Verification successful. Starting download...', 'success');
+            if (_exportType === 'PRINT') {
+                _showToast('Verification successful. Opening print dialog...', 'success');
+                setTimeout(function() {
+                    _setBtnLoading(false);
+                    bootstrap.Modal.getOrCreateInstance(_exportModalEl).hide();
+                    setTimeout(function() { window.print(); }, 300);
+                }, 800);
+                return;
+            }
+
+            _showToast('Verification successful. Starting download...', 'success');
             var sep         = _exportUrl.includes('?') ? '&' : '?';
             var downloadUrl = _exportUrl + sep + 'export_token=' + encodeURIComponent(data.token);
 
@@ -2346,7 +2589,7 @@ function submitExportVerification() {
         })
         .catch(function() {
             _setBtnLoading(false);
-            _showAlert('Network error. Please try again.', 'danger');
+            _showToast('Network error. Please try again.', 'danger');
         });
 }
 

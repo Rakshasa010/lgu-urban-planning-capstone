@@ -70,6 +70,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'resend') {
         </div>";
 
         $mail->send();
+        $_SESSION['otp_expiry_ts'] = strtotime($new_expiry);
         header("Location: login.php?otp=1&resend=success");
     } catch (Exception $e) {
         header("Location: login.php?otp=1&resend=error");
@@ -93,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if ($auth->login($tempUser, $tempPass)) {
                     $dbInstance->query("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?", [$user['id']]);
-                    unset($_SESSION['temp_login_user'], $_SESSION['temp_login_pass']);
+                    unset($_SESSION['temp_login_user'], $_SESSION['temp_login_pass'], $_SESSION['otp_expiry_ts']);
                     session_regenerate_id(true);
                     $_SESSION['show_preloader'] = true;
                     $auth->redirectToDashboard();
@@ -175,6 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>";
 
                 $mail->send();
+                $_SESSION['otp_expiry_ts'] = strtotime($expiry);
             } catch (Exception $e) {
                 $error = "Could not send OTP. Mailer Error: {$mail->ErrorInfo}";
                 $showOtpForm = false;
@@ -684,23 +686,16 @@ include __DIR__ . '/auth/header.php';
                 (function () {
                     const btn   = document.getElementById('resendBtn');
                     const timer = document.getElementById('resendTimer');
-                    const KEY   = 'otp_resend_start';
-                    const WAIT  = 60; // seconds
 
-                    // On a fresh resend redirect, reset the stored start time
-                    const params = new URLSearchParams(window.location.search);
-                    if (params.get('resend') === 'success') {
-                        sessionStorage.setItem(KEY, Date.now().toString());
-                    }
-
-                    // If no stored start yet (first OTP send), set it now
-                    if (!sessionStorage.getItem(KEY)) {
-                        sessionStorage.setItem(KEY, Date.now().toString());
-                    }
+                    // Server tells us exactly when the OTP that's currently
+                    // active actually expires (set the moment it was mailed,
+                    // whether that was the initial send or a resend). This
+                    // means the countdown is always in sync with reality and
+                    // resets correctly on every fresh OTP, not just once.
+                    const expiryTs = <?php echo isset($_SESSION['otp_expiry_ts']) ? (int)$_SESSION['otp_expiry_ts'] * 1000 : 'Date.now()'; ?>;
 
                     function tick() {
-                        const elapsed = Math.floor((Date.now() - parseInt(sessionStorage.getItem(KEY))) / 1000);
-                        const remaining = WAIT - elapsed;
+                        const remaining = Math.ceil((expiryTs - Date.now()) / 1000);
 
                         if (remaining <= 0) {
                             timer.textContent = '';

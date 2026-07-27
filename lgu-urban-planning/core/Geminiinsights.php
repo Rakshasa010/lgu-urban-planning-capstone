@@ -1,43 +1,17 @@
 <?php
 
-/**
- * OllamaInsights
- * --------------
- * Same purpose as AIInsights.php (turns aggregated report data into a
- * short narrative), but calls a locally self-hosted Ollama model instead
- * of the Anthropic API. No API key, no per-call cost — just the compute
- * on your own server.
- *
- * Setup on your server:
- *   curl -fsSL https://ollama.com/install.sh | sh
- *   ollama pull llama3.2
- *
- * Usage (identical to AIInsights):
- *   require_once __DIR__ . '/../core/OllamaInsights.php';
- *   $aiInsights = new OllamaInsights();
- *   $aiNarrative = $aiInsights->generate($chartData, $inspectorWorkload, $selectedYear ?? date('Y'));
- *
- * Swap between this and AIInsights.php by changing one line in index.php —
- * both classes expose the same generate() method.
- */
-class OllamaInsights
-{
-    private string $ollamaUrl;
-    private string $model;
-    private string $cacheDir;
-    private int $cacheTtlSeconds = 3600;
-    private int $timeoutSeconds;
 
-    public function __construct(
-        string $ollamaUrl = 'http://localhost:11434/api/chat',
-        string $model = 'llama3.2',
-        ?string $cacheDir = null,
-        int $timeoutSeconds = 60 // local models on CPU can be slow — give it room
-    ) {
-        $this->ollamaUrl = $ollamaUrl;
-        $this->model = $model;
+class Geminiinsights
+{
+    private string $apiKey;
+    private string $model = 'gemini-flash-latest';
+    private string $cacheDir;
+    private int $cacheTtlSeconds = 3600; // 1 hour
+
+    public function __construct(?string $apiKey = null, ?string $cacheDir = null)
+    {
+        $this->apiKey = $apiKey ?? (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
         $this->cacheDir = $cacheDir ?? (__DIR__ . '/../cache/ai_insights');
-        $this->timeoutSeconds = $timeoutSeconds;
 
         if (!is_dir($this->cacheDir)) {
             @mkdir($this->cacheDir, 0775, true);
@@ -46,7 +20,11 @@ class OllamaInsights
 
     public function generate(array $chartData, array $inspectorWorkload, int $year): string
     {
-        $cacheKey = md5('ollama_' . $this->model . json_encode([$chartData, $inspectorWorkload, $year]));
+        if (empty($this->apiKey)) {
+            return ''; // No key configured — caller should skip rendering the card
+        }
+
+        $cacheKey = md5('gemini_' . json_encode([$chartData, $inspectorWorkload, $year]));
         $cacheFile = $this->cacheDir . '/' . $cacheKey . '.json';
 
         $cached = $this->readCache($cacheFile);
@@ -54,8 +32,8 @@ class OllamaInsights
             return $cached;
         }
 
-        $summary = $this->summarizeForPrompt($chartData, $inspectorWorkload, $year);
-        $narrative = $this->callOllama($summary);
+        $facts = $this->buildFacts($chartData, $inspectorWorkload, $year);
+        $narrative = $this->callGemini($facts);
 
         if ($narrative !== '') {
             $this->writeCache($cacheFile, $narrative);
@@ -72,15 +50,17 @@ class OllamaInsights
     }
 
     // ----------------------------------------------------------------
-    // Internal
+    // Internal — fact precomputation identical in approach to
+    // OllamaInsights.php: PHP does all arithmetic, the model only phrases
+    // already-correct facts into sentences. Keeps hallucinated numbers out
+    // regardless of which model is behind the API.
     // ----------------------------------------------------------------
 
-    private function summarizeForPrompt(array $chartData, array $inspectorWorkload, int $year): string
+    private function buildFacts(array $chartData, array $inspectorWorkload, int $year): string
     {
         $facts = [];
         $facts[] = "Report year: {$year}";
 
-        // --- Status counts (PHP-verified, model must not alter these) ---
         $status = $chartData['status'] ?? ['Approved' => 0, 'Rejected' => 0, 'Pending' => 0];
         $totalApps = array_sum($status);
         $facts[] = "FACT: Total applications in {$year} = {$totalApps}";
@@ -88,7 +68,6 @@ class OllamaInsights
         $facts[] = "FACT: Rejected = {$status['Rejected']}";
         $facts[] = "FACT: Pending/Other (includes submitted, under review, etc.) = {$status['Pending']}";
 
-        // --- Year-over-year, computed here (not left for the model to subtract) ---
         $yoy = $chartData['yoy_comparison'] ?? ['current' => 0, 'previous' => 0];
         $prevYear = $year - 1;
         $delta = $yoy['current'] - $yoy['previous'];
@@ -102,7 +81,6 @@ class OllamaInsights
             $facts[] = "FACT: No year-over-year comparison is available.";
         }
 
-        // --- Busiest month, computed here (not a raw dump for the model to sum) ---
         $months = $chartData['months'] ?? [];
         $monthsWithData = array_filter($months, fn($c) => $c > 0);
         if (!empty($monthsWithData)) {
@@ -115,7 +93,6 @@ class OllamaInsights
             $facts[] = "FACT: No monthly application data recorded for {$year}.";
         }
 
-        // --- Barangays (already just a ranked list — safe as-is) ---
         $barangays = $chartData['barangays'] ?? [];
         if (!empty($barangays)) {
             $brgyLine = [];
@@ -125,7 +102,6 @@ class OllamaInsights
             $facts[] = "FACT: Top barangays by TOTAL application count, all statuses mixed together (NOT approved-only): " . implode(', ', $brgyLine);
         }
 
-        // --- Inspector workload ---
         if (!empty($inspectorWorkload)) {
             $counts = array_column($inspectorWorkload, 'total_inspections');
             $avg = count($counts) ? round(array_sum($counts) / count($counts), 1) : 0;
@@ -142,10 +118,8 @@ class OllamaInsights
         return implode("\n", $facts);
     }
 
-    private function callOllama(string $dataSummary): string
+    private function callGemini(string $factsBlock): string
     {
-        // Small local models follow short, explicit instructions much more
-        // reliably than long nuanced ones — keep the prompt tight.
         $prompt = <<<PROMPT
 Summarize this local government permit dashboard data for an admin.
 
@@ -177,27 +151,31 @@ Write exactly:
 - Keep it under 150 words. No headers, no markdown besides the bullets.
 
 FACTS:
-{$dataSummary}
+{$factsBlock}
 PROMPT;
 
         $payload = json_encode([
-            'model' => $this->model,
-            'messages' => [
-                ['role' => 'user', 'content' => $prompt],
+            'contents' => [
+                ['parts' => [['text' => $prompt]]],
             ],
-            'stream' => false,
-            'options' => [
-                'temperature' => 0.2, // lower = stricter adherence to the data, less creative drift/hallucination
+            'generationConfig' => [
+                'temperature' => 0.2,
+                'maxOutputTokens' => 600,
             ],
         ]);
 
-        $ch = curl_init($this->ollamaUrl);
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+
+        $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $payload,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_TIMEOUT => $this->timeoutSeconds,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'x-goog-api-key: ' . $this->apiKey,
+            ],
+            CURLOPT_TIMEOUT => 20,
         ]);
 
         $response = curl_exec($ch);
@@ -206,12 +184,12 @@ PROMPT;
         curl_close($ch);
 
         if ($curlError || $httpCode !== 200 || !$response) {
-            error_log("OllamaInsights: call failed (HTTP {$httpCode}): {$curlError}. Is 'ollama serve' running?");
+            error_log("Geminiinsights: API call failed (HTTP {$httpCode}): {$curlError} | Response: " . substr((string)$response, 0, 500));
             return '';
         }
 
         $data = json_decode($response, true);
-        $text = $data['message']['content'] ?? '';
+        $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
         return trim($text);
     }
