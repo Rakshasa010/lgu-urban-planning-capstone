@@ -46,6 +46,7 @@ $_prT = [
         'lbl_phone'             => 'Phone Number',
         'lbl_street'            => 'Street / House No.',
         'lbl_barangay'          => 'Barangay',
+        'lbl_district'          => 'District',
         'lbl_city'              => 'City / Municipality',
         'lbl_role'              => 'Account Role',
         'lbl_status'            => 'Account Status',
@@ -55,6 +56,7 @@ $_prT = [
         'ph_phone'              => 'e.g. 09XXXXXXXXX',
         'ph_street'             => 'Street / House No.',
         'ph_barangay'           => 'Barangay',
+        'ph_district'           => 'District',
         'ph_city'               => 'City / Municipality',
         // Not set / Cannot change
         'not_set'               => 'Not set',
@@ -129,6 +131,7 @@ $_prT = [
         'lbl_phone'             => 'Numero ng Telepono',
         'lbl_street'            => 'Kalye / Blg. ng Bahay',
         'lbl_barangay'          => 'Barangay',
+        'lbl_district'          => 'Distrito',
         'lbl_city'              => 'Lungsod / Munisipalidad',
         'lbl_role'              => 'Papel ng Account',
         'lbl_status'            => 'Katayuan ng Account',
@@ -138,6 +141,7 @@ $_prT = [
         'ph_phone'              => 'hal. 09XXXXXXXXX',
         'ph_street'             => 'Kalye / Blg. ng Bahay',
         'ph_barangay'           => 'Barangay',
+        'ph_district'           => 'Distrito',
         'ph_city'               => 'Lungsod / Munisipalidad',
         // Not set / Cannot change
         'not_set'               => 'Hindi nakatakda',
@@ -244,6 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $phone         = trim($_POST['phone']     ?? '');
         $street        = trim($_POST['street']    ?? '');
         $barangay      = trim($_POST['barangay']  ?? '');
+        $district      = trim($_POST['district']  ?? '');
         $city          = trim($_POST['city']      ?? '');
 
         if (empty($fullNameInput)) {
@@ -269,15 +274,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $oldPhone    = $user['phone']    ?? '';
             $oldStreet   = $user['street']   ?? '';
             $oldBarangay = $user['barangay'] ?? '';
+            $oldDistrict = $user['district'] ?? '';
             $oldCity     = $user['city']     ?? '';
 
             $stmt = $pdo->prepare(
                 "UPDATE users
                  SET first_name = ?, last_name = ?, email = ?, phone = ?,
-                     street = ?, barangay = ?, city = ?
+                     street = ?, barangay = ?, district = ?, city = ?
                  WHERE id = ?"
             );
-            $stmt->execute([$firstName, $lastName, $email, $phone, $street, $barangay, $city, $userId]);
+            $stmt->execute([$firstName, $lastName, $email, $phone, $street, $barangay, $district, $city, $userId]);
 
             $_SESSION['full_name'] = $fullNameInput;
 
@@ -292,6 +298,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $changes[] = "Street: \"" . ($oldStreet ?: 'Not set') . "\" → \"" . ($street ?: 'Not set') . "\"";
             if ($oldBarangay !== $barangay)
                 $changes[] = "Barangay: \"" . ($oldBarangay ?: 'Not set') . "\" → \"" . ($barangay ?: 'Not set') . "\"";
+            if ($oldDistrict !== $district)
+                $changes[] = "District: \"" . ($oldDistrict ?: 'Not set') . "\" → \"" . ($district ?: 'Not set') . "\"";
             if ($oldCity !== $city)
                 $changes[] = "City: \"" . ($oldCity ?: 'Not set') . "\" → \"" . ($city ?: 'Not set') . "\"";
 
@@ -436,10 +444,10 @@ include __DIR__ . '/../user/header.php';
                     <span><?php echo htmlspecialchars($user['phone']); ?></span>
                 </li>
                 <?php endif; ?>
-                <?php if (!empty($user['street']) || !empty($user['barangay']) || !empty($user['city'])): ?>
+                <?php if (!empty($user['street']) || !empty($user['barangay']) || !empty($user['district']) || !empty($user['city'])): ?>
                 <li>
                     <i class="bi bi-geo-alt"></i>
-                    <span><?php echo htmlspecialchars(implode(', ', array_filter([$user['street'] ?? '', $user['barangay'] ?? '', $user['city'] ?? '']))); ?></span>
+                    <span><?php echo htmlspecialchars(implode(', ', array_filter([$user['street'] ?? '', $user['barangay'] ?? '', $user['district'] ?? '', $user['city'] ?? '']))); ?></span>
                 </li>
                 <?php endif; ?>
                 <li>
@@ -633,7 +641,19 @@ include __DIR__ . '/../user/header.php';
                                             </div>
                                         </div>
                                         <div class="profile-row-field">
-                                            <!-- spacer -->
+                                            <span class="profile-field-label"><?php echo _prt('lbl_district'); ?></span>
+                                            <div class="view-mode">
+                                                <?php if (!empty($user['district'])): ?>
+                                                    <span class="field-view-value"><?php echo htmlspecialchars($user['district']); ?></span>
+                                                <?php else: ?>
+                                                    <span class="not-set"><?php echo _prt('not_set'); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="edit-mode d-none">
+                                                <input type="text" name="district" class="form-control profile-input"
+                                                       value="<?php echo htmlspecialchars($user['district'] ?? ''); ?>"
+                                                       placeholder="<?php echo _prt('ph_district'); ?>">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1267,6 +1287,18 @@ include __DIR__ . '/../user/header.php';
 .pw-tips-list li i { color: #d97706; font-size: 0.8rem; flex-shrink: 0; margin-top: 1px; }
 
 /* ════════════════════════════════════
+   1024px — LAPTOP
+════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .profile-grid { grid-template-columns: 250px 1fr; gap: 16px; }
+    .profile-card { padding: 18px; }
+    /* The nested 1fr/280px password grid runs out of room once the
+       outer sidebar column and header's own docked sidebar both eat
+       into the width — stack it before that happens. */
+    .pw-two-col { grid-template-columns: 1fr; gap: 18px; }
+}
+
+/* ════════════════════════════════════
    768px — TABLETS
 ════════════════════════════════════ */
 @media (max-width: 768px) {
@@ -1302,6 +1334,54 @@ include __DIR__ . '/../user/header.php';
     .pw-tips-title { font-size: 0.64rem; }
     .pw-tips-list li { font-size: 0.73rem; }
     .app-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ════════════════════════════════════
+   320px — SMALL MOBILE
+════════════════════════════════════ */
+@media (max-width: 320px) {
+    .profile-page { padding: 10px; }
+    .avatar-upload-wrap { width: 72px; height: 72px; }
+    .profile-avatar-img, .profile-avatar-initials { width: 72px; height: 72px; }
+    .profile-avatar-initials { font-size: 1.5rem; }
+    .profile-name { font-size: 0.9rem; }
+    .profile-role-badge { font-size: 0.6rem; padding: 2px 8px; }
+    .profile-meta-list li { font-size: 0.66rem; gap: 6px; }
+    .app-stats-grid { gap: 6px; }
+    .app-stat-item { padding: 8px 6px; }
+    .app-stat-value { font-size: 1.1rem; }
+    .app-stat-label { font-size: 0.55rem; }
+    .quick-link-btn { font-size: 0.72rem; padding: 7px 10px; }
+    .profile-card { padding: 12px; border-radius: 10px; }
+    .profile-card-title { font-size: 0.8rem; }
+    .profile-card-subtitle { font-size: 0.68rem; }
+    .profile-tab-btn { font-size: 0.64rem; padding: 7px 8px; gap: 3px; }
+    .profile-section-label { font-size: 0.62rem; }
+    .profile-field-label { font-size: 0.6rem; }
+    .field-view-value { font-size: 0.78rem; }
+    .profile-input { font-size: 0.78rem; padding: 6px 8px; }
+    .not-set { font-size: 0.72rem; }
+    .profile-row-field { padding: 7px 4px; }
+    .profile-form-actions { flex-direction: column; }
+    .btn-save, .btn-cancel {
+        font-size: 0.75rem;
+        padding: 7px 12px;
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-edit { font-size: 0.68rem; padding: 4px 8px; }
+    .pw-last-changed {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 8px 10px;
+    }
+    .pw-last-changed-icon { width: 26px; height: 26px; font-size: 0.75rem; }
+    .pw-last-changed-label { font-size: 0.58rem; }
+    .pw-last-changed-date { font-size: 0.68rem; }
+    .pw-tips { padding: 8px 10px; }
+    .pw-tips-title { font-size: 0.6rem; }
+    .pw-tips-list li { font-size: 0.68rem; }
 }
 
 /* ════════════════════════════════════

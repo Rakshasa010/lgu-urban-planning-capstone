@@ -458,14 +458,13 @@ include __DIR__ . '/../user/header.php';
 
                                 <?php if ($deletionRequested): ?>
                                     <!-- Already pending -->
-                                    <div class="w-100 p-3 rounded-3 d-flex align-items-center gap-2"
-                                         style="background:#fff7ed; border:1px solid #fed7aa;">
+                                    <div class="w-100 p-3 rounded-3 d-flex align-items-center gap-2 notice-box notice-pending">
                                         <i class="bi bi-hourglass-split text-warning fs-5"></i>
                                         <div>
-                                            <div class="fw-semibold" style="font-size:0.85rem; color:#92400e;">
+                                            <div class="fw-semibold notice-title" style="font-size:0.85rem;">
                                                 <?php echo t('acct_delete_pending', $translations, $lang); ?>
                                             </div>
-                                            <div style="font-size:0.78rem; color:#b45309;">
+                                            <div class="notice-text" style="font-size:0.78rem;">
                                                 <?php echo t('acct_delete_pending_hint', $translations, $lang); ?>
                                             </div>
                                         </div>
@@ -473,22 +472,20 @@ include __DIR__ . '/../user/header.php';
                                 <?php else: ?>
                                     <?php if ($deletionRejected): ?>
                                     <!-- Rejection notice -->
-                                    <div class="w-100 p-3 rounded-3 d-flex align-items-center gap-2 mb-1"
-                                         style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                                    <div class="w-100 p-3 rounded-3 d-flex align-items-center gap-2 mb-1 notice-box notice-rejected">
                                         <i class="bi bi-x-circle-fill text-success fs-5 flex-shrink-0"></i>
                                         <div>
-                                            <div class="fw-semibold" style="font-size:0.85rem; color:#166534;">Request Not Approved</div>
-                                            <div style="font-size:0.78rem; color:#15803d;">
+                                            <div class="fw-semibold notice-title" style="font-size:0.85rem;">Request Not Approved</div>
+                                            <div class="notice-text" style="font-size:0.78rem;">
                                                 Your previous deletion request was reviewed and was not approved. You may submit a new request below if needed.
                                             </div>
                                         </div>
                                     </div>
                                     <?php endif; ?>
                                     <!-- Warning box -->
-                                    <div class="w-100 p-3 rounded-3 d-flex align-items-start gap-2 mb-1"
-                                         style="background:#fef2f2; border:1px solid #fecaca;">
+                                    <div class="w-100 p-3 rounded-3 d-flex align-items-start gap-2 mb-1 notice-box notice-warning">
                                         <i class="bi bi-exclamation-triangle-fill text-danger mt-1" style="font-size:0.9rem; flex-shrink:0;"></i>
-                                        <span style="font-size:0.8rem; color:#991b1b;">
+                                        <span class="notice-text" style="font-size:0.8rem;">
                                             <?php echo t('acct_delete_warning', $translations, $lang); ?>
                                         </span>
                                     </div>
@@ -699,6 +696,16 @@ include __DIR__ . '/../user/header.php';
     gap: 1.5rem;
     align-items: start;
 }
+/* --- 1024px: Laptop --- */
+@media (max-width: 1024px) {
+    .settings-page { padding: 1.25rem 1.5rem; }
+    .settings-grid { grid-template-columns: 210px 1fr; gap: 1.1rem; }
+    .settings-card-header { padding: 1rem 1.25rem; }
+    .settings-card-title { font-size: 0.92rem; }
+    .settings-fields { padding: 0.25rem 1.25rem; }
+    .settings-card-footer { padding: 0.85rem 1.25rem; }
+}
+
 @media (max-width: 820px) {
     .settings-grid { grid-template-columns: 1fr; }
     .settings-sidebar-card { overflow: visible; position: static; }
@@ -953,6 +960,28 @@ include __DIR__ . '/../user/header.php';
 .settings-empty-state i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; }
 .settings-empty-state p { font-size: 0.9rem; margin: 0; }
 
+/* ── Notice boxes (pending / rejected / warning) ── */
+.notice-pending  { background: #fff7ed; border: 1px solid #fed7aa; }
+.notice-rejected { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.notice-warning  { background: #fef2f2; border: 1px solid #fecaca; }
+.notice-pending  .notice-title { color: #92400e; } .notice-pending  .notice-text { color: #b45309; }
+.notice-rejected .notice-title { color: #166534; } .notice-rejected .notice-text { color: #15803d; }
+.notice-warning  .notice-text  { color: #991b1b; }
+
+/* ── Export modal ── */
+.settings-modal-header,
+.settings-modal-footer { background: #f9fafb; }
+.settings-modal-header { border-bottom: 1px solid #e5e9f0; }
+.settings-modal-footer { border-top: 1px solid #e5e9f0; }
+.settings-modal-icon {
+    width: 36px; height: 36px; background: #e8edf7; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; color: #1e3a6e;
+}
+.settings-modal-title { color: #1a1a2e; }
+.settings-modal-sub   { color: #6b7280; }
+.settings-modal-label { color: #374151; }
+.settings-modal-hint  { color: #9ca3af; }
+
 /* ── Save button ── */
 .btn-save {
     background: #1e3a6e;
@@ -991,6 +1020,35 @@ include __DIR__ . '/../user/header.php';
 [data-bs-theme="dark"] .activity-ip { background: #334155; color: #e2e8f0; }
 [data-bs-theme="dark"] .form-select,
 [data-bs-theme="dark"] .form-control { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+[data-bs-theme="dark"] .settings-empty-state { color: #64748b; }
+
+/* Notice boxes */
+[data-bs-theme="dark"] .notice-pending  { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); }
+[data-bs-theme="dark"] .notice-rejected { background: rgba(34, 197, 94, 0.12);  border-color: rgba(34, 197, 94, 0.35); }
+[data-bs-theme="dark"] .notice-warning  { background: rgba(239, 68, 68, 0.12);  border-color: rgba(239, 68, 68, 0.35); }
+[data-bs-theme="dark"] .notice-pending  .notice-title { color: #fbbf24; }
+[data-bs-theme="dark"] .notice-pending  .notice-text  { color: #fcd34d; }
+[data-bs-theme="dark"] .notice-rejected .notice-title { color: #4ade80; }
+[data-bs-theme="dark"] .notice-rejected .notice-text  { color: #86efac; }
+[data-bs-theme="dark"] .notice-warning  .notice-text  { color: #fca5a5; }
+
+/* Export modal */
+[data-bs-theme="dark"] .settings-modal-header,
+[data-bs-theme="dark"] .settings-modal-footer { background: #0f172a; }
+[data-bs-theme="dark"] .settings-modal-header { border-color: #334155; }
+[data-bs-theme="dark"] .settings-modal-footer { border-color: #334155; }
+[data-bs-theme="dark"] .settings-modal-icon   { background: #1e3a5f; color: #93c5fd; }
+[data-bs-theme="dark"] .settings-modal-title  { color: #f1f5f9; }
+[data-bs-theme="dark"] .settings-modal-sub,
+[data-bs-theme="dark"] .settings-modal-hint   { color: #94a3b8; }
+[data-bs-theme="dark"] .settings-modal-label  { color: #e2e8f0; }
+
+/* Login activity badges */
+[data-bs-theme="dark"] .badge-login-success { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
+[data-bs-theme="dark"] .badge-login-fail    { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+/* Confirmation dialog icon */
+[data-bs-theme="dark"] .confirm-dialog .confirm-icon { background: rgba(220, 38, 38, 0.15); color: #f87171; }
 /* ── Toast notifications ── */
 .settings-toast {
     display: flex;
@@ -1330,17 +1388,16 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:14px; overflow:hidden;">
 
-            <div class="modal-header" style="background:#f9fafb; border-bottom:1px solid #e5e9f0;">
+            <div class="modal-header settings-modal-header">
                 <div class="d-flex align-items-center gap-2">
-                    <div style="width:36px;height:36px;background:#e8edf7;border-radius:8px;
-                                display:flex;align-items:center;justify-content:center;color:#1e3a6e;">
+                    <div class="settings-modal-icon">
                         <i class="bi bi-shield-lock"></i>
                     </div>
                     <div>
-                        <h6 class="modal-title mb-0 fw-semibold" id="exportDataModalLabel" style="font-size:0.95rem;color:#1a1a2e;">
+                        <h6 class="modal-title mb-0 fw-semibold settings-modal-title" id="exportDataModalLabel" style="font-size:0.95rem;">
                             <?php echo t('acct_export_modal_title', $translations, $lang); ?>
                         </h6>
-                        <p class="mb-0" style="font-size:0.76rem;color:#6b7280;">
+                        <p class="mb-0 settings-modal-sub" style="font-size:0.76rem;">
                             <?php echo t('acct_export_modal_sub', $translations, $lang); ?>
                         </p>
                     </div>
@@ -1355,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <!-- Reason -->
                     <div class="mb-3">
-                        <label class="form-label fw-semibold" for="exportReason" style="font-size:0.85rem;color:#374151;">
+                        <label class="form-label fw-semibold settings-modal-label" for="exportReason" style="font-size:0.85rem;">
                             <i class="bi bi-chat-left-text me-1 text-primary"></i>
                             <?php echo t('acct_export_reason_label', $translations, $lang); ?>
                         </label>
@@ -1372,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <!-- Password -->
                     <div class="mb-1">
-                        <label class="form-label fw-semibold" for="exportPassword" style="font-size:0.85rem;color:#374151;">
+                        <label class="form-label fw-semibold settings-modal-label" for="exportPassword" style="font-size:0.85rem;">
                             <i class="bi bi-key me-1 text-warning"></i>
                             <?php echo t('acct_export_pwd_label', $translations, $lang); ?>
                         </label>
@@ -1387,14 +1444,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <i class="bi bi-eye" id="toggleExportPwdIcon"></i>
                             </button>
                         </div>
-                        <p class="mt-1 mb-0" style="font-size:0.76rem;color:#9ca3af;">
+                        <p class="mt-1 mb-0 settings-modal-hint" style="font-size:0.76rem;">
                             <?php echo t('acct_export_pwd_hint', $translations, $lang); ?>
                         </p>
                     </div>
 
                 </div><!-- /.modal-body -->
 
-                <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e9f0; gap:0.5rem;">
+                <div class="modal-footer settings-modal-footer" style="gap:0.5rem;">
                     <button type="button" class="btn btn-sm btn-outline-secondary px-3"
                             data-bs-dismiss="modal">
                         <i class="bi bi-x-lg me-1"></i>Cancel

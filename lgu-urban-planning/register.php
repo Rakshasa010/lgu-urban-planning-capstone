@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $birthDate = $_POST['birth_date'] ?? '';
         $street    = ucwords(strtolower(trim($_POST['street'] ?? '')));
         $barangay  = ucwords(strtolower(trim($_POST['barangay'] ?? '')));
+        $district  = ucwords(strtolower(trim($_POST['district'] ?? '')));
         $city      = ucwords(strtolower(trim($_POST['city'] ?? '')));
 
         $today = new DateTime();
@@ -92,10 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     move_uploaded_file($_FILES['id_back']['tmp_name'], $back_path);
                 }
 
-                $query = "INSERT INTO users (username, email, password_hash, first_name, last_name, role, phone, birth_date, street, barangay, city, id_front_path, id_back_path, otp_code, otp_expiry, is_verified) 
-                          VALUES (?, ?, ?, ?, ?, 'applicant', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
+                $query = "INSERT INTO users (username, email, password_hash, first_name, last_name, role, phone, birth_date, street, barangay, district, city, id_front_path, id_back_path, otp_code, otp_expiry, is_verified) 
+                          VALUES (?, ?, ?, ?, ?, 'applicant', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
 
-                $db->query($query, [$username, $email, $passwordHash, $firstName, $lastName, $phone, $birthDate, $street, $barangay, $city, $front_path, $back_path, $otp, $expiry]);
+                $db->query($query, [$username, $email, $passwordHash, $firstName, $lastName, $phone, $birthDate, $street, $barangay, $district, $city, $front_path, $back_path, $otp, $expiry]);
 
                 // PHPMailer
                 $mail = new PHPMailer(true);
@@ -224,7 +225,24 @@ include __DIR__ . '/auth/header.php';
         padding: 20px 25px;
     }
 
-    .register-logo { width: 50px; margin-bottom: 8px; }
+    .register-logo-wrap {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .register-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        margin-bottom: 0;
+        filter:
+            drop-shadow(0 0 6px rgba(255,255,255,0.9))
+            drop-shadow(0 0 14px rgba(255,255,255,0.7))
+            drop-shadow(0 0 24px rgba(255,255,255,0.5));
+    }
     .form-label { font-size: 12px; font-weight: 600; color: #000; margin-bottom: 4px; }
     .form-control { background: rgba(255,255,255,0.7) !important; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 8px; font-size: 14px; }
     .btn-step { padding: 10px; background: linear-gradient(135deg, #6384d2, #285ccd); border: none; border-radius: 12px; color: #fff; font-weight: 600; }
@@ -293,7 +311,7 @@ include __DIR__ . '/auth/header.php';
         }
         .register-header { padding: 18px 20px; }
         .register-body { padding: 14px 18px; }
-        .register-logo { width: 44px; margin-bottom: 6px; }
+        .register-logo-wrap { width: 70px; height: 70px; margin-bottom: 6px; }
         .register-header h5 { font-size: 1rem; }
         .form-label { font-size: 11.5px; margin-bottom: 2px; }
         .form-control { font-size: 13px; padding: 7px 10px; border-radius: 8px; }
@@ -315,7 +333,7 @@ include __DIR__ . '/auth/header.php';
         .register-card { max-width: 400px; width: 100%; border-radius: 14px; }
         .register-header { padding: 12px 16px; }
         .register-body { padding: 12px 14px; }
-        .register-logo { width: 38px; margin-bottom: 4px; }
+        .register-logo-wrap { width: 58px; height: 58px; margin-bottom: 4px; }
         .register-header h5 { font-size: 0.92rem; }
         .form-label { font-size: 11px; margin-bottom: 2px; }
         .form-control { font-size: 12px; padding: 6px 9px; border-radius: 8px; }
@@ -350,7 +368,7 @@ include __DIR__ . '/auth/header.php';
         .register-card { max-width: 300px; width: 100%; border-radius: 12px; }
         .register-header { padding: 10px 13px; }
         .register-body { padding: 10px 12px; }
-        .register-logo { width: 32px; margin-bottom: 3px; }
+        .register-logo-wrap { width: 48px; height: 48px; margin-bottom: 3px; }
         .register-header h5 { font-size: 0.83rem; }
         .form-label { font-size: 10.5px; margin-bottom: 1px; }
         .form-control { font-size: 11.5px; padding: 5px 8px; border-radius: 7px; }
@@ -393,7 +411,9 @@ include __DIR__ . '/auth/header.php';
 <div class="register-container">
     <div class="register-card">
         <div class="register-header">
-            <img src="assets/img/lgu-logo.png" alt="LGU Logo" class="register-logo">
+            <div class="register-logo-wrap">
+                <img src="assets/upad-logo.png" alt="LGU Logo" class="register-logo">
+            </div>
             <h5 class="fw-bold mb-1"><?php echo $success_msg ? 'Success!' : ($otp_sent ? 'Email Verification' : 'Create Your Account'); ?></h5>
             <?php if (!$success_msg && !$otp_sent): ?>
             <div class="step-indicator mt-3">
@@ -511,9 +531,10 @@ include __DIR__ . '/auth/header.php';
                 <div class="mb-3">
                     <label class="form-label">Complete Address</label>
                     <div class="row g-2">
-                        <div class="col-4"><input type="text" class="form-control" name="street" placeholder="Street" required></div>
-                        <div class="col-4"><input type="text" class="form-control" name="barangay" placeholder="Barangay" required></div>
-                        <div class="col-4"><input type="text" class="form-control" name="city" placeholder="City" required></div>
+                        <div class="col-3"><input type="text" class="form-control" name="street" placeholder="Street" required></div>
+                        <div class="col-3"><input type="text" class="form-control" name="barangay" placeholder="Barangay" required></div>
+                        <div class="col-3"><input type="text" class="form-control" name="district" placeholder="District" required></div>
+                        <div class="col-3"><input type="text" class="form-control" name="city" placeholder="City" required></div>
                     </div>
                 </div>
                 <div class="mb-3">

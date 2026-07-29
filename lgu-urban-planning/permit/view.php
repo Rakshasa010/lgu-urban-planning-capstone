@@ -6,8 +6,11 @@
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../core/Auth.php';
 require_once __DIR__ . '/../core/Helper.php';
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../modules/PermitProcessing/PermitController.php';
 require_once __DIR__ . '/../modules/GISMapping/GISController.php';
+require_once __DIR__ . '/../modules/PermitProcessing/payments.php';
+require_once __DIR__ . '/../modules/PermitProcessing/issue_permit.php';
 
 $auth = new Auth();
 $auth->requireRole(['admin', 'super_admin', 'zoning_officer', 'building_official', 'assessor', 'inspector']);
@@ -112,6 +115,7 @@ $_translations = [
         'lbl_lot_block'         => 'Lot & Block Number',
         'lbl_street'            => 'Street',
         'lbl_barangay'          => 'Barangay',
+        'lbl_district'          => 'District',
         'lbl_parcel_id'         => 'GIS Parcel ID',
         'lbl_coordinates'       => 'Geospatial Coordinates',
         'section_applicant'     => 'Applicant Information',
@@ -162,9 +166,12 @@ $_translations = [
         'status_submitted'      => 'Submitted (Initial)',
         'status_review'         => 'Under Review / Processing',
         'status_revision'       => 'For Revision (Return to Applicant)',
-        'status_approved'       => 'Final Approval',
+        'status_approved'       => 'Approved (Paid)',
+        'status_pending_payment'=> 'Final Approval',
         'status_rejected'       => 'Rejected / Denied',
-        'status_hint'           => "Final Approval requires all technical assessments to be 'OK'.",
+        'status_hint'           => "Final Approval requires all technical assessments to be 'OK'. It sends a payment request to the applicant — the permit itself is only released once payment is confirmed.",
+        'payment_unpaid'        => 'Awaiting Payment',
+        'payment_paid'          => 'Paid',
         'lbl_assign_officer'    => 'Assign to Officer',
         'no_assignment'         => '-- No Assignment --',
         'lbl_remarks'           => 'Official Remarks',
@@ -235,6 +242,7 @@ $_translations = [
         'lbl_lot_block'         => 'Numero ng Lote at Bloke',
         'lbl_street'            => 'Kalye',
         'lbl_barangay'          => 'Barangay',
+        'lbl_district'          => 'Distrito',
         'lbl_parcel_id'         => 'GIS Parcel ID',
         'lbl_coordinates'       => 'Geospatial na Koordinasyon',
         'section_applicant'     => 'Impormasyon ng Aplikante',
@@ -285,9 +293,12 @@ $_translations = [
         'status_submitted'      => 'Isinumite (Paunang)',
         'status_review'         => 'Sinusuri / Pinoproseso',
         'status_revision'       => 'Para sa Rebisyon (Ibalik sa Aplikante)',
-        'status_approved'       => 'Panghuling Pag-apruba',
+        'status_approved'       => 'Aprubado (Bayad na)',
+        'status_pending_payment'=> 'Panghuling Pag-apruba',
         'status_rejected'       => 'Tinanggihan / Ipinagkait',
-        'status_hint'           => "Ang Panghuling Pag-apruba ay nangangailangan na lahat ng teknikal na pagsusuri ay 'OK'.",
+        'status_hint'           => "Ang Panghuling Pag-apruba ay nangangailangan na lahat ng teknikal na pagsusuri ay 'OK'. Magpapadala ito ng kahilingan sa bayad sa aplikante — ilalabas lamang ang permit kapag nakumpirma na ang bayad.",
+        'payment_unpaid'        => 'Naghihintay ng Bayad',
+        'payment_paid'          => 'Nabayaran',
         'lbl_assign_officer'    => 'Italaga sa Opisyal',
         'no_assignment'         => '-- Walang Itatalaga --',
         'lbl_remarks'           => 'Opisyal na Mga Puna',
@@ -347,6 +358,7 @@ $_t = fn(string $key) => _vt($key, $_translations, $_lang);
 // --- STEP 1: FETCH FRESH DATA --- 
 $zoningCheck = $db->fetchOne("SELECT * FROM zoning_compliance_checks WHERE application_id = ?", [$applicationId]);
 $impactAssessment = $db->fetchOne("SELECT * FROM impact_assessments WHERE application_id = ? ORDER BY checked_at DESC LIMIT 1", [$applicationId]);
+$paymentRecord = $db->fetchOne("SELECT * FROM payments WHERE application_id = ? ORDER BY id DESC LIMIT 1", [$applicationId]);
 $application = $permitController->getApplicationDetails($applicationId);
 
 if (!$application) {
@@ -394,6 +406,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     fputcsv($output, ['Application Number', $application['application_number'] ?? '']);
     fputcsv($output, ['Project Name', $application['project_name'] ?? '']);
     fputcsv($output, ['Barangay', $application['barangay'] ?? '']);
+    fputcsv($output, ['District', $application['district'] ?? '']);
     fputcsv($output, ['Roads & Traffic Status', $impactAssessment['traffic_flag'] ?? 'Awaiting Inspection']);
     fputcsv($output, ['Roads & Traffic Assessment Data', $impactAssessment['traffic_notes'] ?? '']);
     fputcsv($output, ['Utilities / Grid Status', $impactAssessment['energy_flag'] ?? 'Awaiting Inspection']);
@@ -618,7 +631,11 @@ if ($_POST['action'] === 'update_compliance') {
         // ── PREREQUISITE CHECK ───────────────────────────────────────────────
         // Statuses that require both Technical Assessment AND Zoning & Land
         // Verification to have been completed before they can be set.
-        $statusesRequiringChecks = ['approved', 'rejected'];
+        // NOTE: 'approved' is no longer staff-settable directly — Final
+        // Approval now moves the application to 'pending_payment' instead,
+        // and 'approved' is only reached automatically once the applicant
+        // pays (see modules/PermitProcessing/pay.php).
+        $statusesRequiringChecks = ['pending_payment', 'rejected'];
         if (in_array($newStatus, $statusesRequiringChecks)) {
             $statusLabel = strtoupper(str_replace('_', ' ', $newStatus));
             if (!$impactAssessment) {
@@ -627,6 +644,13 @@ if ($_POST['action'] === 'update_compliance') {
             } elseif (!$zoningCheck) {
                 $error = "<strong>Cannot move to \"{$statusLabel}\":</strong> Zoning &amp; Land Verification has not been completed yet. "
                        . "Please open the GIS Map from the <em>Zoning &amp; Actions</em> tab and save the spatial verification first.";
+            } elseif ($newStatus === 'pending_payment' && strtolower($zoningCheck['compliance_status']) !== 'compliant') {
+                // A non-compliant zoning result can never proceed to Final
+                // Approval / payment — the only valid next step for it is
+                // Rejected.
+                $error = "<strong>Cannot move to \"{$statusLabel}\":</strong> The Zoning &amp; Land Verification result is "
+                       . "<strong>NON-COMPLIANT</strong>. An application with a non-compliant zoning result cannot be "
+                       . "approved — please set the status to <em>Rejected</em> instead.";
             }
         }
         // ── END PREREQUISITE CHECK ───────────────────────────────────────────
@@ -642,12 +666,28 @@ if ($_POST['action'] === 'update_compliance') {
             $stmt = $dbConn->prepare("UPDATE applications SET status = :status, updated_at = NOW() WHERE id = :id");
             $stmt->execute([':status' => $newStatus, ':id' => $applicationId]);
 
-            // 2. Add to Status History
-            $stmtHistory = $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)");
-            $stmtHistory->execute([$applicationId, $newStatus, $remarks, $officerId]);
+            // 2. Create the payment record FIRST (if applicable), so its
+            //    reference number/amount can be baked into the status
+            //    history remarks below — this is what makes the payment
+            //    request show up clearly in the applicant's history timeline.
+            $paymentRefForMessage = null;
+            $historyRemarks = $remarks;
+            if ($newStatus === 'pending_payment') {
+                $newPayment = createPendingPayment($dbConn, $applicationId, (float) PERMIT_FEE_AMOUNT);
+                $paymentRefForMessage = $newPayment['reference_number'];
+                $historyRemarks = trim($remarks)
+                    . "\n\n[Payment Requested] Reference No: " . $paymentRefForMessage
+                    . " | Amount Due: PHP " . number_format((float) PERMIT_FEE_AMOUNT, 2);
+            }
 
-            // 3. Inspections
-            if ($newStatus === 'approved') {
+            // 3. Add to Status History
+            $stmtHistory = $dbConn->prepare("INSERT INTO application_status_history (application_id, status, remarks, changed_by) VALUES (?, ?, ?, ?)");
+            $stmtHistory->execute([$applicationId, $newStatus, $historyRemarks, $officerId]);
+
+            // 4. Inspections — kept under 'pending_payment' since that is now
+            //    the point at which Final Approval has been decided; the
+            //    permit itself still waits on payment.
+            if ($newStatus === 'pending_payment') {
                 $exists = $db->fetchOne("SELECT id FROM inspections WHERE application_id = ?", [$applicationId]);
                 if (!$exists) {
                     // Siguraduhing 'inspection' ang status dito
@@ -656,18 +696,18 @@ if ($_POST['action'] === 'update_compliance') {
                 }
             }
 
-// 4. SET DYNAMIC SUBJECT & MESSAGE BODY
+// 5. SET DYNAMIC SUBJECT & MESSAGE BODY
         $statusLabel = strtoupper(str_replace('_', ' ', $newStatus));
-        
-        if ($newStatus === 'approved') {
-            $subject = "CONGRATULATIONS: Approved Locational Clearance / Permit #" . $application['application_number'];
-            
+
+        if ($newStatus === 'pending_payment') {
+            $subject = "Action Required: Permit Fee Payment for Application #" . $application['application_number'];
+
             $messageBody = "Dear Applicant,\n\n";
-            $messageBody .= "We are pleased to inform you that your application for '" . $application['project_name'] . "' has been officially APPROVED.\n\n";
-            $messageBody .= "Your Locational Clearance / Permit has been generated. You may download and print the official document from the 'Documents' section of your portal. A copy has also been sent to your registered email address.\n\n";
-            $messageBody .= "Permit Details:\n";
-            $messageBody .= "- Permit No: " . $application['application_number'] . "\n";
-            $messageBody .= "- Location: Barangay " . $application['barangay'] . "\n\n";
+            $messageBody .= "Good news — your application for '" . $application['project_name'] . "' has passed Final Approval.\n\n";
+            $messageBody .= "Before your Locational Clearance / Permit can be released, please settle the permit fee below:\n\n";
+            $messageBody .= "- Reference No: " . $paymentRefForMessage . "\n";
+            $messageBody .= "- Amount Due: PHP " . number_format((float) PERMIT_FEE_AMOUNT, 2) . "\n\n";
+            $messageBody .= "You may pay this fee from the 'Pay Now' button on your application in the applicant portal. Your permit will be generated and emailed to you automatically once payment is confirmed.\n\n";
             $messageBody .= "Office Remarks:\n\"" . $remarks . "\"\n\n";
             $messageBody .= "Thank you for your cooperation.\n\n";
         } else {
@@ -676,7 +716,7 @@ if ($_POST['action'] === 'update_compliance') {
             $messageBody = "Dear Applicant,\n\n";
             $messageBody .= "This is an official notification regarding your application: " . $application['project_name'] . ".\n\n";
             $messageBody .= "The status has been updated to: " . $statusLabel . ".\n";
-            $messageBody .= "Location: Barangay " . $application['barangay'] . ", Block " . ($application['block'] ?? 'N/A') . ", Street " . ($application['street'] ?? 'N/A') . "\n\n";
+            $messageBody .= "Location: Barangay " . $application['barangay'] . ($application['district'] ?? '' ? " (District: " . $application['district'] . ")" : '') . ", Block " . ($application['block'] ?? 'N/A') . ", Street " . ($application['street'] ?? 'N/A') . "\n\n";
             $messageBody .= "Remarks from Office:\n\"" . $remarks . "\"\n\n";
             $messageBody .= "You may monitor further progress through your portal.\n\n";
         }
@@ -688,206 +728,13 @@ if ($_POST['action'] === 'update_compliance') {
 
         // 6. COMMIT everything (status + history + inspection row + message)
         $dbConn->commit();
-        $success = 'Application status updated and notification sent.';
+        $success = ($newStatus === 'pending_payment')
+            ? 'Application moved to Final Approval. A payment request (Ref: ' . htmlspecialchars($paymentRefForMessage) . ') has been sent to the applicant. The permit will be generated and emailed automatically once payment is confirmed.'
+            : 'Application status updated and notification sent.';
 
-        // ── AUTO-GENERATE PERMIT PDF ON FINAL APPROVAL ──────────────────────
-        if ($newStatus === 'approved') {
-            $permitGenerated = false;
-            $pdfFilename     = '';
-
-            try {
-                // Reuse the same PDF-generation logic inline via require,
-                // but capture output so we can store the file path.
-                $safeNo      = preg_replace('/[^A-Za-z0-9\-_]/', '_', $application['application_number']);
-                $pdfFilename = "Locational_Clearance_{$safeNo}.pdf";
-                $uploadDir   = __DIR__ . '/../uploads/permits/';
-
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
-
-                // Only regenerate if file does not already exist
-                $savePath = $uploadDir . $pdfFilename;
-                if (!file_exists($savePath)) {
-                    // Delegate to generator script (outputs to file, not browser)
-                    // Pass a flag so the generator saves to disk without streaming.
-                    $_POST['_save_only']    = true;
-                    $_POST['application_id'] = $applicationId;
-                    ob_start();
-                include __DIR__ . '/../modules/PermitProcessing/generate_permit_pdf.php';
-                    ob_end_clean();
-                }
-
-                // Record in application_documents table if not already present
-                $existing = $db->fetchOne(
-                    "SELECT id FROM application_documents WHERE application_id = ? AND document_type = 'permit_certificate'",
-                    [$applicationId]
-                );
-                if (!$existing) {
-                    $dbConn->prepare(
-                        "INSERT INTO application_documents (application_id, uploaded_by, document_type, file_name, file_path, created_at)
-                         VALUES (?, ?, 'permit_certificate', ?, ?, NOW())"
-                    )->execute([
-                        $applicationId,
-                        $_SESSION['user_id'],
-                        $pdfFilename,
-                        'uploads/permits/' . $pdfFilename
-                    ]);
-                }
-
-                $permitGenerated = true;
-                $success .= ' <strong>Locational Clearance PDF has been generated and attached to the application.</strong>';
-
-                // ── SEND EMAIL WITH PDF ATTACHMENT VIA PHPMAILER (GMAIL SMTP) ──
-                $applicantEmail = $application['applicant_email'] ?? '';
-                if (!empty($applicantEmail) && file_exists($savePath)) {
-                    try {
-                        // PHPMailer — same autoload used by the rest of the system
-                        require_once __DIR__ . '/../vendor/autoload.php';
-                        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-
-                        // ── SMTP credentials (Gmail) ─────────────────────────
-                        $mail->isSMTP();
-                        $mail->Host       = 'smtp.gmail.com';
-                        $mail->SMTPAuth   = true;
-                        $mail->Username   = 'aelousssnexus@gmail.com';
-                        $mail->Password   = 'zuey mjni sbzz gvsm';
-                        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                        $mail->Port       = 587;
-                        $mail->CharSet    = 'UTF-8';
-
-                        // ── Sender & recipient ───────────────────────────────
-                        $mail->setFrom('aelousssnexus@gmail.com', 'LGU Urban Planning');
-                        $mail->addAddress(
-                            $applicantEmail,
-                            trim($application['applicant_first_name'] . ' ' . $application['applicant_last_name'])
-                        );
-
-                        // ── Attach the generated PDF ─────────────────────────
-                        $mail->addAttachment($savePath, $pdfFilename);
-
-                        // ── Subject & HTML body ──────────────────────────────
-                        $mail->isHTML(true);
-                        $mail->Subject = 'Your Locational Clearance is Ready – Permit #' . $application['application_number'];
-
-                        $applicantFullName = htmlspecialchars(
-                            trim($application['applicant_first_name'] . ' ' . $application['applicant_last_name'])
-                        );
-                        $mail->Body = '
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family:Arial,sans-serif;color:#222;margin:0;padding:0;background:#f4f6f9;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:30px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-
-        <!-- Header -->
-        <tr>
-          <td style="background:#003366;padding:24px 32px;text-align:center;">
-            <h2 style="color:#fff;margin:0;font-size:18px;letter-spacing:1px;">
-              QUEZON CITY URBAN PLANNING DEPARTMENT
-            </h2>
-            <p style="color:#aac4e8;margin:6px 0 0;font-size:12px;">
-              Official Notification – Locational Clearance
-            </p>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:32px;">
-            <p style="margin:0 0 16px;">Dear <strong>' . $applicantFullName . '</strong>,</p>
-            <p style="margin:0 0 16px;">
-              🎉 Congratulations! Your application has been officially <strong style="color:#1a7a3c;">APPROVED</strong>.
-              Your <strong>Locational Clearance / Permit</strong> is attached to this email as a PDF file.
-            </p>
-
-            <!-- Permit details box -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-                   style="background:#f0f5ff;border:1px solid #c8d8f5;border-radius:6px;margin:20px 0;">
-              <tr>
-                <td style="padding:16px 20px;">
-                  <p style="margin:0 0 8px;font-size:13px;color:#555;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;">
-                    Permit Details
-                  </p>
-                  <table cellpadding="4" cellspacing="0" style="font-size:14px;width:100%;">
-                    <tr>
-                      <td style="color:#555;width:140px;">Permit No.</td>
-                      <td><strong>' . htmlspecialchars($application['application_number']) . '</strong></td>
-                    </tr>
-                    <tr>
-                      <td style="color:#555;">Project</td>
-                      <td><strong>' . htmlspecialchars($application['project_name']) . '</strong></td>
-                    </tr>
-                    <tr>
-                      <td style="color:#555;">Location</td>
-                      <td>Barangay ' . htmlspecialchars($application['barangay']) . '</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Remarks -->
-            <p style="margin:0 0 8px;font-size:13px;color:#555;">Office Remarks:</p>
-            <blockquote style="margin:0 0 20px;padding:10px 16px;background:#f9f9f9;border-left:4px solid #003366;
-                               font-style:italic;color:#444;border-radius:0 4px 4px 0;">
-              ' . nl2br(htmlspecialchars($remarks)) . '
-            </blockquote>
-
-            <p style="margin:0 0 20px;font-size:14px;">
-              You may also download the document anytime from the
-              <strong>Documents</strong> section of your applicant portal.
-            </p>
-
-            <p style="margin:0;font-size:14px;">Thank you for your cooperation.</p>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="background:#f0f0f0;padding:16px 32px;text-align:center;font-size:11px;color:#888;">
-            This is a system-generated email. Please do not reply directly to this message.<br>
-            © ' . date('Y') . ' Quezon City Urban Planning Department
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>';
-
-                        // Plain-text fallback
-                        $mail->AltBody =
-                            "Dear " . trim($application['applicant_first_name'] . ' ' . $application['applicant_last_name']) . ",\r\n\r\n" .
-                            "Congratulations! Your application for \"" . $application['project_name'] . "\" has been officially APPROVED.\r\n\r\n" .
-                            "Permit No : " . $application['application_number'] . "\r\n" .
-                            "Project   : " . $application['project_name'] . "\r\n" .
-                            "Location  : Barangay " . $application['barangay'] . "\r\n\r\n" .
-                            "Office Remarks:\r\n\"" . $remarks . "\"\r\n\r\n" .
-                            "The Locational Clearance PDF is attached to this email.\r\n\r\n" .
-                            "Quezon City Urban Planning Department";
-
-                        $mail->send();
-                        $success .= ' <strong>Permit PDF has been emailed to ' . htmlspecialchars($applicantEmail) . '.</strong>';
-
-                    } catch (Exception $mailEx) {
-                        $success .= ' <span class="text-warning">(Email notice: ' . htmlspecialchars($mailEx->getMessage()) . ')</span>';
-                    }
-                }
-                // ── END EMAIL SEND ───────────────────────────────────────────
-
-            } catch (Exception $pdfEx) {
-                // PDF failure should not roll back the status update.
-                $success .= ' (Note: PDF generation encountered an issue: ' . htmlspecialchars($pdfEx->getMessage()) . ')';
-            }
-        }
-        // ── END PDF GENERATION ───────────────────────────────────────────────
-
-        // Sync in-memory status so the badge and PDF panel render correctly on this page load
+        // Sync in-memory status so the badge/panels render correctly on this page load
         $application['status'] = $newStatus;
+        $paymentRecord = $db->fetchOne("SELECT * FROM payments WHERE application_id = ? ORDER BY id DESC LIMIT 1", [$applicationId]);
 
     } catch (Exception $e) {
         $dbConn->rollBack();
@@ -1472,9 +1319,25 @@ include __DIR__ . '/../admin/header.php';
             </div>
             <div class="d-flex align-items-center">
                 <span class="me-3 text-muted small"><?php echo htmlspecialchars($_t('current_phase')); ?> <strong><?php echo htmlspecialchars($_t('phase_name')); ?></strong></span>
-                <span class="badge bg-<?php echo Helper::getStatusBadge($application['status']); ?> p-2 px-3">
+                <?php
+                    // NOTE: Helper::getStatusBadge() lives in core/Helper.php (not
+                    // reviewed here) and may not yet have a color mapping for the
+                    // new 'pending_payment' status. This override keeps the badge
+                    // readable regardless — remove once Helper.php is updated.
+                    $statusBadgeColor = ($application['status'] === 'pending_payment')
+                        ? 'warning'
+                        : Helper::getStatusBadge($application['status']);
+                ?>
+                <span class="badge bg-<?php echo $statusBadgeColor; ?> p-2 px-3">
                     <?php echo strtoupper(str_replace('_', ' ', $application['status'])); ?>
                 </span>
+                <?php if ($application['status'] === 'pending_payment' && $paymentRecord): ?>
+                    <span class="badge <?php echo $paymentRecord['status'] === 'paid' ? 'bg-success' : 'bg-secondary'; ?> p-2 px-3 ms-2">
+                        <i class="bi bi-cash-coin me-1"></i>
+                        <?php echo $paymentRecord['status'] === 'paid' ? htmlspecialchars($_t('payment_paid')) : htmlspecialchars($_t('payment_unpaid')); ?>
+                        (<?php echo htmlspecialchars($paymentRecord['reference_number']); ?>)
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
         <div class="card-body">
@@ -1543,6 +1406,10 @@ include __DIR__ . '/../admin/header.php';
                                         <div class="col-md-6">
                                             <small class="text-muted d-block x-small"><?php echo htmlspecialchars($_t('lbl_barangay')); ?></small>
                                             <span class="fw-bold text-dark"><?php echo htmlspecialchars($application['barangay'] ?? '---'); ?></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block x-small"><?php echo htmlspecialchars($_t('lbl_district')); ?></small>
+                                            <span class="fw-bold text-dark"><?php echo htmlspecialchars($application['district'] ?? '---'); ?></span>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="text-muted d-block small"><?php echo htmlspecialchars($_t('lbl_parcel_id')); ?></label>
@@ -1822,22 +1689,30 @@ include __DIR__ . '/../admin/header.php';
                                         $currentRole = $_SESSION['role'] ?? '';
                                         $currentStatus = $application['status'];
 
-                                        // All available statuses
+                                        // All available statuses.
+                                        // NOTE: 'approved' is included only so an already-paid
+                                        // application still displays its correct current status in
+                                        // this dropdown — it is never in $allowedStatuses below, so
+                                        // it can't be chosen directly. Staff instead pick
+                                        // 'pending_payment' ("Final Approval"), which requests the
+                                        // fee from the applicant; 'approved' is set automatically by
+                                        // the system once payment is confirmed.
                                         $allStatuses = [
-                                            'submitted'    => $_t('status_submitted'),
-                                            'under_review' => $_t('status_review'),
-                                            'for_revision' => $_t('status_revision'),
-                                            'approved'     => $_t('status_approved'),
-                                            'rejected'     => $_t('status_rejected'),
+                                            'submitted'        => $_t('status_submitted'),
+                                            'under_review'     => $_t('status_review'),
+                                            'for_revision'     => $_t('status_revision'),
+                                            'pending_payment'  => $_t('status_pending_payment'),
+                                            'approved'         => $_t('status_approved'),
+                                            'rejected'         => $_t('status_rejected'),
                                         ];
 
-                                        // Role-based allowed statuses
+                                        // Role-based allowed statuses ('approved' deliberately excluded — see note above)
                                         if (in_array($currentRole, ['admin', 'super_admin'])) {
-                                            $allowedStatuses = array_keys($allStatuses);
+                                            $allowedStatuses = ['submitted', 'under_review', 'for_revision', 'pending_payment', 'rejected'];
                                         } elseif ($currentRole === 'zoning_officer') {
                                             $allowedStatuses = ['submitted', 'under_review', 'for_revision', 'rejected'];
                                         } elseif ($currentRole === 'building_official') {
-                                            $allowedStatuses = ['submitted', 'under_review', 'for_revision', 'approved', 'rejected'];
+                                            $allowedStatuses = ['submitted', 'under_review', 'for_revision', 'pending_payment', 'rejected'];
                                         } else {
                                             $allowedStatuses = [$currentStatus]; // fallback
                                         }
@@ -1875,6 +1750,7 @@ include __DIR__ . '/../admin/header.php';
                                     // Pass prerequisite flags to JS
                                     $hasTechnicalAssessment = !empty($impactAssessment);
                                     $hasZoningVerification  = !empty($zoningCheck);
+                                    $isZoningCompliant      = $zoningCheck && strtolower($zoningCheck['compliance_status']) === 'compliant';
                                 ?>
                                 <!-- ── PREREQUISITE CHECKLIST ── -->
                                 <div class="mb-3 p-2 rounded border bg-white" id="prereqChecklist">
@@ -1937,11 +1813,13 @@ include __DIR__ . '/../admin/header.php';
                             (function () {
                                 var hasTechnical = <?php echo $hasTechnicalAssessment ? 'true' : 'false'; ?>;
                                 var hasZoning    = <?php echo $hasZoningVerification  ? 'true' : 'false'; ?>;
+                                var isCompliant  = <?php echo $isZoningCompliant ? 'true' : 'false'; ?>;
                                 var JS_PREREQ_TECH  = <?php echo json_encode($_t('js_prereq_tech')); ?>;
                                 var JS_PREREQ_ZONE  = <?php echo json_encode($_t('js_prereq_zone')); ?>;
+                                var JS_PREREQ_NONCOMPLIANT = 'Zoning result is NON-COMPLIANT — this application cannot be approved. Please set the status to Rejected instead.';
 
                                 // Statuses that require both checks
-                                var restrictedStatuses = ['approved', 'rejected'];
+                                var restrictedStatuses = ['pending_payment', 'rejected'];
 
                                 var btn = document.getElementById('confirmWorkflowBtn');
                                 if (!btn) return;
@@ -1966,6 +1844,13 @@ include __DIR__ . '/../admin/header.php';
                                         missing.push({
                                             icon: 'bi-geo-alt-fill',
                                             text: JS_PREREQ_ZONE
+                                        });
+                                    } else if (chosen === 'pending_payment' && !isCompliant) {
+                                        // Zoning check exists, but failed compliance — Final
+                                        // Approval (and therefore payment) is not allowed.
+                                        missing.push({
+                                            icon: 'bi-x-octagon-fill',
+                                            text: JS_PREREQ_NONCOMPLIANT
                                         });
                                     }
 
@@ -2024,7 +1909,7 @@ include __DIR__ . '/../admin/header.php';
                             
                             <div class="p-3 border rounded-4 shadow-sm mb-1 <?php echo $containerClass; ?>">                                
                                 <div class="text-center mb-3">
-                                    <a href="/lgu-urban-planning/gis/map.php?app_id=<?php echo $applicationId; ?>&lat=<?php echo $application['latitude']; ?>&lng=<?php echo $application['longitude']; ?>&brgy=<?php echo urlencode($application['barangay']); ?>&street=<?php echo urlencode($application['street']); ?>&block=<?php echo urlencode($application['block']); ?>&lot=<?php echo urlencode($application['lot_number']); ?>" 
+                                    <a href="/lgu-urban-planning/gis/map.php?app_id=<?php echo $applicationId; ?>&lat=<?php echo $application['latitude']; ?>&lng=<?php echo $application['longitude']; ?>&brgy=<?php echo urlencode($application['barangay']); ?>&district=<?php echo urlencode($application['district'] ?? ''); ?>&street=<?php echo urlencode($application['street']); ?>&block=<?php echo urlencode($application['block']); ?>&lot=<?php echo urlencode($application['lot_number']); ?>" 
                                     class="btn btn-simulate-gradient shadow-sm w-100 py-2">
                                         <i class="bi bi-map-fill me-2"></i> 
                                         <?php echo ($zoningCheck) ? htmlspecialchars($_t('btn_reverify')) : htmlspecialchars($_t('btn_verify')); ?>
@@ -2081,7 +1966,7 @@ include __DIR__ . '/../admin/header.php';
                                 <div class="mb-3">
                                     <label class="small fw-bold mb-1"><?php echo htmlspecialchars($_t('lbl_set_status')); ?></label>
                                     <select class="form-select border-primary" disabled>
-                                        <?php foreach (['submitted' => $_t('status_submitted'), 'under_review' => $_t('status_review'), 'for_revision' => $_t('status_revision'), 'approved' => $_t('status_approved'), 'rejected' => $_t('status_rejected')] as $value => $label): ?>
+                                        <?php foreach (['submitted' => $_t('status_submitted'), 'under_review' => $_t('status_review'), 'for_revision' => $_t('status_revision'), 'pending_payment' => $_t('status_pending_payment'), 'approved' => $_t('status_approved'), 'rejected' => $_t('status_rejected')] as $value => $label): ?>
                                             <option value="<?php echo $value; ?>" <?php echo ($application['status'] === $value) ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($label); ?>
                                             </option>
@@ -2213,8 +2098,8 @@ include __DIR__ . '/../admin/header.php';
                             </div>
                         <?php else: ?>
                             <?php foreach ($historyRecords as $history): ?>
-                                <div class="border-start border-primary border-3 ps-3 mb-4 position-relative">
-                                    <i class="bi bi-circle-fill position-absolute text-primary" style="left: -10px; top: 0; font-size: 12px;"></i>
+                                <div class="border-start <?php echo $history['status'] === 'pending_payment' ? 'border-warning' : 'border-primary'; ?> border-3 ps-3 mb-4 position-relative">
+                                    <i class="bi <?php echo $history['status'] === 'pending_payment' ? 'bi-cash-coin text-warning' : 'bi-circle-fill text-primary'; ?> position-absolute" style="left: -10px; top: 0; font-size: 12px;"></i>
                                     <div class="d-flex justify-content-between">
                                         <strong class="text-primary small">
                                             <?php 
@@ -2228,7 +2113,7 @@ include __DIR__ . '/../admin/header.php';
                                         <span class="text-muted italic" style="font-size: 11px;"><?php echo Helper::formatDateTime($history['created_at']); ?></span>
                                     </div>
                                     <p class="mb-1 small">
-                                        <?php echo ($history['status'] === 'submitted') ? htmlspecialchars($_t('history_online_desc')) . ' <strong>' . htmlspecialchars($_t('history_online_portal')) . '</strong>' : htmlspecialchars($history['remarks'] ?? $_t('history_no_notes')); ?>
+                                        <?php echo ($history['status'] === 'submitted') ? htmlspecialchars($_t('history_online_desc')) . ' <strong>' . htmlspecialchars($_t('history_online_portal')) . '</strong>' : nl2br(htmlspecialchars($history['remarks'] ?? $_t('history_no_notes'))); ?>
                                     </p>
                                     <small class="text-muted x-small">
                                         <?php echo htmlspecialchars($_t('history_by')); ?> <strong>

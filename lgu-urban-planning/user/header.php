@@ -54,7 +54,7 @@ unset($_SESSION['show_preloader']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>LGU Urban Planning System - User Portal</title>
-    <link rel="icon" type="image/x-icon" href="/lgu-urban-planning/assets/favicon.png" />
+    <link rel="icon" type="image/x-icon" href="/lgu-urban-planning/assets/upad-logo.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -81,72 +81,55 @@ unset($_SESSION['show_preloader']);
             pointer-events: none;
         }
 
-        .infra-svg { width: 200px; height: auto; overflow: visible; }
-
-        .infra-preloader .draw {
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-dasharray: var(--len, 800);
-            stroke-dashoffset: var(--len, 800);
-            animation: infra-draw-in 1.6s cubic-bezier(.4,0,.2,1) forwards;
-        }
-        @keyframes infra-draw-in {
-            to { stroke-dashoffset: 0; }
-        }
-
-        .infra-preloader .d1 { animation-delay: 0.1s; }
-        .infra-preloader .d2 { animation-delay: 0.3s; }
-        .infra-preloader .d3 { animation-delay: 0.5s; }
-        .infra-preloader .d4 { animation-delay: 0.7s; }
-        .infra-preloader .d5 { animation-delay: 0.9s; }
-        .infra-preloader .d6 { animation-delay: 1.0s; }
-
-        .infra-preloader .dots-group {
-            opacity: 0;
-            animation: infra-fade-in 0.5s ease forwards;
-            animation-delay: 1.5s;
-        }
-        .infra-preloader .dot-rect { fill: #1a3a6e; }
-
-        .infra-preloader .infra-text {
-            opacity: 0;
-            animation: infra-rise-in 0.6s cubic-bezier(.4,0,.2,1) forwards;
-            animation-delay: 1.7s;
-        }
-        .infra-preloader .sub-text {
-            opacity: 0;
-            animation: infra-rise-in 0.5s cubic-bezier(.4,0,.2,1) forwards;
-            animation-delay: 2.1s;
-        }
-        @keyframes infra-rise-in {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: translateY(0);   }
-        }
-        @keyframes infra-fade-in {
-            to { opacity: 1; }
-        }
-
-        .infra-loading-dots {
+        .preloader-logo-wrap {
+            position: relative;
+            width: 150px;
+            height: 150px;
             display: flex;
+            align-items: center;
             justify-content: center;
-            width: 200px;
-            gap: 7px;
+        }
+
+        .preloader-glow {
+            position: absolute;
+            inset: -18px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 166, 35, 0.22) 0%, rgba(26, 58, 110, 0.10) 55%, transparent 75%);
+            animation: preloader-glow-pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes preloader-glow-pulse {
+            0%, 100% { transform: scale(0.9); opacity: 0.55; }
+            50%      { transform: scale(1.12); opacity: 1; }
+        }
+
+        .preloader-ring {
+            position: absolute;
+            inset: -12px;
+            border-radius: 50%;
+            border: 3px solid rgba(26, 58, 110, 0.10);
+            border-top-color: #f5a623;
+            border-right-color: #f5a623;
+            animation: preloader-ring-spin 1.3s linear infinite;
+        }
+
+        @keyframes preloader-ring-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .preloader-logo {
+            width: 96px;
+            height: auto;
+            position: relative;
+            z-index: 2;
             opacity: 0;
-            animation: infra-fade-in 0.4s ease forwards;
-            animation-delay: 2.4s;
-            transform: translateX(-18px);
+            filter: drop-shadow(0 6px 14px rgba(26, 58, 110, 0.18));
+            transform: scale(0.8);
+            animation: preloader-logo-in 0.7s cubic-bezier(.34,1.56,.64,1) forwards;
         }
-        .infra-loading-dots .ld {
-            width: 7px; height: 7px; border-radius: 50%; background: #c5cae9;
-            animation: infra-ld-pulse 1.1s ease-in-out infinite;
-        }
-        .infra-loading-dots .ld:nth-child(1) { animation-delay: 2.4s; }
-        .infra-loading-dots .ld:nth-child(2) { animation-delay: 2.55s; }
-        .infra-loading-dots .ld:nth-child(3) { animation-delay: 2.7s; }
-        @keyframes infra-ld-pulse {
-            0%,100% { background: #c5cae9; transform: scale(1); }
-            50%      { background: #1a237e; transform: scale(1.4); }
+
+        @keyframes preloader-logo-in {
+            to { opacity: 1; transform: scale(1); }
         }
 
         * {
@@ -430,6 +413,46 @@ unset($_SESSION['show_preloader']);
             -webkit-backdrop-filter: blur(2px);
         }
         .sidebar-overlay.active { display: block; }
+
+        /* =============================================
+           1024px — LAPTOP
+        ============================================= */
+        @media (max-width: 1024px) {
+
+            /* --- Navbar --- */
+            .top-navbar {
+                padding: 12px 20px;
+            }
+            .top-navbar h5 {
+                font-size: 1rem;
+                max-width: 260px;
+            }
+
+            /* --- Sidebar: stay docked, just narrower --- */
+            .sidebar {
+                width: 220px;
+            }
+            .main-content {
+                margin-left: 220px;
+                width: calc(100% - 220px);
+                padding: 18px;
+            }
+            .sidebar .nav-link {
+                padding: 11px 13px;
+                font-size: 0.95rem;
+            }
+            .sidebar-logo-container img {
+                max-width: 90px;
+            }
+
+            /* --- Notification / avatar dropdowns --- */
+            .notif-dropdown .dropdown-menu {
+                width: 300px;
+            }
+            .avatar-menu {
+                width: 230px;
+            }
+        }
 
         /* =============================================
            768px — TABLETS
@@ -807,6 +830,12 @@ unset($_SESSION['show_preloader']);
     [data-bs-theme="dark"] .avatar-menu-logout i { color: #f87171 !important; }
     [data-bs-theme="dark"] .avatar-menu-logout:hover { background: rgba(239,68,68,0.1) !important; }
     [data-bs-theme="dark"] .dropdown-divider { border-color: rgba(255,255,255,0.08); }
+    [data-bs-theme="dark"] .sidebar .nav-link:hover { background: #334155; color: #fff !important; }
+    [data-bs-theme="dark"] .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .notif-item.unread { background: rgba(55, 98, 200, 0.18); }
+    [data-bs-theme="dark"] .notif-footer { border-top: 1px solid #4a5568; }
+    [data-bs-theme="dark"] .notif-dropdown .text-dark { color: #f1f5f9 !important; }
+    [data-bs-theme="dark"] .notif-message-preview { color: #94a3b8; }
 
     </style>
     <script src="/lgu-urban-planning/assets/js/user.js?v=<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . '/lgu-urban-planning/assets/js/user.js'); ?>"></script>
@@ -833,61 +862,10 @@ unset($_SESSION['show_preloader']);
     <!-- INFRA Preloader (only shown once, right after login) -->
     <?php if ($showLoginPreloader): ?>
     <div id="infra-preloader" class="infra-preloader">
-        <svg class="infra-svg" viewBox="0 0 200 175" xmlns="http://www.w3.org/2000/svg">
-
-            <polyline class="draw d1" points="22,118 22,90 44,90 44,118" stroke="#1a5fa8" stroke-width="3" style="--len:120"/>
-            <polyline class="draw d2" points="33,118 33,72 58,72 58,118" stroke="#1a5fa8" stroke-width="3" style="--len:160"/>
-
-            <polyline class="draw d3" points="68,50 68,30 96,10 96,30 96,118" stroke="#1a3a6e" stroke-width="3.5" style="--len:340"/>
-            <polyline class="draw d3" points="58,110 58,52 68,52 68,118" stroke="#1a3a6e" stroke-width="3" style="--len:180"/>
-            <polyline class="draw d4" points="96,50 96,52 106,52 106,118" stroke="#1a3a6e" stroke-width="3" style="--len:180"/>
-
-            <polyline class="draw d4" points="106,118 106,75 126,75 126,118" stroke="#1a5fa8" stroke-width="3" style="--len:155"/>
-            <polyline class="draw d5" points="126,118 126,95 142,95 142,118" stroke="#1a5fa8" stroke-width="3" style="--len:110"/>
-
-            <line class="draw d5" x1="18" y1="118" x2="146" y2="118" stroke="#1a3a6e" stroke-width="3" style="--len:130"/>
-
-            <g class="dots-group">
-
-                <rect class="dot-rect" x="72" y="38" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="38" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="48" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="48" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="58" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="58" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="68" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="68" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="78" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="78" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="88" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="88" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="72" y="98" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="80" y="98" width="4" height="4" rx="0.5"/>
-
-                <rect class="dot-rect" x="110" y="82" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="118" y="82" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="110" y="91" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="118" y="91" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="110" y="100" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="118" y="100" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="110" y="109" width="4" height="4" rx="0.5"/>
-                <rect class="dot-rect" x="118" y="109" width="4" height="4" rx="0.5"/>
-            </g>
-
-            <text class="infra-text" x="82" y="142" text-anchor="middle"
-                font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-                font-size="22" font-weight="800" fill="#1a3a6e" letter-spacing="3">INFRA</text>
-
-            <text class="sub-text" x="82" y="160" text-anchor="middle"
-                font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-                font-size="9" font-weight="600" fill="#5c6bc0" letter-spacing="4">GOV SERVICES</text>
-
-        </svg>
-
-        <div class="infra-loading-dots">
-            <div class="ld"></div>
-            <div class="ld"></div>
-            <div class="ld"></div>
+        <div class="preloader-logo-wrap">
+            <div class="preloader-glow"></div>
+            <div class="preloader-ring"></div>
+            <img src="/lgu-urban-planning/assets/upad-logo.png" alt="UPAD Logo" class="preloader-logo">
         </div>
     </div>
     <script>
@@ -956,7 +934,7 @@ unset($_SESSION['show_preloader']);
                                     <?php foreach ($latestNotifs as $n): ?>
                                         <a href="/lgu-urban-planning/applicant/messages.php" class="notif-item <?php echo $n['is_read'] == 0 ? 'unread' : ''; ?>">
                                             <div class="fw-bold small text-dark"><?php echo htmlspecialchars($n['subject']); ?></div>
-                                            <div style="font-size:0.82rem;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;display:block;">
+                                            <div class="notif-message-preview">
                                                 <?php
                                                     $msg = preg_replace('/\s+/', ' ', trim(strip_tags($n['message'])));
                                                     echo htmlspecialchars(mb_substr($msg, 0, 55) . (mb_strlen($msg) > 55 ? '…' : ''));
@@ -1031,7 +1009,7 @@ unset($_SESSION['show_preloader']);
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-top">
                 <div class="sidebar-logo-container">
-                    <img src="../assets/img/lgu-logo.png" alt="LGU Logo">
+                    <img src="../assets/upad-logo.png" alt="UPAD Logo">
                 </div>
                 <div class="sidebar-divider"></div>
 

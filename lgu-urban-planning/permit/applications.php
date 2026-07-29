@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         $sql = "INSERT INTO applications 
                 (application_number, applicant_id, parcel_id, project_name, project_type, project_description, 
-                 lot_number, barangay, street, block, latitude, longitude, status, record_type, submitted_at, created_at) 
+                 lot_number, barangay, district, street, block, latitude, longitude, status, record_type, submitted_at, created_at) 
                 VALUES 
                 (:application_number, :applicant_id, :parcel_id, :project_name, :project_type, :project_description, 
-                 :lot_number, :barangay, :street, :block, :latitude, :longitude, :status, :record_type, :submitted_at, :created_at)";
+                 :lot_number, :barangay, :district, :street, :block, :latitude, :longitude, :status, :record_type, :submitted_at, :created_at)";
         
         $params = [
             ':application_number'  => $appNumber,
@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ':project_description' => $_POST['project_description'],
             ':lot_number'          => $_POST['lot_number'],
             ':barangay'            => $_POST['barangay'],
+            ':district'            => $_POST['district'] ?? null,
             ':street'              => $_POST['street'],
             ':block'               => $_POST['block'],
             ':latitude'            => $_POST['latitude'],
@@ -838,6 +839,10 @@ include __DIR__ . '/../admin/header.php';
                         <div class="col-md-6">
                             <label class="form-label">Barangay</label>
                             <input type="text" name="barangay" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">District</label>
+                            <input type="text" name="district" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Street</label>

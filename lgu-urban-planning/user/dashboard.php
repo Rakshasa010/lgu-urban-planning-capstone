@@ -245,6 +245,71 @@ $firstDayOfWeek = date('w', $firstDayOfMonth);
     /* Alert spacing */
     .alert { border-radius: 0.5rem; }
 
+    /* Appointment detail item card (JS-generated in showApptDetail) */
+    .appt-item-card { background-color: #fff; }
+
+    /* =============================================
+       DARK MODE
+    ============================================= */
+    [data-bs-theme="dark"] .bg-light {
+        background-color: var(--bs-tertiary-bg) !important;
+    }
+    [data-bs-theme="dark"] .badge.bg-light.text-dark {
+        color: var(--bs-body-color) !important;
+        border-color: var(--bs-border-color) !important;
+    }
+    [data-bs-theme="dark"] .appt-item-card {
+        background-color: var(--bs-tertiary-bg);
+    }
+    [data-bs-theme="dark"] .calendar-table th {
+        color: var(--bs-secondary-color);
+    }
+    [data-bs-theme="dark"] .calendar-day:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #6ea8fe;
+    }
+    [data-bs-theme="dark"] .calendar-day.has-appt {
+        border-color: #0a58ca;
+    }
+    [data-bs-theme="dark"] .calendar-day.today {
+        border-bottom-color: #ea868f;
+    }
+    [data-bs-theme="dark"] .stat-card-clickable:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* =============================================
+       1024px — LAPTOP
+    ============================================= */
+    @media (max-width: 1024px) {
+        .dashboard-wrapper { padding: 1.25rem; }
+
+        /* Header */
+        .dashboard-header h2 { font-size: 1.55rem; }
+        .dashboard-header .badge { font-size: 0.85rem !important; padding: 8px 14px !important; }
+
+        /* Status card */
+        .status-card-inner .status-icon-box { padding: 1.1rem !important; }
+        .status-card-inner .status-icon-box i { font-size: 1.5rem !important; }
+        .status-main-text h6 { font-size: 0.72rem; }
+        .status-main-text h5 { font-size: 1.05rem; }
+
+        /* Stat cards */
+        .stat-card .card-body { padding: 1.25rem !important; }
+        .stat-card h2 { font-size: 1.75rem; }
+        .stat-card-icon { font-size: 1.8rem; }
+
+        /* Calendar */
+        .calendar-day { height: 37px; font-size: 0.8rem; }
+
+        /* Applications table */
+        .table-app th, .table-app td { padding: 0.65rem 0.75rem; font-size: 0.88rem; }
+
+        /* Section headers */
+        .section-card-header h5 { font-size: 1.1rem; }
+        .section-card-header small { font-size: 0.8rem; }
+    }
+
     /* =============================================
        768px — TABLETS
     ============================================= */
@@ -707,7 +772,7 @@ $firstDayOfWeek = date('w', $firstDayOfMonth);
         if(noApptMsg) noApptMsg.style.display = 'none';
         panel.style.display = 'block';
         content.innerHTML = details.map(a => `
-            <div class="mb-3 p-2 bg-white rounded border-start border-3 border-primary">
+            <div class="mb-3 p-2 appt-item-card rounded border-start border-3 border-primary">
                 <div class="text-primary fw-bold mb-1" style="font-size: 0.9rem;">${a.project_name}</div>
                 <div class="text-muted small mb-2">
                     <i class="bi bi-clock-fill me-1"></i>

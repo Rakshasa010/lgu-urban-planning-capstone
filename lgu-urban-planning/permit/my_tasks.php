@@ -8,7 +8,7 @@ $db = Database::getInstance();
 $inspector_id = $_SESSION['user_id'];
 
 $tasks = $db->fetchAll("
-    SELECT i.*, a.application_number, a.project_name, u.last_name AS owner_last_name
+    SELECT i.*, a.application_number, a.project_name, a.barangay, a.district, u.last_name AS owner_last_name
     FROM inspections i 
     JOIN applications a ON i.application_id = a.id
     LEFT JOIN users u ON a.applicant_id = u.id
@@ -32,7 +32,15 @@ include __DIR__ . '/../admin/header.php';
                             <small class="text-muted"><?= date('M d, Y h:i A', strtotime($t['scheduled_at'])) ?></small>
                         </div>
                         <h6 class="fw-bold mb-1">App #<?= $t['application_number'] ?></h6>
-                        <p class="small text-secondary mb-3"><?= $t['project_name'] ?> (<?= $t['owner_last_name'] ?>)</p>
+                        <p class="small text-secondary mb-1"><?= $t['project_name'] ?> (<?= $t['owner_last_name'] ?>)</p>
+                        <?php if (!empty($t['barangay']) || !empty($t['district'])): ?>
+                            <p class="small text-muted mb-3">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                <?= htmlspecialchars(implode(', ', array_filter([$t['barangay'] ?? '', $t['district'] ?? '']))) ?>
+                            </p>
+                        <?php else: ?>
+                            <p class="small text-secondary mb-3"></p>
+                        <?php endif; ?>
                         <div class="d-flex gap-2">
                             <a href="/lgu-urban-planning/permit/view.php?id=<?= $t['application_id'] ?>" class="btn btn-outline-primary btn-sm w-50">
                                 <i class="bi bi-eye me-1"></i> View Application

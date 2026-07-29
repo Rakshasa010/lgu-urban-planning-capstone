@@ -134,25 +134,67 @@ $isAuthPage = true;
 include __DIR__ . '/../user/header.php';
 ?>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
 /* =============================================
-   MESSAGES PAGE — FULLY RESPONSIVE
-   Breakpoints: 768px | 480px | 320px
+   MESSAGES PAGE — MODERN CIVIC THEME
+   Breakpoints: 1024px | 768px | 480px | 320px
    Root fix: prevent horizontal overflow from
    sidebar + Bootstrap padding on narrow screens
    ============================================= */
 
-/* --- Overflow lock: stop horizontal scroll --- */
 .messages-page {
+    --ap-navy:        #16324F;
+    --ap-navy-deep:   #0F2438;
+    --ap-navy-tint:   #EAF0F5;
+    --ap-gold:        #A9812F;
+    --ap-gold-tint:   #F6EFDE;
+    --ap-bg:          #F6F7F9;
+    --ap-surface:     #FFFFFF;
+    --ap-border:      #E2E6EC;
+    --ap-text:        #1C2733;
+    --ap-text-muted:  #667085;
+
     padding: 0;
     width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ap-text);
 }
 
 .messages-page h2 {
-    font-size: 1.5rem;
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--ap-navy-deep);
     margin-bottom: 1.25rem;
+}
+
+/* --- Dark mode ---
+   Every rule below already reads colors from the --ap-* custom
+   properties, so redefining them here re-themes the whole page. */
+[data-bs-theme="dark"] .messages-page {
+    --ap-navy:        #4d8eff;
+    --ap-navy-deep:   #cfe2ff;
+    --ap-navy-tint:   rgba(77, 142, 255, .15);
+    --ap-gold:        #e8c568;
+    --ap-gold-tint:   rgba(232, 197, 104, .12);
+    --ap-bg:          var(--bs-body-bg);
+    --ap-surface:     var(--bs-tertiary-bg);
+    --ap-border:      var(--bs-border-color);
+    --ap-text:        var(--bs-body-color);
+    --ap-text-muted:  var(--bs-secondary-color);
+}
+
+/* This rule hardcoded a light-blue background over Bootstrap's own
+   theme-aware .bg-body-tertiary, which otherwise re-themes itself
+   automatically — so unread rows need an explicit dark variant. */
+[data-bs-theme="dark"] .message-item.bg-body-tertiary {
+    background: rgba(77, 142, 255, .15) !important;
 }
 
 /* Force all children to respect container width */
@@ -182,9 +224,25 @@ include __DIR__ . '/../user/header.php';
     }
 }
 
+/* --- Cards --- */
+.messages-page .card {
+    background: var(--ap-surface);
+    border: 1px solid var(--ap-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+}
+
+.messages-page .alert-success {
+    background: var(--ap-navy-tint);
+    border: 1px solid rgba(22,50,79,.15);
+    color: var(--ap-navy-deep);
+    border-radius: 10px;
+}
+
 /* --- Filter Bar (admin style) --- */
 .messages-filter-bar {
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--ap-border) !important;
 }
 
 /* Keep filter tabs vertically centered with the input-group height,
@@ -195,43 +253,98 @@ include __DIR__ . '/../user/header.php';
 
 .messages-filter-bar .btn-group .btn {
     font-size: 0.82rem;
-    padding: 0.3rem 0.7rem;
+    font-weight: 600;
+    padding: 0.35rem 0.8rem;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    border-radius: 7px !important;
+}
+
+.messages-filter-bar .btn-group .btn + .btn {
+    margin-left: 0.3rem;
+}
+
+.messages-filter-bar .btn-primary,
+.messages-filter-bar .btn-outline-primary {
+    background: var(--ap-navy);
+    border-color: var(--ap-navy);
+    color: #fff;
+}
+
+.messages-filter-bar .btn-primary:hover,
+.messages-filter-bar .btn-outline-primary:hover {
+    background: var(--ap-navy-deep);
+    border-color: var(--ap-navy-deep);
+}
+
+.messages-filter-bar .btn-secondary {
+    background: var(--ap-text-muted);
+    border-color: var(--ap-text-muted);
+    color: #fff;
+}
+
+.messages-filter-bar .btn-outline-secondary {
+    color: var(--ap-text-muted);
+    border-color: var(--ap-border);
+    background: var(--ap-surface);
+}
+
+.messages-filter-bar .btn-outline-secondary:hover {
+    background: var(--ap-bg);
+    border-color: var(--ap-text-muted);
 }
 
 .messages-filter-bar .input-group-text {
-    background: var(--bs-body-bg);
+    background: var(--ap-surface);
+    border: 1px solid var(--ap-border);
     border-right: 0;
+    border-radius: 7px 0 0 7px;
 }
 
 .messages-filter-bar .form-control {
+    border: 1px solid var(--ap-border);
     border-left: 0;
     font-size: 0.875rem;
+    border-radius: 0 7px 7px 0;
 }
 
 .messages-filter-bar .form-control:focus {
     box-shadow: none;
-    border-color: #dee2e6;
+    border-color: var(--ap-border);
+}
+
+.messages-filter-bar #msgSearchBtn {
+    background: var(--ap-navy);
+    border-color: var(--ap-navy);
+    border-radius: 7px;
+    font-weight: 600;
+}
+
+.messages-filter-bar #msgSearchBtn:hover {
+    background: var(--ap-navy-deep);
+    border-color: var(--ap-navy-deep);
 }
 
 /* Result count sits snugly under the search bar, doesn't affect row height */
 .messages-filter-bar .col > small {
     display: block;
-    margin-top: 0.2rem;
+    margin-top: 0.3rem;
     font-size: 0.75rem;
     line-height: 1.2;
+    color: var(--ap-text-muted);
 }
 
 /* --- Card inbox header label --- */
 .messages-card-header {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
 }
 
 .messages-card-header h5 {
     font-size: 1rem;
+    font-weight: 700;
+    color: var(--ap-navy-deep);
     margin-bottom: 0;
 }
 
@@ -253,22 +366,27 @@ include __DIR__ . '/../user/header.php';
 /* --- Message Item (clickable preview) --- */
 .message-item {
     margin-bottom: 0.875rem;
-    padding: 0.875rem;
-    border-radius: 0.5rem;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
     cursor: pointer;
     transition: box-shadow 0.15s ease, transform 0.1s ease;
     user-select: none;
     width: 100%;
     overflow: hidden;
+    border: 1px solid var(--ap-border) !important;
 }
 
 .message-item:hover {
-    box-shadow: 0 4px 14px rgba(13, 110, 253, 0.12) !important;
+    box-shadow: 0 4px 14px rgba(22,50,79,0.1) !important;
     transform: translateY(-1px);
 }
 
 .message-item:active {
     transform: translateY(0);
+}
+
+.message-item.bg-body-tertiary {
+    background: #eaf2ff !important;
 }
 
 .message-item .message-meta {
@@ -284,12 +402,18 @@ include __DIR__ . '/../user/header.php';
     font-size: 0.78rem;
     white-space: nowrap;
     flex-shrink: 0;
+    color: var(--ap-text-muted);
+}
+
+.message-item .message-meta strong {
+    color: var(--ap-navy-deep);
 }
 
 .message-item .message-subject {
     font-size: 0.95rem;
     margin-top: 0.5rem;
     word-break: break-word;
+    color: var(--ap-navy-deep);
 }
 
 /* Preview: single truncated line */
@@ -299,7 +423,7 @@ include __DIR__ . '/../user/header.php';
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--bs-secondary-color);
+    color: var(--ap-text-muted);
     width: 100%;
     display: block;
 }
@@ -307,11 +431,12 @@ include __DIR__ . '/../user/header.php';
 .message-preview .click-hint {
     font-size: 0.75rem;
     color: #0d6efd;
-    opacity: 0.8;
+    opacity: 0.85;
     margin-left: 0.35rem;
+    font-weight: 600;
 }
 
-/* Unread dot */
+/* Unread dot — blue accent */
 .unread-dot {
     display: inline-block;
     width: 8px;
@@ -324,12 +449,22 @@ include __DIR__ . '/../user/header.php';
     margin-top: 3px;
 }
 
+/* Badges (application number tag) */
+.messages-page .badge.bg-info {
+    background: var(--ap-navy-tint) !important;
+    color: var(--ap-navy-deep) !important;
+    font-weight: 600;
+    font-size: 0.7rem;
+    border-radius: 999px;
+    padding: 0.3em 0.7em;
+}
+
 /* --- Full Message Modal --- */
 .msg-modal-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(15, 36, 56, 0.45);
     z-index: 1055;
     align-items: center;
     justify-content: center;
@@ -342,10 +477,10 @@ include __DIR__ . '/../user/header.php';
 }
 
 .msg-modal {
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border-radius: 0.75rem;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    background: var(--ap-surface);
+    color: var(--ap-text);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(15,36,56,0.25);
     width: 100%;
     max-width: 620px;
     max-height: 88vh;
@@ -360,8 +495,8 @@ include __DIR__ . '/../user/header.php';
 }
 
 .msg-modal-header {
-    padding: 1rem 1.25rem 0.75rem;
-    border-bottom: 1px solid var(--bs-border-color);
+    padding: 1.1rem 1.35rem 0.85rem;
+    border-bottom: 1px solid var(--ap-border);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -376,14 +511,15 @@ include __DIR__ . '/../user/header.php';
 
 .msg-modal-header .modal-sender {
     font-size: 0.82rem;
-    color: var(--bs-secondary-color);
-    margin-bottom: 0.2rem;
+    color: var(--ap-text-muted);
+    margin-bottom: 0.25rem;
     word-break: break-word;
 }
 
 .msg-modal-header .modal-subject {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
+    color: var(--ap-navy-deep);
     word-break: break-word;
 }
 
@@ -392,26 +528,26 @@ include __DIR__ . '/../user/header.php';
     border: none;
     font-size: 1.5rem;
     line-height: 1;
-    color: var(--bs-secondary-color);
+    color: var(--ap-text-muted);
     cursor: pointer;
     padding: 0 0.25rem;
     flex-shrink: 0;
 }
 
-.msg-modal-close:hover { color: var(--bs-body-color); }
+.msg-modal-close:hover { color: var(--ap-text); }
 
 .msg-modal-body {
-    padding: 1rem 1.25rem;
+    padding: 1.1rem 1.35rem;
     overflow-y: auto;
     flex: 1;
     font-size: 0.9rem;
-    line-height: 1.55;
+    line-height: 1.6;
     word-break: break-word;
 }
 
 .msg-modal-footer {
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid var(--bs-border-color);
+    padding: 0.85rem 1.35rem;
+    border-top: 1px solid var(--ap-border);
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
@@ -419,16 +555,48 @@ include __DIR__ . '/../user/header.php';
     flex-shrink: 0;
 }
 
+.msg-modal-footer .btn {
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.msg-modal-footer .btn-primary {
+    background: var(--ap-navy);
+    border-color: var(--ap-navy);
+}
+
+.msg-modal-footer .btn-primary:hover {
+    background: var(--ap-navy-deep);
+    border-color: var(--ap-navy-deep);
+}
+
+.msg-modal-footer .btn-secondary {
+    background: var(--ap-surface);
+    border-color: var(--ap-border);
+    color: var(--ap-text);
+}
+
+.msg-modal-footer .btn-secondary:hover {
+    background: var(--ap-bg);
+}
+
+.msg-modal-footer .btn-success {
+    background: #2E7D4F;
+    border-color: #2E7D4F;
+}
+
 /* --- Empty State --- */
 .empty-state {
-    padding: 2.5rem 1rem;
+    padding: 3rem 1rem;
     text-align: center;
 }
 
-.empty-state i { font-size: 2.5rem; }
+.empty-state i { font-size: 2.5rem; color: var(--ap-text-muted); }
+.empty-state p { color: var(--ap-text-muted); }
 
 /* --- Pagination --- */
-.messages-pagination { margin-top: 1rem; }
+.messages-pagination { margin-top: 1.25rem; }
 
 .messages-pagination .pagination {
     flex-wrap: wrap;
@@ -438,26 +606,63 @@ include __DIR__ . '/../user/header.php';
 
 .messages-pagination .page-link {
     font-size: 0.8rem;
-    padding: 0.3rem 0.6rem;
-    min-width: 2rem;
+    padding: 0.4rem 0.7rem;
+    min-width: 2.1rem;
     text-align: center;
+    color: var(--ap-navy);
+    border: 1px solid var(--ap-border);
+    border-radius: 7px;
+}
+
+.messages-pagination .page-item.active .page-link {
+    background: var(--ap-navy);
+    border-color: var(--ap-navy);
+    color: #fff;
+}
+
+.messages-pagination .page-item.disabled .page-link {
+    color: var(--ap-text-muted);
 }
 
 /* --- Compose Card --- */
 .compose-card { margin-top: 1.25rem; }
-.compose-card .card-header h5 { font-size: 1rem; }
-.compose-card .card-body { padding: 1rem; }
+
+.compose-card .card-header {
+    background: var(--ap-navy) !important;
+    color: #fff !important;
+    border-radius: 12px 12px 0 0;
+    padding: 1rem 1.25rem !important;
+}
+
+.compose-card .card-header h5 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.compose-card .card-body { padding: 1.25rem; }
 
 .compose-card .form-label {
-    font-size: 0.8rem;
-    margin-bottom: 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ap-text);
+    margin-bottom: 0.4rem;
 }
 
 .compose-card .form-control,
 .compose-card .form-select {
     font-size: 0.875rem;
-    padding: 0.45rem 0.65rem;
+    padding: 0.55rem 0.75rem;
     width: 100%;
+    border: 1px solid var(--ap-border);
+    border-radius: 8px;
+    background: var(--ap-surface);
+    color: var(--ap-text);
+}
+
+.compose-card .form-control:focus,
+.compose-card .form-select:focus {
+    border-color: var(--ap-navy);
+    box-shadow: 0 0 0 3px rgba(22,50,79,.14);
 }
 
 .compose-card textarea {
@@ -468,8 +673,88 @@ include __DIR__ . '/../user/header.php';
 
 .compose-card .btn-send {
     font-size: 0.9rem;
-    padding: 0.55rem;
+    padding: 0.65rem;
     width: 100%;
+    background: var(--ap-navy);
+    border-color: var(--ap-navy);
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.compose-card .btn-send:hover {
+    background: var(--ap-navy-deep);
+    border-color: var(--ap-navy-deep);
+}
+
+/* Who to contact guide */
+.compose-card .bg-body-tertiary {
+    background: var(--ap-bg) !important;
+    border: 1px solid var(--ap-border) !important;
+}
+
+.compose-card .bg-body-tertiary p {
+    color: var(--ap-gold) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.7rem !important;
+}
+
+.compose-card .bg-body-tertiary ul li {
+    color: var(--ap-text-muted);
+}
+
+.compose-card .bg-body-tertiary ul li .text-body {
+    color: var(--ap-text) !important;
+}
+
+/* =============================================
+   1024px — Laptop
+   ============================================= */
+@media (max-width: 1024px) {
+    .messages-page h2 {
+        font-size: 1.4rem;
+    }
+
+    .messages-card-header { padding: 0.85rem 1.1rem; }
+    .messages-card-header h5 { font-size: 1rem; }
+
+    .filter-btn-group .btn {
+        font-size: 0.78rem;
+        padding: 0.32rem 0.65rem;
+    }
+
+    .message-item { padding: 0.9rem; }
+
+    .compose-card .card-body { padding: 1.1rem; }
+
+    /* --- Filter bar: the 4 filter buttons + search input-group no
+       longer fit side-by-side once the sidebar + compose column eat
+       into the available width. Stack search below the buttons and
+       stop the input-group itself from wrapping (Bootstrap's
+       .input-group wraps by default, which is what was crushing the
+       text input and dropping the Search button to its own line). */
+    .messages-filter-bar .row {
+        flex-wrap: wrap;
+    }
+
+    .messages-filter-bar .col-auto {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .messages-filter-bar .col {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    .messages-filter-bar .input-group {
+        flex-wrap: nowrap;
+    }
+
+    .messages-filter-bar #msgSearchInput {
+        min-width: 0;
+    }
 }
 
 /* =============================================
@@ -495,7 +780,7 @@ include __DIR__ . '/../user/header.php';
     }
 
     .messages-card-header {
-        padding: 0.65rem 0.875rem;
+        padding: 0.75rem 1rem;
         gap: 0.5rem;
     }
 
@@ -506,7 +791,7 @@ include __DIR__ . '/../user/header.php';
         padding: 0.25rem 0.5rem;
     }
 
-    .message-item { padding: 0.75rem; }
+    .message-item { padding: 0.8rem; }
 
     .compose-card { margin-top: 0; }
 
@@ -537,15 +822,16 @@ include __DIR__ . '/../user/header.php';
     .messages-filter-bar .btn-group {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr);
-        gap: 0.2rem;
+        gap: 0.25rem;
         width: 100%;
     }
 
     .messages-filter-bar .btn-group .btn {
         font-size: 0.68rem;
-        padding: 0.28rem 0.1rem;
+        padding: 0.32rem 0.1rem;
         justify-content: center;
-        gap: 0.15rem;
+        gap: 0.2rem;
+        margin-left: 0 !important;
     }
 
     .messages-filter-bar .btn-group .btn i {
@@ -554,13 +840,13 @@ include __DIR__ . '/../user/header.php';
 
     /* Message items */
     .message-item {
-        padding: 0.625rem;
-        margin-bottom: 0.625rem;
+        padding: 0.7rem;
+        margin-bottom: 0.65rem;
     }
 
     .message-item .message-meta {
         flex-direction: column;
-        gap: 0.15rem;
+        gap: 0.2rem;
     }
 
     .message-item .message-meta small {
@@ -576,12 +862,12 @@ include __DIR__ . '/../user/header.php';
     /* Pagination */
     .messages-pagination .page-link {
         font-size: 0.72rem;
-        padding: 0.25rem 0.45rem;
-        min-width: 1.75rem;
+        padding: 0.3rem 0.5rem;
+        min-width: 1.9rem;
     }
 
     /* Compose */
-    .compose-card .card-body { padding: 0.75rem; }
+    .compose-card .card-body { padding: 0.9rem; }
 
     .compose-card .form-control,
     .compose-card .form-select { font-size: 0.825rem; }
@@ -595,17 +881,17 @@ include __DIR__ . '/../user/header.php';
     }
 
     .msg-modal {
-        border-radius: 0.875rem 0.875rem 0 0;
+        border-radius: 14px 14px 0 0;
         max-height: 85vh;
         max-width: 100%;
     }
 
-    .msg-modal-header { padding: 0.875rem 1rem 0.625rem; }
+    .msg-modal-header { padding: 0.9rem 1rem 0.65rem; }
     .msg-modal-body {
-        padding: 0.75rem 1rem;
+        padding: 0.8rem 1rem;
         font-size: 0.85rem;
     }
-    .msg-modal-footer { padding: 0.625rem 1rem; }
+    .msg-modal-footer { padding: 0.65rem 1rem; }
 }
 
 /* =============================================
@@ -631,7 +917,7 @@ include __DIR__ . '/../user/header.php';
     .messages-card-header {
         flex-direction: column;
         align-items: stretch;
-        padding: 0.5rem 0.6rem;
+        padding: 0.6rem 0.7rem;
         gap: 0.4rem;
     }
 
@@ -658,9 +944,9 @@ include __DIR__ . '/../user/header.php';
 
     /* Message items */
     .message-item {
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
-        border-radius: 0.375rem;
+        padding: 0.55rem;
+        margin-bottom: 0.55rem;
+        border-radius: 8px;
     }
 
     .message-item .message-meta strong {
@@ -693,13 +979,13 @@ include __DIR__ . '/../user/header.php';
     /* Pagination */
     .messages-pagination .page-link {
         font-size: 0.65rem;
-        padding: 0.2rem 0.35rem;
-        min-width: 1.5rem;
+        padding: 0.25rem 0.4rem;
+        min-width: 1.6rem;
     }
 
     /* Compose form */
     .compose-card .card-header {
-        padding: 0.5rem 0.6rem;
+        padding: 0.55rem 0.7rem !important;
     }
 
     .compose-card .card-header h5 {
@@ -707,31 +993,31 @@ include __DIR__ . '/../user/header.php';
     }
 
     .compose-card .card-body {
-        padding: 0.6rem;
+        padding: 0.65rem;
     }
 
     .compose-card .form-label {
         font-size: 0.72rem;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.25rem;
     }
 
     .compose-card .form-control,
     .compose-card .form-select {
         font-size: 0.75rem;
-        padding: 0.35rem 0.5rem;
+        padding: 0.4rem 0.55rem;
     }
 
     .compose-card textarea { min-height: 70px; }
 
     .compose-card .btn-send {
         font-size: 0.78rem;
-        padding: 0.45rem;
+        padding: 0.5rem;
     }
 
-    .mb-3 { margin-bottom: 0.5rem !important; }
+    .mb-3 { margin-bottom: 0.55rem !important; }
 
     /* Empty state */
-    .empty-state { padding: 1.5rem 0.5rem; }
+    .empty-state { padding: 1.75rem 0.5rem; }
     .empty-state i { font-size: 1.75rem; }
     .empty-state p { font-size: 0.78rem; }
 
@@ -739,39 +1025,41 @@ include __DIR__ . '/../user/header.php';
     .msg-modal-overlay { padding: 0; align-items: flex-end; }
 
     .msg-modal {
-        border-radius: 0.75rem 0.75rem 0 0;
+        border-radius: 12px 12px 0 0;
         max-height: 92vh;
         max-width: 100%;
     }
 
     .msg-modal-header {
-        padding: 0.65rem 0.75rem 0.5rem;
+        padding: 0.7rem 0.8rem 0.55rem;
     }
 
     .msg-modal-header .modal-sender { font-size: 0.72rem; }
 
-    .msg-modal-header .modal-subject { font-size: 0.85rem; }
+    .msg-modal-header .modal-subject { font-size: 0.88rem; }
 
     .msg-modal-close { font-size: 1.25rem; }
 
     .msg-modal-body {
-        padding: 0.65rem 0.75rem;
+        padding: 0.7rem 0.8rem;
         font-size: 0.78rem;
     }
 
     .msg-modal-footer {
-        padding: 0.5rem 0.75rem;
+        padding: 0.55rem 0.8rem;
         gap: 0.35rem;
     }
 
     .msg-modal-footer .btn {
         font-size: 0.72rem;
-        padding: 0.28rem 0.6rem;
+        padding: 0.3rem 0.65rem;
     }
 }
+
 /* Search input active glow when a query is set */
 #msgSearchInput.border-primary {
     box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
+    border-color: #0d6efd !important;
 }
 </style>
 
@@ -790,7 +1078,7 @@ include __DIR__ . '/../user/header.php';
 
         <!-- ── Inbox / Sent Column ── -->
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
+            <div class="card">
 
                 <!-- ── Filter bar (admin style) ── -->
                 <div class="card-body border-bottom py-2 px-3 messages-filter-bar">
@@ -901,7 +1189,7 @@ include __DIR__ . '/../user/header.php';
                             ?>
 
                             <!-- Clickable preview row -->
-                            <div class="message-item border rounded shadow-sm <?php echo $isUnread ? 'bg-body-tertiary border-primary' : 'bg-body'; ?>"
+                            <div class="message-item rounded <?php echo $isUnread ? 'bg-body-tertiary' : 'bg-body'; ?>"
                                  data-search-sender="<?php echo strtolower(htmlspecialchars(strip_tags($senderLabel))); ?>"
                                  data-search-subject="<?php echo strtolower(htmlspecialchars($msg['subject'] ?: '')); ?>"
                                  data-search-body="<?php echo strtolower(htmlspecialchars(mb_substr(strip_tags($msg['message']), 0, 300))); ?>"
@@ -1006,7 +1294,7 @@ include __DIR__ . '/../user/header.php';
 
         <!-- ── Compose Column ── -->
         <div class="col-md-4 mt-4 mt-md-0">
-            <div class="card shadow-sm border-0 bg-body compose-card">
+            <div class="card compose-card">
                 <div class="card-header bg-primary text-white py-3 border-0">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i><?php echo _mgt('compose_title'); ?></h5>
                 </div>
