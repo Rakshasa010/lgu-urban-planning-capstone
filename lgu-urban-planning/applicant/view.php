@@ -80,6 +80,8 @@ $_vwT = [
         'pay_amount'        => 'Amount Due',
         'btn_pay_now'        => 'Pay Now',
         'pay_paid_note'     => 'Payment received. Your permit has been emailed to your registered email address.',
+        'btn_view_receipt'  => 'View Receipt',
+        'btn_download_receipt' => 'Download Receipt',
     ],
     'fil' => [
         'page_title'        => 'Mga Detalye ng Aplikasyon',
@@ -132,6 +134,8 @@ $_vwT = [
         'pay_amount'        => 'Halagang Babayaran',
         'btn_pay_now'        => 'Magbayad Ngayon',
         'pay_paid_note'     => 'Natanggap na ang bayad. Ang inyong permit ay naipadala na sa inyong nakarehistrong email.',
+        'btn_view_receipt'  => 'Tingnan ang Resibo',
+        'btn_download_receipt' => 'I-download ang Resibo',
     ],
 ];
 
@@ -314,11 +318,30 @@ if (preg_match('/releas|complet|issued|claimed/', $_trkStatus)) {
 
 .app-details-wrapper .table-responsive-wrapper .table {
     min-width: 480px;
+    table-layout: auto;
 }
 
 .app-details-wrapper .table {
     font-size: 0.88rem;
     margin: 0;
+}
+
+/* Headers/short cells never wrap — the wrapper above scrolls
+   horizontally instead. Only the file-name column (2nd) is allowed
+   to wrap, since names can be long. This is set unconditionally
+   (not just inside a narrow-width media query) so it can't be
+   undermined by any breakpoint tier forgetting to repeat it. */
+.app-details-wrapper .table th,
+.app-details-wrapper .table td {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+.app-details-wrapper .table td:nth-child(2) {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
 }
 
 .app-details-wrapper .table thead th {
@@ -748,17 +771,26 @@ if (preg_match('/releas|complet|issued|claimed/', $_trkStatus)) {
         padding: 0.3em 0.6em;
     }
 
-    /* Fully wrap table text */
+    /* Documents table: with 4 columns (incl. a 2-button Action column),
+       there isn't enough room to wrap everything into ~75px-wide
+       columns without breaking headers apart letter-by-letter. Keep a
+       sane min-width and let .table-responsive-wrapper's horizontal
+       scroll (already set up above) handle the overflow instead. */
     .app-details-wrapper .table-responsive-wrapper .table {
-        min-width: 300px;
+        min-width: 460px;
     }
 
     .app-details-wrapper .table th,
     .app-details-wrapper .table td {
         font-size: 0.72rem;
-        padding: 0.35rem 0.4rem;
+        padding: 0.4rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    .app-details-wrapper .table td:nth-child(2) {
         white-space: normal;
         word-break: break-word;
+        max-width: 140px;
     }
 
     .app-details-wrapper .btn-sm {
@@ -944,7 +976,13 @@ if (preg_match('/releas|complet|issued|claimed/', $_trkStatus)) {
         </div>
         <div class="card-body">
             <?php if ($paymentRecord['status'] === 'paid'): ?>
-                <p class="mb-0 text-success"><i class="bi bi-check-circle-fill me-1"></i> <?php echo _vwt('pay_paid_note'); ?></p>
+                <p class="mb-3 text-success"><i class="bi bi-check-circle-fill me-1"></i> <?php echo _vwt('pay_paid_note'); ?></p>
+                <a href="/lgu-urban-planning/modules/PermitProcessing/receipt.php?id=<?php echo $applicationId; ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-receipt me-1"></i> <?php echo _vwt('btn_view_receipt'); ?>
+                </a>
+                <a href="/lgu-urban-planning/modules/PermitProcessing/receipt.php?id=<?php echo $applicationId; ?>&download=1" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-download me-1"></i> <?php echo _vwt('btn_download_receipt'); ?>
+                </a>
             <?php else: ?>
                 <p><?php echo _vwt('pay_intro'); ?></p>
                 <p class="mb-1"><strong><?php echo _vwt('pay_reference'); ?>:</strong> <?php echo htmlspecialchars($paymentRecord['reference_number']); ?></p>
