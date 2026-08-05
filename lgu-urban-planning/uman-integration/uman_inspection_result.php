@@ -6,10 +6,8 @@
  * Give this URL to the UMAN team:
  *   https://upad.infragovservices.com/api/webhooks/uman_inspection_result.php
  *
- * ⚠️ Expected JSON payload below is a PLACEHOLDER, mirrored off the shape
- * confirmed with IPMS for Roads. None of this has been confirmed with the
- * Energy/Utilities team yet — get their actual modal field names and
- * approve/reject convention before relying on it.
+ * Expected JSON payload below is confirmed against UMAN's own
+ * api/v1/inspection-callback.php:
  * {
  *   "application_id": 789,              // echoed back from our request
  *   "grid_id": "EG-2026-014",           // their own generated id
@@ -58,8 +56,8 @@ if (!$data) {
 $applicationId    = (int) ($data['application_id'] ?? 0);
 $externalRefId    = $data['grid_id']              ?? null;
 $overallCondition = $data['overall_condition']    ?? null;  // Excellent|Good|Fair|Poor|Critical
-$severity         = $data['severity']             ?? null;  // ⚠️ scale not yet confirmed with UMAN
-$recommendation   = $data['recommendation']        ?? null;  // ⚠️ dropdown options not yet confirmed
+$severity         = $data['severity']             ?? null;  // Low|Medium|High
+$recommendation   = $data['recommendation']        ?? null;  // free text, entered by the UMAN inspector
 $remarks          = $data['remarks']              ?? '';
 $inspectedAt      = $data['inspection_date']       ?? null;
 $engineerAssigned = $data['engineer_assigned']     ?? null;
@@ -125,7 +123,7 @@ try {
 
     $db->prepare(
         "INSERT INTO application_status_history (application_id, status, remarks, changed_by)
-         VALUES (?, ?, ?, 0)"
+         VALUES (?, ?, ?, NULL)"
     )->execute([
         $applicationId,
         $currentStatus,

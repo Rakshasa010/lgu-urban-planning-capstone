@@ -2,27 +2,36 @@
 /**
  * Config for the UPAD <-> UMAN (Energy & Utilities) integration.
  *
- * ⚠️ PLACEHOLDER VALUES — replace all of these once the UMAN team issues
- * real credentials and confirms their actual endpoint path. UMAN is the
- * Energy/Utilities counterpart to Roads' IPMS.
+ * Real values come from environment variables — see .env.example in this
+ * folder. Copy it to `.env` (untracked, gitignored) and override values
+ * there for a different environment; nothing secret belongs in this file.
  *
- * Recommended: move these into environment variables (.env) instead of
- * hardcoding, especially UMAN_API_KEY and UMAN_WEBHOOK_SECRET.
+ * The defaults below already match UMAN's own local defaults (see
+ * uman_/api/integration_config.php on the UMAN side), so this integration
+ * works out of the box on a local XAMPP setup with both projects under
+ * htdocs. Override UMAN_API_URL/UMAN_WEBHOOK_CALLBACK_URL once either side
+ * is deployed somewhere other than localhost.
  */
 
-// Base URL of their system. Confirm the exact API path with the
-// Energy/Utilities team (e.g. it might be /api/v1/inspection-requests,
-// /api/v2/grid/requests, etc.)
-define('UMAN_API_URL', 'https://uman.infragovservices.com');
+require_once __DIR__ . '/env.php';
 
-// API key/token the Energy/Utilities team will issue us to authenticate
-// our outbound requests.
-define('UMAN_API_KEY', 'REPLACE_WITH_REAL_API_KEY');
+// Base URL of the UMAN system. Local XAMPP default assumes both projects
+// live side by side under htdocs (…/htdocs/uman_). Override via .env once
+// UMAN is deployed somewhere else reachable from this server.
+define('UMAN_API_URL', uman_env('UMAN_API_URL', 'http://localhost/uman_'));
+
+// API key/token UMAN expects on inbound requests (Authorization: Bearer).
+// Must match UPAD_API_KEY in UMAN's api/integration_config.php.
+define('UMAN_API_KEY', uman_env('UMAN_API_KEY', 'UPAD_UMAN_INTEGRATION_KEY_2026'));
 
 // Shared secret used to verify that inbound webhook calls really came from
-// UMAN (HMAC signature check). Both sides must agree on this value.
-define('UMAN_WEBHOOK_SECRET', 'REPLACE_WITH_SHARED_WEBHOOK_SECRET');
+// UMAN (HMAC signature check). Must match UPAD_WEBHOOK_SECRET in UMAN's
+// api/integration_config.php.
+define('UMAN_WEBHOOK_SECRET', uman_env('UMAN_WEBHOOK_SECRET', 'UPAD_UMAN_WEBHOOK_SECRET_2026'));
 
-// The URL we give to the Energy/Utilities team so they know where to POST
-// results back to us.
-define('UMAN_WEBHOOK_CALLBACK_URL', 'https://upad.infragovservices.com/api/webhooks/uman_inspection_result.php');
+// The URL we give UMAN so it knows where to POST results back to us. Local
+// XAMPP default points at this project's own webhook receiver.
+define('UMAN_WEBHOOK_CALLBACK_URL', uman_env(
+    'UMAN_WEBHOOK_CALLBACK_URL',
+    'http://localhost/lgu-urban-planning-capstone/lgu-urban-planning/uman-integration/uman_inspection_result.php'
+));
