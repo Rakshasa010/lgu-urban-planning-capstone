@@ -267,80 +267,8 @@ if ($_SESSION['role'] === 'inspector') {
 
     /* ================================================
        MOBILE RESPONSIVE
-       1024px (Laptop) | 768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+       768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
        ================================================ */
-
-    /* --- 1024px: Laptop --- */
-    @media (max-width: 1024px) {
-        .p-4 { padding: 1.25rem !important; }
-        .metric-card .card-body h2 { font-size: 1.65rem; }
-
-        /* Total Applications / Pending Review / Approved / Rejected cards:
-           at this width the sidebar can be either expanded (~250px) or
-           collapsed to icons (~80px), so each card's actual width swings
-           by ~40px depending purely on sidebar state — with the default
-           label size, that's enough to flip "Total Applications" between
-           1 and 2 lines, making the whole card row (and everything below
-           it) jump every time the sidebar is toggled. Shrink the label
-           enough that it reliably fits on one line either way, and
-           reserve height for 2 lines regardless so a translation that
-           still wraps doesn't reintroduce the jump. */
-        .metric-card .card-body h6 {
-            font-size: 0.78rem;
-            min-height: 2.1em;
-            display: flex;
-            align-items: center;
-        }
-        .metric-card .card-body .bi { font-size: 1.2rem !important; }
-
-        /* Avg. Processing Time / Top Performing Barangay / Upcoming
-           Inspections cards: at this width (minus the docked sidebar)
-           each of the 3 columns is only ~200px, so labels like "Top
-           Performing Barangay" wrap to 3 lines. align-items-center then
-           centers the icon against that whole 3-line block, making it
-           look like it's floating disconnected from the text. Anchor
-           the icon to the top instead, and shrink it + the label so two
-           lines is the worst case rather than three. */
-        .stat-icon-card-body {
-            align-items: flex-start !important;
-        }
-        .stat-icon-card-body .rounded-circle {
-            padding: 0.6rem !important;
-            flex-shrink: 0;
-        }
-        .stat-icon-card-body .bi { font-size: 1.1rem !important; }
-        .stat-icon-card-body h6 { font-size: 0.72rem; margin-bottom: 0.25rem; }
-        .stat-icon-card-body h4 { font-size: 1.05rem; }
-
-        .table { font-size: 0.85rem; }
-        .table th, .table td { padding: 0.65rem 0.55rem; }
-
-        /* Priority Action Required alert: with the sidebar expanded, the
-           icon+text block and the "Review Overdue" button come up just
-           short of fitting on one row, so flex-wrap silently drops the
-           button onto its own line only in that state — toggling the
-           sidebar flips the alert between a clean 1-row layout and a
-           2-row one with the button stranded on the left. Trim the icon,
-           text, and button just enough that the row reliably fits with
-           room to spare either way, so it always looks like the 1-row
-           layout regardless of sidebar state. */
-        .overdue-alert .rounded-circle {
-            padding: 0.65rem !important;
-        }
-        .overdue-alert .bi.fs-3 {
-            font-size: 1.3rem !important;
-        }
-        .overdue-alert h5 {
-            font-size: 0.95rem;
-        }
-        .overdue-alert p {
-            font-size: 0.82rem;
-        }
-        .overdue-alert .btn {
-            font-size: 0.82rem;
-            padding: 8px 16px;
-        }
-    }
 
     /* --- 768px: Tablet --- */
     @media (max-width: 768px) {
@@ -383,10 +311,10 @@ if ($_SESSION['role'] === 'inspector') {
         .col-md-4 { width: 100%; flex: 0 0 100%; }
 
         /* Performance row cards */
-        .stat-icon-card-body h4 { font-size: 1rem; }
-        .stat-icon-card-body h6 { font-size: 0.75rem; }
-        .stat-icon-card-body .rounded-circle { padding: 0.6rem !important; }
-        .stat-icon-card-body .bi { font-size: 1.1rem !important; }
+        .card-body.d-flex.align-items-center h4 { font-size: 1rem; }
+        .card-body.d-flex.align-items-center h6 { font-size: 0.75rem; }
+        .card-body.d-flex.align-items-center .rounded-circle { padding: 0.6rem !important; }
+        .card-body.d-flex.align-items-center .bi { font-size: 1.1rem !important; }
 
         /* Overdue alert */
         .overdue-alert .card-body { padding: 1rem !important; }
@@ -402,23 +330,12 @@ if ($_SESSION['role'] === 'inspector') {
         .card-header .input-group-sm .form-control { font-size: 0.8rem; }
         .card-header .form-select-sm { font-size: 0.8rem; }
 
-        /* Bootstrap's .input-group wraps by default, which can push a
-           trailing element onto its own line once its column narrows —
-           keep the search icon + input on one row. */
-        .input-group { flex-wrap: nowrap; }
-
         /* Table */
         .table { font-size: 0.8rem; }
         .table th, .table td { padding: 0.5rem 0.4rem; }
         .table thead th:nth-child(3),
         .table tbody td:nth-child(3) { display: none; } /* hide Applicant col */
         .table .btn-sm { font-size: 0.75rem; padding: 4px 10px; }
-
-        /* Guard header/cell text (e.g. "SCHEDULED DATE") from breaking
-           mid-word once columns get tight — let table-responsive's
-           horizontal scroll take over instead. */
-        .table th, .table td { white-space: nowrap; }
-        .table-responsive .table { min-width: 560px; }
 
         /* Chart cards: 1 per row */
         .col-md-6 { width: 100%; flex: 0 0 100%; }
@@ -459,10 +376,10 @@ if ($_SESSION['role'] === 'inspector') {
         .metric-card .card-body .bi { font-size: 1rem !important; }
 
         /* Performance cards */
-        .stat-icon-card-body { padding: 0.75rem !important; }
-        .stat-icon-card-body h4 { font-size: 0.95rem; }
-        .stat-icon-card-body h6 { font-size: 0.7rem; }
-        .stat-icon-card-body .rounded-circle {
+        .card-body.d-flex.align-items-center { padding: 0.75rem !important; }
+        .card-body.d-flex.align-items-center h4 { font-size: 0.95rem; }
+        .card-body.d-flex.align-items-center h6 { font-size: 0.7rem; }
+        .card-body.d-flex.align-items-center .rounded-circle {
             padding: 0.5rem !important;
             margin-right: 0.6rem !important;
         }
@@ -485,8 +402,7 @@ if ($_SESSION['role'] === 'inspector') {
 
         /* Table */
         .table { font-size: 0.72rem; }
-        .table th, .table td { padding: 0.4rem 0.3rem; white-space: nowrap; }
-        .table-responsive .table { min-width: 400px; }
+        .table th, .table td { padding: 0.4rem 0.3rem; }
         .table thead th:nth-child(3),
         .table tbody td:nth-child(3),
         .table thead th:nth-child(5),
@@ -532,14 +448,14 @@ if ($_SESSION['role'] === 'inspector') {
         .metric-card .card-body .bi { font-size: 0.9rem !important; }
 
         /* Performance cards */
-        .stat-icon-card-body { padding: 0.6rem !important; }
-        .stat-icon-card-body h4 { font-size: 0.85rem; }
-        .stat-icon-card-body h6 { font-size: 0.65rem; }
-        .stat-icon-card-body .rounded-circle {
+        .card-body.d-flex.align-items-center { padding: 0.6rem !important; }
+        .card-body.d-flex.align-items-center h4 { font-size: 0.85rem; }
+        .card-body.d-flex.align-items-center h6 { font-size: 0.65rem; }
+        .card-body.d-flex.align-items-center .rounded-circle {
             padding: 0.4rem !important;
             margin-right: 0.5rem !important;
         }
-        .stat-icon-card-body .bi { font-size: 0.9rem !important; }
+        .card-body.d-flex.align-items-center .bi { font-size: 0.9rem !important; }
 
         /* Overdue alert */
         .overdue-alert .card-body.p-4 {
@@ -562,8 +478,7 @@ if ($_SESSION['role'] === 'inspector') {
 
         /* Table: keep App# + Status + Action only */
         .table { font-size: 0.65rem; }
-        .table th, .table td { padding: 0.3rem 0.2rem; white-space: nowrap; }
-        .table-responsive .table { min-width: 300px; }
+        .table th, .table td { padding: 0.3rem 0.2rem; }
         .table thead th:nth-child(2),
         .table tbody td:nth-child(2),
         .table thead th:nth-child(3),
@@ -662,7 +577,7 @@ if ($_SESSION['role'] === 'inspector') {
     <div class="row mb-4 g-4">
         <div class="col-md-4">
             <div class="card shadow-sm border-0 bg-white" style="border-radius: 15px; border-left: 5px solid #6366f1;">
-                <div class="card-body d-flex align-items-center stat-icon-card-body">
+                <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3"><i class="bi bi-speedometer2 text-primary fs-4"></i></div>
                     <div><h6 class="text-muted mb-1"><?php echo dt('avg_processing', $dashTranslations, $dashLang); ?></h6><h4 class="fw-bold mb-0"><?php echo $avgProcessingTime; ?> <?php echo dt('days', $dashTranslations, $dashLang); ?></h4></div>
                 </div>
@@ -670,7 +585,7 @@ if ($_SESSION['role'] === 'inspector') {
         </div>
         <div class="col-md-4">
             <div class="card shadow-sm border-0 bg-white" style="border-radius: 15px; border-left: 5px solid #8b5cf6;">
-                <div class="card-body d-flex align-items-center stat-icon-card-body">
+                <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-purple bg-opacity-10 p-3 me-3" style="background: rgba(139,92,246,0.1);"><i class="bi bi-trophy text-purple fs-4" style="color:#8b5cf6;"></i></div>
                     <div><h6 class="text-muted mb-1"><?php echo dt('top_barangay', $dashTranslations, $dashLang); ?></h6><h4 class="fw-bold mb-0"><?php echo htmlspecialchars($topBarangay); ?></h4></div>
                 </div>
@@ -678,7 +593,7 @@ if ($_SESSION['role'] === 'inspector') {
         </div>
         <div class="col-md-4">
             <div class="card shadow-sm border-0 bg-white" style="border-radius: 15px; border-left: 5px solid #ec4899;">
-                <div class="card-body d-flex align-items-center stat-icon-card-body">
+                <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-pink bg-opacity-10 p-3 me-3" style="background: rgba(236,72,153,0.1);"><i class="bi bi-calendar-check text-pink fs-4" style="color:#ec4899;"></i></div>
                     <div><h6 class="text-muted mb-1"><?php echo dt('upcoming_inspections', $dashTranslations, $dashLang); ?></h6><h4 class="fw-bold mb-0"><?php echo $inspectionCount; ?></h4></div>
                 </div>

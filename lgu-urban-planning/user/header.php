@@ -53,7 +53,7 @@ unset($_SESSION['show_preloader']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>UPAD - User Portal</title>
+    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>LGU Urban Planning System - User Portal</title>
     <link rel="icon" type="image/x-icon" href="/lgu-urban-planning/assets/upad-logo.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -196,51 +196,21 @@ unset($_SESSION['show_preloader']);
         
         .sidebar.collapsed .sidebar-text, 
         .sidebar.collapsed .badge,
+        .sidebar.collapsed .sidebar-logo-container,
         .sidebar.collapsed .welcome-text {
             display: none;
         }
-
-        /* Close button inside the mobile drawer — hidden on desktop since
-           the drawer never covers the navbar's hamburger there. */
-        .sidebar-close-btn {
-            display: none;
-        }
-
+        
         /* Logo and Divider Styling */
         .sidebar-logo-container {
-            padding: 28px 20px 20px;
+            padding: 20px;
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: padding 0.3s ease;
         }
 
         .sidebar-logo-container img {
             max-width: 100px;
             height: auto;
-            margin: 0 auto 15px;
-            display: block;
-            transition: all 0.3s ease;
-        }
-
-        /* Collapsed rail: shrink the logo to a small badge-sized crop
-           instead of hiding it, so the rail still reads as branded.
-           object-position: top keeps the building icon in frame and
-           crops out the "UPAD" wordmark underneath it. */
-        .sidebar.collapsed .sidebar-logo-container {
-            padding: 15px 8px 10px;
-        }
-
-        .sidebar.collapsed .sidebar-logo-container img {
-            width: 44px;
-            height: 44px;
-            max-width: 44px;
-            object-fit: cover;
-            object-position: top;
-            border-radius: 10px;
-            margin-bottom: 0;
+            margin-bottom: 15px;
         }
 
         .sidebar-divider {
@@ -303,90 +273,6 @@ unset($_SESSION['show_preloader']);
             background: #3762c8;
             color: #fff;
             box-shadow: 0 4px 12px rgba(55, 98, 200, 0.3);
-        }
-
-        /* ---------- LOGOUT OVERLAY (branded card) ---------- */
-        #logout-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 999999;
-            background: rgba(15, 23, 42, 0.45);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #logout-overlay.show {
-            display: flex;
-        }
-        #logout-overlay.visible {
-            opacity: 1;
-        }
-
-        .logout-card {
-            background: #ffffff;
-            border-radius: 18px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-            padding: 36px 40px 32px;
-            width: 300px;
-            max-width: 88vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transform: translateY(10px) scale(0.97);
-            opacity: 0;
-            transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.35s ease;
-        }
-        #logout-overlay.visible .logout-card {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-
-        .logout-card-logo {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            object-fit: contain;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 14px rgba(26, 58, 110, 0.18);
-        }
-
-        .logout-card-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #1e293b;
-            letter-spacing: 0.2px;
-            margin-bottom: 4px;
-        }
-
-        .logout-card-subtext {
-            font-size: 12.5px;
-            color: #64748b;
-            margin-bottom: 22px;
-            line-height: 1.4;
-        }
-
-        .logout-progress-track {
-            width: 100%;
-            height: 5px;
-            border-radius: 999px;
-            background: #e9edf5;
-            overflow: hidden;
-        }
-        .logout-progress-fill {
-            height: 100%;
-            width: 40%;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #1e3a8a, #4d76d6);
-            animation: logout-progress-slide 1.1s ease-in-out infinite;
-        }
-        @keyframes logout-progress-slide {
-            0%   { transform: translateX(-100%); }
-            100% { transform: translateX(250%); }
         }
 
         /* --- LOGOUT BUTTON AND WELCOME SA IBABA --- */
@@ -528,17 +414,6 @@ unset($_SESSION['show_preloader']);
         }
         .sidebar-overlay.active { display: block; }
 
-        /* Belt-and-braces: keep the backdrop in sync with the sidebar's
-           actual open state even if a JS class toggle is missed/late. */
-        .d-flex:has(> #sidebar.show) #sidebarOverlay {
-            display: block;
-        }
-
-        /* Prevent the page behind the drawer from scrolling while it's open */
-        body:has(#sidebar.show) {
-            overflow: hidden;
-        }
-
         /* =============================================
            1024px — LAPTOP
         ============================================= */
@@ -584,32 +459,6 @@ unset($_SESSION['show_preloader']);
         ============================================= */
         @media (max-width: 768px) {
 
-            /* Icon-only "collapsed" mode doesn't make sense for an
-               off-canvas drawer — force full content (logo, labels,
-               badges, welcome text) any time the sidebar is a drawer,
-               regardless of whether .collapsed is toggled, and regardless
-               of which narrower breakpoint (480px/320px) is also active. */
-            .sidebar .sidebar-text,
-            .sidebar .badge,
-            .sidebar .welcome-text {
-                display: unset !important;
-            }
-            .sidebar .sidebar-logo-container {
-                display: flex !important;
-                padding-top: 36px !important;
-            }
-            .sidebar.collapsed .sidebar-logo-container {
-                padding: 20px !important;
-            }
-            .sidebar.collapsed .sidebar-logo-container img {
-                width: auto !important;
-                height: auto !important;
-                max-width: 100px !important;
-                object-fit: unset !important;
-                border-radius: 0 !important;
-                margin-bottom: 15px !important;
-            }
-
             /* --- Navbar --- */
             .top-navbar {
                 padding: 10px 16px;
@@ -626,43 +475,28 @@ unset($_SESSION['show_preloader']);
             /* --- Sidebar: off-canvas drawer --- */
             .sidebar {
                 transform: translateX(-100%);
-                width: min(80vw, 300px);
+                width: 250px;
                 top: 0;
                 height: 100vh;
-                z-index: 1060;
+                z-index: 1040;
                 transition: transform 0.3s ease;
-            }
-            .sidebar-close-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: absolute;
-                top: 14px;
-                right: 14px;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                border: none;
-                background: rgba(0, 0, 0, 0.08);
-                color: #333;
-                font-size: 1rem;
-                cursor: pointer;
-                z-index: 5;
-                transition: background 0.2s ease;
-            }
-            .sidebar-close-btn:hover {
-                background: rgba(0, 0, 0, 0.16);
             }
             .sidebar.show {
                 transform: translateX(0);
             }
             /* Reset collapsed behaviour on mobile — always full width when shown */
             .sidebar.collapsed {
-                width: min(80vw, 300px);
+                width: 250px;
                 transform: translateX(-100%);
             }
             .sidebar.collapsed.show {
                 transform: translateX(0);
+            }
+            .sidebar.collapsed .sidebar-text,
+            .sidebar.collapsed .badge,
+            .sidebar.collapsed .sidebar-logo-container,
+            .sidebar.collapsed .welcome-text {
+                display: unset;
             }
 
             /* --- Main content: full width --- */
@@ -693,10 +527,9 @@ unset($_SESSION['show_preloader']);
             }
             .top-navbar h5 {
                 font-size: 0.82rem;
-                max-width: 118px;
+                max-width: 130px;
             }
-            .navbar-icon-group { gap: 0px; }
-            .user-info { gap: 3px; }
+            .user-info { gap: 4px; }
 
             /* Shrink toggle button slightly */
             .sidebar-toggle {
@@ -704,19 +537,9 @@ unset($_SESSION['show_preloader']);
                 font-size: 0.9rem;
             }
 
-            /* Shrink the navbar icon buttons (theme toggle, bell, avatar
-               trigger) instead of hiding any of them, so dark mode stays
-               reachable at every width. */
-            .navbar-icon-btn {
-                width: 30px;
-                height: 30px;
-                font-size: 0.9rem;
-            }
-
-            .user-avatar {
-                width: 32px;
-                height: 32px;
-                font-size: 0.8rem;
+            /* Hide the theme-toggle icon on very small bars to save room */
+            .navbar-icon-btn[onclick="toggleDarkMode()"] {
+                display: none;
             }
 
             /* --- Notification dropdown: viewport-anchored to beat Popper.js --- */
@@ -752,7 +575,7 @@ unset($_SESSION['show_preloader']);
             .main-content { padding: 10px 8px; width: 100% !important; margin-left: 0 !important; }
 
             /* --- Sidebar (inherit 768 rules, just ensure sizing is correct) --- */
-            .sidebar { width: min(82vw, 260px); }
+            .sidebar { width: 240px; }
             .sidebar-logo-container img { max-width: 80px; }
             .sidebar h4 { font-size: 1.05rem; }
             .sidebar .nav-link { padding: 10px 12px; font-size: 0.9rem; gap: 10px; }
@@ -820,7 +643,7 @@ unset($_SESSION['show_preloader']);
             .main-content { padding: 8px 6px; width: 100% !important; margin-left: 0 !important; }
 
             /* --- Sidebar --- */
-            .sidebar { width: min(85vw, 240px); }
+            .sidebar { width: 220px; }
             .sidebar-logo-container { padding: 14px; }
             .sidebar-logo-container img { max-width: 64px; margin-bottom: 10px; }
             .sidebar-divider { margin: 0 14px 14px; }
@@ -1009,8 +832,6 @@ unset($_SESSION['show_preloader']);
     [data-bs-theme="dark"] .dropdown-divider { border-color: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .sidebar .nav-link:hover { background: #334155; color: #fff !important; }
     [data-bs-theme="dark"] .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .sidebar-close-btn { background: rgba(255, 255, 255, 0.1); color: #f1f5f9; }
-    [data-bs-theme="dark"] .sidebar-close-btn:hover { background: rgba(255, 255, 255, 0.18); }
     [data-bs-theme="dark"] .notif-item.unread { background: rgba(55, 98, 200, 0.18); }
     [data-bs-theme="dark"] .notif-footer { border-top: 1px solid #4a5568; }
     [data-bs-theme="dark"] .notif-dropdown .text-dark { color: #f1f5f9 !important; }
@@ -1062,18 +883,6 @@ unset($_SESSION['show_preloader']);
         })();
     </script>
     <?php endif; ?>
-
-    <!-- Logging out overlay -->
-    <div id="logout-overlay">
-        <div class="logout-card">
-            <img src="/lgu-urban-planning/assets/upad-logo.png" alt="Logo" class="logout-card-logo">
-            <div class="logout-card-title">Logging out</div>
-            <div class="logout-card-subtext">Please wait while we securely sign you out.</div>
-            <div class="logout-progress-track">
-                <div class="logout-progress-fill"></div>
-            </div>
-        </div>
-    </div>
 
     <nav class="top-navbar">
         <div class="d-flex justify-content-between align-items-center">
@@ -1198,9 +1007,6 @@ unset($_SESSION['show_preloader']);
         <!-- Mobile sidebar backdrop overlay -->
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
         <nav class="sidebar" id="sidebar">
-            <button type="button" class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Close menu" title="Close menu">
-                <i class="bi bi-x-lg"></i>
-            </button>
             <div class="sidebar-top">
                 <div class="sidebar-logo-container">
                     <img src="../assets/upad-logo.png" alt="UPAD Logo">
@@ -1247,31 +1053,5 @@ unset($_SESSION['show_preloader']);
                 </a>
             </div>
         </nav>
-
-        <script>
-            (function () {
-                // Logout confirmation — intercept logout link and show branded overlay
-                var logoutLinks = document.querySelectorAll('a[href$="logout.php"]');
-                var logoutOverlay = document.getElementById('logout-overlay');
-
-                logoutLinks.forEach(function (link) {
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        var href = link.getAttribute('href');
-
-                        if (logoutOverlay) {
-                            logoutOverlay.classList.add('show');
-                            // Force a reflow so the opacity transition actually plays
-                            void logoutOverlay.offsetWidth;
-                            logoutOverlay.classList.add('visible');
-                        }
-
-                        setTimeout(function () {
-                            window.location.href = href;
-                        }, 1200);
-                    });
-                });
-            })();
-        </script>
 
         <main class="main-content">

@@ -98,7 +98,7 @@ function updateNotifications() {
                         const unreadClass = n.is_read == 0 ? 'unread' : '';
                         html += `
                             <a href="/lgu-urban-planning/applicant/messages.php" class="notif-item ${unreadClass}">
-                                <div class="fw-bold small text-body">${n.subject}</div>
+                                <div class="fw-bold small text-dark">${n.subject}</div>
                                 <div class="text-muted small notif-message-preview">${n.message.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().substring(0, 60) + (n.message.length > 60 ? '…' : '')}</div>
                                 <small class="text-primary" style="font-size: 0.7rem;">${n.formatted_date}</small>
                             </a>`;
@@ -140,46 +140,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let countdownInterval = null;
 
-    // Self-contained styles for this modal — injected once so it looks right
-    // regardless of what stylesheet the current page happens to load, and so
-    // it responds to the same [data-bs-theme="dark"] attribute as everything else.
-    if (!document.getElementById('session-timeout-styles')) {
-        const styleTag = document.createElement('style');
-        styleTag.id = 'session-timeout-styles';
-        styleTag.textContent = `
-            .session-timeout-overlay {
-                display:none; position:fixed; inset:0; z-index:99999;
-                background:rgba(0,0,0,.5); align-items:center; justify-content:center;
-            }
-            .session-timeout-card {
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="sessionTimeoutModal" style="
+            display:none; position:fixed; inset:0; z-index:99999;
+            background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+            <div style="
                 background:#fff; border-radius:12px; padding:32px 28px;
                 max-width:380px; width:90%; text-align:center;
-                box-shadow:0 8px 32px rgba(0,0,0,.2);
-            }
-            .session-timeout-icon { font-size:2rem; margin-bottom:8px; }
-            .session-timeout-title { margin:0 0 8px; font-weight:700; color:#111; }
-            .session-timeout-text { margin:0 0 20px; color:#555; font-size:.95rem; }
-            .session-timeout-btn {
-                background:#6366f1; color:#fff; border:none; border-radius:8px;
-                padding:8px 24px; font-weight:600; cursor:pointer;
-            }
-            [data-bs-theme="dark"] .session-timeout-card { background:#1e293b; box-shadow:0 8px 32px rgba(0,0,0,.5); }
-            [data-bs-theme="dark"] .session-timeout-title { color:#f1f5f9; }
-            [data-bs-theme="dark"] .session-timeout-text { color:#94a3b8; }
-        `;
-        document.head.appendChild(styleTag);
-    }
-
-    document.body.insertAdjacentHTML('beforeend', `
-        <div id="sessionTimeoutModal" class="session-timeout-overlay">
-            <div class="session-timeout-card">
-                <div id="sessionModalIcon" class="session-timeout-icon">⚠️</div>
-                <h5 id="sessionModalTitle" class="session-timeout-title">Session Expiring</h5>
-                <p id="sessionModalText" class="session-timeout-text">
+                box-shadow:0 8px 32px rgba(0,0,0,.2);">
+                <div id="sessionModalIcon" style="font-size:2rem; margin-bottom:8px;">⚠️</div>
+                <h5 id="sessionModalTitle" style="margin:0 0 8px; font-weight:700; color:#111;">Session Expiring</h5>
+                <p id="sessionModalText" style="margin:0 0 20px; color:#555; font-size:.95rem;">
                     Your session will expire in <span id="sessionCountdownNum">30</span> seconds due to inactivity.
                     Click OK to stay logged in.
                 </p>
-                <button id="sessionModalBtn" class="session-timeout-btn" onclick="window.dismissTimeoutWarning()">OK</button>
+                <button id="sessionModalBtn" onclick="window.dismissTimeoutWarning()"
+                    style="background:#6366f1;color:#fff;border:none;border-radius:8px;
+                           padding:8px 24px;font-weight:600;cursor:pointer;">OK</button>
             </div>
         </div>`);
 

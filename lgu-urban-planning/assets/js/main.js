@@ -16,39 +16,22 @@ function showAlert(type, title, msg) {
 
     // Inject a minimal modal if the full one from header.php isn't present.
     if (!document.getElementById('customAlertOverlay')) {
-        if (!document.getElementById('custom-alert-styles')) {
-            const styleTag = document.createElement('style');
-            styleTag.id = 'custom-alert-styles';
-            styleTag.textContent = `
-                .custom-alert-card {
-                    background:#fff; border-radius:12px; padding:32px 28px;
-                    max-width:380px; width:90%; text-align:center;
-                    box-shadow:0 8px 32px rgba(0,0,0,.2);
-                }
-                .custom-alert-title { margin:0 0 8px; font-weight:700; color:#111; }
-                .custom-alert-text  { margin:0 0 20px; color:#555; font-size:.95rem; }
-                .custom-alert-btn {
-                    background:#6366f1; color:#fff; border:none; border-radius:8px;
-                    padding:8px 24px; font-weight:600; cursor:pointer;
-                }
-                [data-bs-theme="dark"] .custom-alert-card { background:#1e293b; box-shadow:0 8px 32px rgba(0,0,0,.5); }
-                [data-bs-theme="dark"] .custom-alert-title { color:#f1f5f9; }
-                [data-bs-theme="dark"] .custom-alert-text  { color:#94a3b8; }
-            `;
-            document.head.appendChild(styleTag);
-        }
-
         document.body.insertAdjacentHTML('beforeend', `
             <div id="customAlertOverlay" style="
                 display:none; position:fixed; inset:0; z-index:99999;
                 background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
-                <div class="custom-alert-card">
+                <div style="
+                    background:#fff; border-radius:12px; padding:32px 28px;
+                    max-width:380px; width:90%; text-align:center;
+                    box-shadow:0 8px 32px rgba(0,0,0,.2);">
                     <div id="customAlertIconWrap" style="font-size:2rem; margin-bottom:8px;">
                         <span id="customAlertIcon"></span>
                     </div>
-                    <h5 id="customAlertTitle" class="custom-alert-title"></h5>
-                    <p  id="customAlertMsg"   class="custom-alert-text"></p>
-                    <button onclick="closeAlert(true)" class="custom-alert-btn">OK</button>
+                    <h5 id="customAlertTitle" style="margin:0 0 8px; font-weight:700; color:#111;"></h5>
+                    <p  id="customAlertMsg"   style="margin:0 0 20px; color:#555; font-size:.95rem;"></p>
+                    <button onclick="closeAlert(true)"
+                        style="background:#6366f1;color:#fff;border:none;border-radius:8px;
+                               padding:8px 24px;font-weight:600;cursor:pointer;">OK</button>
                 </div>
             </div>`);
     }

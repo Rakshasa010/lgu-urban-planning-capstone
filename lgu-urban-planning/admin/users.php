@@ -108,14 +108,6 @@ $translations = [
         'label_new_password'    => 'New Password (Optional)',
         'label_role'            => 'Role',
         'label_phone'           => 'Phone',
-        // Create / Edit user modal — field placeholders
-        'ph_first_name'         => 'e.g. Juan',
-        'ph_last_name'          => 'e.g. Dela Cruz',
-        'ph_username'           => 'e.g. juandelacruz',
-        'ph_email'              => 'name@example.com',
-        'ph_phone'              => 'e.g. 09171234567',
-        'ph_password'           => 'Min. 8 characters, with uppercase and a number',
-        'ph_new_password'       => 'Leave blank to keep current password',
         // Role labels
         'role_applicant'        => 'Applicant',
         'role_inspector'        => 'Inspector',
@@ -208,14 +200,6 @@ $translations = [
         'label_new_password'    => 'Bagong Password (Opsyonal)',
         'label_role'            => 'Papel',
         'label_phone'           => 'Telepono',
-        // Create / Edit user modal — field placeholders
-        'ph_first_name'         => 'hal. Juan',
-        'ph_last_name'          => 'hal. Dela Cruz',
-        'ph_username'           => 'hal. juandelacruz',
-        'ph_email'              => 'pangalan@example.com',
-        'ph_phone'              => 'hal. 09171234567',
-        'ph_password'           => 'Min. 8 karakter, may malaking titik at numero',
-        'ph_new_password'       => 'Iwanang blangko para panatilihin ang kasalukuyang password',
         // Role labels
         'role_applicant'        => 'Aplikante',
         'role_inspector'        => 'Inspektor',
@@ -519,45 +503,11 @@ include __DIR__ . '/header.php';
 
 <style>
     /* ── BASE ── */
-    /* Guard against any ambient text-align/justify-content from the shared
-       layout pushing the page title out of alignment with its subtitle. */
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child,
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child h2,
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child p {
-        text-align: left !important;
-    }
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child h2 {
-        justify-content: flex-start !important;
-    }
-    /* The title wrapper carries an inline style="width:100%" (meant to keep
-       the heading/subtitle left-aligned). In any row-direction flex layout
-       — i.e. every width above the 768px breakpoint where this container
-       switches to flex-direction:column — that inline width:100% becomes
-       this item's flex-basis and claims the *entire* row, forcing its
-       sibling (the Export CSV / Print / Create User button group) to be
-       crushed down and wrap its labels onto multiple lines even though
-       there's visibly free space. Capping its basis and letting it shrink
-       normally, while protecting the button group from shrinking at all,
-       fixes the squeeze without touching the inline attribute itself. */
-    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child {
-        width: auto !important;
-        max-width: 100%;
-        flex: 1 1 0;
-        min-width: 0;
-    }
-    .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2 {
-        flex-shrink: 0;
-    }
-    .d-flex.justify-content-between.align-items-center.mb-4 .btn {
-        white-space: nowrap;
-    }
     .strength-meter { height: 5px; background-color: #e2e8f0; border-radius: 3px; margin-top: 6px; overflow: hidden; }
     .strength-bar { height: 100%; width: 0%; transition: all 0.3s ease; }
     .cursor-pointer { cursor: pointer; }
     .status-active { background-color: #d1e7dd; color: #0f5132; }
     .status-inactive { background-color: #f8d7da; color: #842029; }
-    .page-title-heading { color: #1e293b; }
-    .export-warning-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 0.5rem 0.75rem; }
     .img-verify-preview { width: 100%; height: 220px; object-fit: contain; border-radius: 8px; border: 1px solid var(--bs-border-color); cursor: pointer; background-color: var(--bs-tertiary-bg); transition: transform 0.2s; }
     .img-verify-preview:hover { transform: scale(1.02); border-color: #0d6efd; }
     #fullImagePreview { max-width: 100%; height: auto; border-radius: 4px; }
@@ -775,57 +725,8 @@ include __DIR__ . '/header.php';
 
     /* ================================================
        MOBILE RESPONSIVE
-       1024px (Laptop) | 768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+       768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
        ================================================ */
-
-    /* --- 1024px: Laptop ---
-       Mostly a light touch here — Bootstrap's own md/lg grid still
-       holds the layout together at this width. The one real bug is
-       modal-xl (1140px wide) overflowing any viewport under ~1140px,
-       so that gets constrained here; everything else just tightens
-       spacing a little for smaller laptop screens. */
-    @media (max-width: 1024px) {
-
-        .modal-dialog.modal-xl {
-            max-width: calc(100% - 2rem) !important;
-            width: calc(100% - 2rem) !important;
-        }
-
-        .table { font-size: 0.86rem; }
-        .table th, .table td { padding: 0.55rem 0.5rem; }
-
-        /* Header action buttons: full labels still fit at this width,
-           but default Bootstrap .btn sizing (1rem font / 0.375rem 0.75rem
-           padding) reads oversized next to the page title on a laptop
-           viewport — trim it down a notch. */
-        .d-flex.justify-content-between.align-items-center.mb-4 .btn {
-            font-size: 0.86rem;
-            padding: 7px 14px;
-        }
-
-        /* Filter row: Apply Filter button, search bar, role dropdown —
-           same treatment, just slightly larger than the mobile sizes
-           since there's more room at this width. */
-        #userFilterForm .form-control,
-        #userFilterForm .form-select { font-size: 0.88rem; padding: 8px 12px; }
-        #userFilterForm .btn-simulate-gradient { font-size: 0.86rem; padding: 8px 14px; }
-        #userFilterForm .btn-filter-reset { padding: 8px 14px; }
-
-        /* Actions column: keep Activity + Edit side by side rather than
-           risk wrapping now that the table font-size has shrunk. */
-        .table td.text-center { white-space: nowrap; }
-        .table td.text-center .btn-sm + .btn-sm { margin-left: 4px; }
-
-        #exportVerifyModal .modal-body,
-        #createUserModal .modal-body,
-        #editUserModal .modal-body,
-        #logsModal .modal-body { padding: 1.4rem !important; }
-
-        #exportVerifyModal .form-section,
-        #createUserModal .form-section,
-        #editUserModal .form-section,
-        #logsModal .form-section { padding: 1.1rem 1.25rem 1.3rem !important; }
-    }
 
     /* --- 768px: Tablet --- */
     @media (max-width: 768px) {
@@ -846,17 +747,6 @@ include __DIR__ . '/header.php';
             font-size: 0.82rem;
         }
 
-        /* Header people-icon: hardcoded inline font-size needs !important
-           to override at this width. */
-        .d-flex.justify-content-between.align-items-center.mb-4 .bi-people {
-            font-size: 1.5rem !important;
-        }
-
-        /* Export toast: Bootstrap's default .toast max-width (350px) can
-           overflow a phone viewport — cap it to the screen instead. */
-        .toast-container { left: 0.75rem; right: 0.75rem; }
-        #exportToast { max-width: 100%; width: 100%; }
-
         /* Filter form: stack inputs */
         .card-body .row.g-3 .col-md-5,
         .card-body .row.g-3 .col-md-2 {
@@ -864,14 +754,6 @@ include __DIR__ . '/header.php';
             flex: 0 0 100%;
         }
         .card-body .row.g-3 .col-md-5:last-child { width: 100%; flex: 0 0 100%; }
-
-        /* Apply Filter button, search bar, role dropdown — the fields
-           already stack full-width above; also tighten their size so
-           the stacked filter card doesn't feel oversized on tablet. */
-        #userFilterForm .form-control,
-        #userFilterForm .form-select { font-size: 0.85rem; padding: 8px 10px; }
-        #userFilterForm .btn-simulate-gradient { font-size: 0.85rem; padding: 8px 10px; }
-        #userFilterForm .btn-filter-reset { padding: 8px 12px; }
 
         /* Table: shrink font, hide lower-priority columns */
         .table { font-size: 0.8rem; }
@@ -892,15 +774,6 @@ include __DIR__ . '/header.php';
         .card-footer .col-md-6:last-child { text-align: center !important; }
         .pagination { justify-content: center !important; }
 
-        /* "Showing X to Y of Z users" text: the markup's first column
-           carries Bootstrap's "text-md-start" utility, which is
-           !important and kicks in exactly at this 768px breakpoint —
-           it was winning over the centered .row rule above and also
-           left the text at full desktop size. */
-        .card-footer .col-md-6:first-child { text-align: center !important; }
-        #paginationInfo,
-        .card-footer .info-text { font-size: 0.8rem; }
-
         /* Pagination */
         .pagination .page-link { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
 
@@ -920,20 +793,6 @@ include __DIR__ . '/header.php';
         /* Create/Edit modal: stack 2-col fields */
         .modal-body .col-md-6 { width: 100%; flex: 0 0 100%; }
         .modal-body .row.g-3 { --bs-gutter-y: 0.5rem; }
-
-        /* Shared modal "chrome" (create/edit/logs/export modals all
-           reuse these class names) — tighten section padding and
-           header icon size so the redesigned form sections don't
-           feel oversized on tablet. */
-        #exportVerifyModal .modal-header-icon,
-        #createUserModal .modal-header-icon,
-        #editUserModal .modal-header-icon,
-        #logsModal .modal-header-icon { width: 34px !important; height: 34px !important; }
-        #exportVerifyModal .form-section,
-        #createUserModal .form-section,
-        #editUserModal .form-section,
-        #logsModal .form-section { padding: 1rem 1.1rem 1.2rem !important; margin-bottom: 1rem !important; }
-        #logsModal .stat-box { padding: 0.6rem 0.8rem !important; }
     }
 
     /* --- 480px: Large Mobile --- */
@@ -945,38 +804,6 @@ include __DIR__ . '/header.php';
         .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.1rem; }
         .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.75rem; margin-bottom: 0; }
         .d-flex.justify-content-between.align-items-center.mb-4 .btn { font-size: 0.78rem; padding: 6px 10px; }
-        .d-flex.justify-content-between.align-items-center.mb-4 .bi-people { font-size: 1.3rem !important; }
-
-        /* Header action buttons: icon-only below 480px. Labels come from
-           translations and can run long in some languages, so dropping
-           the text (title attr covers accessibility) is more reliable
-           than trying to guess a font-size that always fits 3-in-a-row. */
-        .d-flex.justify-content-between.align-items-center.mb-4 .btn-label { display: none; }
-        .d-flex.justify-content-between.align-items-center.mb-4 .btn { flex: 0 0 auto; padding: 7px 12px; }
-        /* Center the Export / Print / Create User row instead of pinning
-           it to the right — matches the centered layout used at 320px. */
-        .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 { width: 100%; justify-content: center; }
-
-        /* Filter row: Apply Filter button, search bar, role dropdown —
-           tighten to match the rest of the compact mobile filter card. */
-        #userFilterForm .btn-simulate-gradient { font-size: 0.8rem; padding: 7px 10px; }
-        #userFilterForm .btn-filter-reset { padding: 7px 12px; }
-        #userFilterForm .btn-filter-reset i { font-size: 0.85rem; }
-        #searchInput { padding-right: 30px; }
-        #roleFilter { padding-right: 28px; background-position: right 8px center; }
-
-        /* Actions column: keep Activity + Edit buttons side by side
-           instead of wrapping to a second line. The visible "Edit" text
-           label was only ever hidden at the 320px breakpoint, so between
-           321–480px the label made the two buttons too wide to fit on
-           one line together. */
-        .table .btn-edit-label { display: none; }
-        .table td.text-center { white-space: nowrap; }
-        .table td.text-center .btn-sm + .btn-sm { margin-left: 4px; }
-
-        /* Pagination: drop the "Prev"/"Next" words, keep the chevrons —
-           matches the pattern used elsewhere (messages.php). */
-        #paginationNav .pg-label { display: none; }
 
         /* Filter card */
         .card-body { padding: 0.75rem !important; }
@@ -1003,11 +830,6 @@ include __DIR__ . '/header.php';
         .pagination .page-link { padding: 0.35rem 0.5rem; font-size: 0.75rem; }
         .card-footer { padding: 0.6rem 0.75rem !important; }
         .card-footer .small { font-size: 0.72rem; }
-        /* "Showing X to Y of Z users" text actually uses the .info-text
-           class in the markup, not .small — the rule above never matched
-           it, so it stayed full-size and cramped the footer. */
-        #paginationInfo,
-        .card-footer .info-text { font-size: 0.72rem; line-height: 1.3; }
 
         /* Modals */
         .modal-header { padding: 0.75rem 1rem !important; }
@@ -1026,41 +848,6 @@ include __DIR__ . '/header.php';
         /* Logs modal table */
         #logsModal .table { font-size: 0.72rem; }
         #logsModal .table th, #logsModal .table td { padding: 0.35rem 0.3rem; }
-
-        /* Shared modal chrome — see 768px block for context */
-        #exportVerifyModal .modal-header-icon,
-        #createUserModal .modal-header-icon,
-        #editUserModal .modal-header-icon,
-        #logsModal .modal-header-icon { width: 30px !important; height: 30px !important; margin-right: 0.5rem !important; }
-        #exportVerifyModal .modal-title,
-        #createUserModal .modal-title,
-        #editUserModal .modal-title,
-        #logsModal .modal-title { font-size: 0.95rem !important; }
-        #exportVerifyModal .header-subtitle,
-        #createUserModal .header-subtitle,
-        #editUserModal .header-subtitle,
-        #exportVerifyModal .modal-header-subtitle,
-        #logsModal .modal-header-subtitle { font-size: 0.7rem !important; }
-        #exportVerifyModal .form-section,
-        #createUserModal .form-section,
-        #editUserModal .form-section,
-        #logsModal .form-section { padding: 0.85rem 0.9rem 1rem !important; margin-bottom: 0.75rem !important; }
-        #exportVerifyModal .form-section-title,
-        #createUserModal .form-section-label,
-        #editUserModal .form-section-label,
-        #logsModal .form-section-title { font-size: 0.72rem !important; margin-bottom: 0.8rem !important; padding-bottom: 0.5rem !important; }
-        #exportVerifyModal label.form-label,
-        #createUserModal label.field-label,
-        #editUserModal label.field-label { font-size: 0.72rem !important; }
-        #createUserModal .input-icon-group .form-control,
-        #createUserModal .input-icon-group .form-select,
-        #editUserModal .input-icon-group .form-control,
-        #editUserModal .input-icon-group .form-select { padding-left: 34px !important; }
-        #createUserModal .input-icon-group > i.field-icon,
-        #editUserModal .input-icon-group > i.field-icon { left: 11px !important; font-size: 0.82rem !important; }
-        #logsModal .stat-box { padding: 0.55rem 0.7rem !important; gap: 0.45rem !important; }
-        #logsModal .stat-box i { font-size: 0.95rem !important; }
-        #logsModal .stat-box .stat-value { font-size: 0.82rem !important; }
     }
 
     /* --- 320px: Small Mobile --- */
@@ -1068,121 +855,14 @@ include __DIR__ . '/header.php';
 
         .p-4 { padding: 0.5rem !important; }
 
-        /* Modal-wide safety net: createUserModal / editUserModal / logsModal /
-           exportVerifyModal only ever use the plain .modal-dialog (no
-           .modal-lg / .modal-xl), so none of the width/margin overrides
-           above ever reached them — they were relying on raw Bootstrap
-           defaults, which is what made them feel "not responsive" here.
-           This rule catches every modal, regardless of size class. */
-        .modal-dialog {
-            width: calc(100% - 0.8rem) !important;
-            max-width: calc(100% - 0.8rem) !important;
-            margin: 0.4rem auto !important;
-        }
-        .modal-content { max-width: 100%; overflow-x: hidden; }
-        .modal-header, .modal-body, .modal-footer { max-width: 100%; overflow-x: hidden; }
-
-        /* Shared modal header (icon + title/subtitle block, used by
-           createUserModal/editUserModal/logsModal/exportVerifyModal):
-           the flex row had no min-width:0, so a long/translated title
-           could force the row wider than the dialog instead of wrapping,
-           pushing the layout past the viewport edge. */
-        .modal-header { flex-wrap: nowrap; }
-        .modal-header .d-flex.align-items-center { min-width: 0; flex: 1 1 auto; }
-        .modal-header .d-flex.align-items-center > div { min-width: 0; }
-        .modal-header .btn-close { flex-shrink: 0; }
-        .modal-title, #verificationModal .modal-title, #logsModal .modal-title {
-            white-space: normal;
-            overflow-wrap: break-word;
-            word-break: break-word;
-        }
-        .header-subtitle, .modal-header-subtitle {
-            overflow-wrap: break-word;
-            word-break: break-word;
-        }
-
-        /* Images inside modals (ID verification previews, zoom preview)
-           must never exceed the now-narrower dialog width. */
-        .img-verify-preview, #fullImagePreview { max-width: 100%; }
-
-        /* Password field + eye-toggle input-group: keep it on one line
-           without spilling past the dialog edge. */
-        .modal-body .input-group { flex-wrap: nowrap; }
-        .modal-body .input-group .form-control { min-width: 0; }
-
-        /* Export / Create / Edit modal footer buttons: these three modals
-           each define their own #id-scoped ".modal-footer .btn" rule
-           (font-size 0.88rem, padding 0.55rem 1.4rem) which is MORE
-           specific than the generic ".modal-footer .btn" rule above, so
-           it always won regardless of this media query — that's why
-           "Create Account" / "Verify & Download" stayed full-size and
-           wrapped to 2–3 lines while "Cancel" stayed one line, making
-           the pair look mismatched. Matching the #id-scoped selector
-           below restores the cascade so overrides actually apply.
-
-           The "card" — the white bordered section holding the warning
-           banner / form fields — still had desktop-sized inner spacing
-           at this width too. */
-        #exportVerifyModal .form-section { padding: 0.65rem 0.7rem 0.75rem !important; }
-        #exportVerifyModal .modal-body .row.g-3 { --bs-gutter-y: 0.6rem !important; }
-        #exportVerifyModal .modal-body .small.mb-4 {
-            padding: 0.45rem 0.6rem !important;
-            margin-bottom: 0.75rem !important;
-            font-size: 0.7rem !important;
-        }
-
-        /* Stack the footer buttons full-width instead of squeezing them
-           side by side — guarantees both buttons render at the same
-           size no matter how long the label is. */
-        #exportVerifyModal .modal-footer,
-        #createUserModal .modal-footer,
-        #editUserModal .modal-footer {
-            flex-direction: column !important;
-            gap: 8px !important;
-            padding: 0.6rem 0.75rem !important;
-        }
-        #exportVerifyModal .modal-footer .btn,
-        #createUserModal .modal-footer .btn,
-        #editUserModal .modal-footer .btn {
-            width: 100% !important;
-            flex: 0 0 auto !important;
-            white-space: nowrap !important;
-            font-size: 0.8rem !important;
-            padding: 9px 10px !important;
-        }
-
-
         /* Page header */
         .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 0.95rem; }
         .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.7rem; }
-        .d-flex.justify-content-between.align-items-center.mb-4 .btn { font-size: 0.72rem; padding: 6px 9px; }
-        .d-flex.justify-content-between.align-items-center.mb-4 .bi-people { font-size: 1.1rem !important; }
-        .d-flex.justify-content-between.align-items-center.mb-4 .btn i { font-size: 0.85rem; }
-
-        /* Header action buttons: center the 3-button row (export / print / create) */
-        .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Export toast: a little tighter still at this width */
-        .toast-container { left: 0.5rem; right: 0.5rem; bottom: 0.5rem !important; }
-        #exportToastMsg { font-size: 0.82rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 .btn { font-size: 0.72rem; padding: 5px 8px; }
 
         /* Filter */
         .card-body { padding: 0.6rem !important; }
-        .form-control, .form-select { font-size: 0.75rem; padding: 5px 8px; }
-
-        /* Search bar: leave room for the spinner icon so text never overlaps it */
-        #searchInput { padding-right: 28px; }
-
-        /* Role dropdown: trim the native arrow gutter a touch */
-        #roleFilter { padding-right: 26px; background-position: right 6px center; }
-
-        /* Apply Filter button + reset icon button */
-        #userFilterForm .btn-simulate-gradient { font-size: 0.75rem; padding: 6px 8px; }
-        #userFilterForm .btn-filter-reset { padding: 6px 10px; }
-        #userFilterForm .btn-filter-reset i { font-size: 0.8rem; }
+        .form-control, .form-select { font-size: 0.78rem; padding: 5px 8px; }
 
         /* Table: keep only User Details, Status, Actions */
         .table { font-size: 0.65rem; }
@@ -1199,22 +879,16 @@ include __DIR__ . '/header.php';
         .table td .text-muted.small { font-size: 0.62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
 
         /* Action buttons: icon only, no text */
-        .table .btn-sm { font-size: 0.7rem; padding: 4px 6px; min-width: 28px; }
+        .table .btn-sm { font-size: 0.62rem; padding: 2px 5px; }
+        .table .btn-sm .bi-pencil-square ~ *,
         /* Hide "Edit" text label — keep icon only */
-        .table .btn-edit-label { display: none; }
-        .table td.text-center { padding: 0.3rem 0.15rem; white-space: nowrap; }
-        .table td.text-center .btn-sm + .btn-sm { margin-left: 3px; }
+        .table td.text-center .btn-sm { min-width: 28px; }
 
         /* Pagination */
         .pagination { flex-wrap: wrap; gap: 2px; }
         .pagination .page-link { padding: 0.3rem 0.45rem; font-size: 0.68rem; }
         .card-footer { padding: 0.5rem 0.6rem !important; }
         .card-footer .small { font-size: 0.68rem; }
-
-        /* Page result text ("Showing X to Y of Z users") — this uses the
-           .info-text class, which no prior breakpoint actually targeted. */
-        #paginationInfo,
-        .card-footer .info-text { font-size: 0.68rem; line-height: 1.35; }
 
         /* Modals */
         .modal-dialog.modal-lg,
@@ -1235,20 +909,6 @@ include __DIR__ . '/header.php';
         }
         .modal-footer .btn { flex: 1; text-align: center; font-size: 0.75rem; padding: 6px 8px; }
 
-        /* Verification modal — not covered by the "shared modal chrome"
-           rules below since it uses Bootstrap's default modal-header,
-           not the custom gradient header used by the other modals. */
-        #verificationModal .modal-header { padding: 0.6rem 0.75rem !important; }
-        #verificationModal .modal-title { font-size: 0.82rem; }
-        #verificationModal label.small { font-size: 0.64rem; }
-        #verificationModal .form-select,
-        #verificationModal .form-control { font-size: 0.75rem; padding: 5px 8px; }
-        #verificationModal .modal-footer { padding: 0.5rem 0.6rem; }
-        #verificationModal .modal-footer .btn { font-size: 0.75rem; padding: 6px 10px; }
-
-        /* Image zoom modal — close button was full-size at every breakpoint */
-        #imageZoomModal .btn-close { padding: 0.4rem; margin: 0.5rem !important; }
-
         /* Verification modal */
         .img-verify-preview { height: 120px; }
 
@@ -1256,45 +916,6 @@ include __DIR__ . '/header.php';
         #logsModal .table { font-size: 0.65rem; }
         #logsModal .table th, #logsModal .table td { padding: 0.28rem 0.25rem; }
         #logsModal .row.g-2 .col-6 { font-size: 0.65rem; }
-
-        /* Shared modal chrome — see 768px block for context */
-        #exportVerifyModal .modal-header,
-        #createUserModal .modal-header,
-        #editUserModal .modal-header,
-        #logsModal .modal-header { padding: 0.7rem 0.9rem !important; }
-        #exportVerifyModal .modal-header-icon,
-        #createUserModal .modal-header-icon,
-        #editUserModal .modal-header-icon,
-        #logsModal .modal-header-icon { width: 26px !important; height: 26px !important; border-radius: 8px !important; margin-right: 0.4rem !important; }
-        #exportVerifyModal .modal-title,
-        #createUserModal .modal-title,
-        #editUserModal .modal-title,
-        #logsModal .modal-title { font-size: 0.85rem !important; }
-        #exportVerifyModal .header-subtitle,
-        #createUserModal .header-subtitle,
-        #editUserModal .header-subtitle,
-        #exportVerifyModal .modal-header-subtitle,
-        #logsModal .modal-header-subtitle { display: none !important; } /* reclaim space — title alone is enough at 320px */
-        #exportVerifyModal .form-section,
-        #createUserModal .form-section,
-        #editUserModal .form-section,
-        #logsModal .form-section { padding: 0.7rem 0.75rem 0.85rem !important; margin-bottom: 0.6rem !important; border-radius: 10px !important; }
-        #exportVerifyModal .form-section-title,
-        #createUserModal .form-section-label,
-        #editUserModal .form-section-label,
-        #logsModal .form-section-title { font-size: 0.66rem !important; margin-bottom: 0.6rem !important; padding-bottom: 0.4rem !important; }
-        #exportVerifyModal label.form-label,
-        #createUserModal label.field-label,
-        #editUserModal label.field-label { font-size: 0.66rem !important; }
-        #createUserModal .input-icon-group .form-control,
-        #createUserModal .input-icon-group .form-select,
-        #editUserModal .input-icon-group .form-control,
-        #editUserModal .input-icon-group .form-select { padding-left: 30px !important; }
-        #createUserModal .input-icon-group > i.field-icon,
-        #editUserModal .input-icon-group > i.field-icon { left: 9px !important; font-size: 0.76rem !important; }
-        #logsModal .stat-box { padding: 0.5rem 0.6rem !important; gap: 0.4rem !important; }
-        #logsModal .stat-box .stat-label { font-size: 0.6rem !important; }
-        #logsModal .stat-box .stat-value { font-size: 0.76rem !important; }
     }
 
     /* ── Print styles (User Management "Print" button) ── */
@@ -1307,26 +928,26 @@ include __DIR__ . '/header.php';
 
 <div class="p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="text-start" style="width: 100%; max-width: 100%;">
-            <h2 class="fw-bold mb-0 d-flex align-items-center gap-2 page-title-heading" style="width: 100%; justify-content: flex-start; text-align: left;">
+        <div>
+            <h2 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: #1e293b;">
                 <span class="d-inline-flex align-items-center justify-content-center rounded-circle">
                     <i class="bi bi-people" style="color:#14b8a6;font-size:1.9rem;"></i>
                 </span>
                 <?= t_users('page_title', $translations, $lang) ?>
             </h2>
-            <p class="text-muted small mb-0" style="text-align: left;"><?= t_users('page_subtitle', $translations, $lang) ?></p>
+            <p class="text-muted small mb-0"><?= t_users('page_subtitle', $translations, $lang) ?></p>
         </div>
         <div class="d-flex gap-2 d-print-none">
-            <button type="button" class="btn btn-export-gradient shadow-sm" title="<?= t_users('btn_export_csv', $translations, $lang) ?>"
+            <button type="button" class="btn btn-export-gradient shadow-sm"
                 onclick="openExportModal('csv', 'users', '?export=csv&<?= http_build_query($filters) ?>')">
-                <i class="bi bi-download"></i> <span class="btn-label"><?= t_users('btn_export_csv', $translations, $lang) ?></span>
+                <i class="bi bi-download"></i> <?= t_users('btn_export_csv', $translations, $lang) ?>
             </button>
-            <button type="button" class="btn btn-simulate-gradient shadow-sm" title="<?= t_users('btn_print', $translations, $lang) ?>"
+            <button type="button" class="btn btn-simulate-gradient shadow-sm"
                 onclick="openExportModal('print', 'users', null)">
-                <i class="bi bi-printer"></i> <span class="btn-label"><?= t_users('btn_print', $translations, $lang) ?></span>
+                <i class="bi bi-printer"></i> <?= t_users('btn_print', $translations, $lang) ?>
             </button>
-            <button type="button" class="btn btn-simulate-gradient shadow-sm" title="<?= t_users('btn_create_user', $translations, $lang) ?>" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                <i class="bi bi-person-plus"></i> <span class="btn-label"><?= t_users('btn_create_user', $translations, $lang) ?></span>
+            <button type="button" class="btn btn-simulate-gradient shadow-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="bi bi-person-plus"></i> <?= t_users('btn_create_user', $translations, $lang) ?>
             </button>
         </div>
     </div>
@@ -1421,7 +1042,7 @@ include __DIR__ . '/header.php';
                                 </td>
                                 <td class="text-center d-print-none">
                                     <button type="button" class="btn btn-sm btn-outline-dark" onclick="viewLogs(<?= $user['id'] ?>, '<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>')"><i class="bi bi-clock-history"></i></button>
-                                    <button type="button" class="btn btn-sm btn-light border" title="<?= t_users('btn_edit', $translations, $lang) ?>" onclick='editUser(<?= json_encode($user) ?>)'><i class="bi bi-pencil-square"></i> <span class="btn-edit-label"><?= t_users('btn_edit', $translations, $lang) ?></span></button>
+                                    <button type="button" class="btn btn-sm btn-light border" onclick='editUser(<?= json_encode($user) ?>)'><i class="bi bi-pencil-square"></i> <?= t_users('btn_edit', $translations, $lang) ?></button>
                                     <?php if (!$user['is_active']): ?>
                                     <button type="button" class="btn btn-sm btn-outline-success border-0" onclick="quickAction(<?= $user['id'] ?>, 'activate')">
                                         <?= t_users('btn_activate', $translations, $lang) ?>
@@ -1450,7 +1071,7 @@ include __DIR__ . '/header.php';
                                 <a class="page-link" href="?p=1&<?= $query_string ?>" data-page="1"><i class="bi bi-chevron-double-left"></i></a>
                             </li>
                             <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                                <a class="page-link" href="?p=<?= ($page - 1) ?>&<?= $query_string ?>" data-page="<?= ($page - 1) ?>"><i class="bi bi-chevron-left"></i> <span class="pg-label">Prev</span></a>
+                                <a class="page-link" href="?p=<?= ($page - 1) ?>&<?= $query_string ?>" data-page="<?= ($page - 1) ?>">Prev</a>
                             </li>
                             <?php
                             $start = max(1, $page - 2);
@@ -1462,7 +1083,7 @@ include __DIR__ . '/header.php';
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                                <a class="page-link" href="?p=<?= ($page + 1) ?>&<?= $query_string ?>" data-page="<?= ($page + 1) ?>"><span class="pg-label">Next</span> <i class="bi bi-chevron-right"></i></a>
+                                <a class="page-link" href="?p=<?= ($page + 1) ?>&<?= $query_string ?>" data-page="<?= ($page + 1) ?>">Next</a>
                             </li>
                             <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
                                 <a class="page-link" href="?p=<?= $totalPages ?>&<?= $query_string ?>" data-page="<?= $totalPages ?>"><i class="bi bi-chevron-double-right"></i></a>
@@ -1974,175 +1595,6 @@ include __DIR__ . '/header.php';
         vertical-align: middle;
         border-color: #f0f2f5;
     }
-
-    /* =============================================
-       DARK MODE — User Management page
-       ============================================= */
-
-    /* Page header */
-    [data-bs-theme="dark"] .page-title-heading { color: #f1f5f9; }
-
-    /* Status badges */
-    [data-bs-theme="dark"] .status-active   { background-color: rgba(25, 135, 84, 0.18); color: #4ade80; }
-    [data-bs-theme="dark"] .status-inactive { background-color: rgba(220, 53, 69, 0.18); color: #f87171; }
-
-    /* Password-strength track */
-    [data-bs-theme="dark"] .strength-meter { background-color: #334155; }
-
-    /* Table action buttons using fixed light/dark Bootstrap utilities that don't auto-adapt */
-    [data-bs-theme="dark"] .btn-outline-dark { color: #cbd5e1; border-color: #475569; }
-    [data-bs-theme="dark"] .btn-outline-dark:hover { background: #334155; color: #f1f5f9; border-color: #475569; }
-    [data-bs-theme="dark"] .btn-light.border { background: #1e293b; border-color: #334155 !important; color: #e2e8f0; }
-    [data-bs-theme="dark"] .btn-light.border:hover { background: #263449; }
-
-    /* Default (no-status) badge from _statusBadgeClass() in the Activity Logs modal */
-    [data-bs-theme="dark"] .badge.bg-light.text-dark {
-        background-color: #334155 !important;
-        color: #e2e8f0 !important;
-        border-color: #475569 !important;
-    }
-
-    /* Verification-decision box (bg-light) inside the verification modal */
-    [data-bs-theme="dark"] #verificationModal .bg-light { background-color: #1e293b !important; }
-
-    /* Export-warning banner inside the export modal */
-    [data-bs-theme="dark"] .export-warning-banner {
-        background: rgba(255, 193, 7, 0.12);
-        border-color: rgba(255, 193, 7, 0.4);
-    }
-
-    /* Password-visibility toggle in the export modal */
-    [data-bs-theme="dark"] #exportVerifyModal .input-group-text.bg-white,
-    [data-bs-theme="dark"] #createUserModal .input-group-text.bg-white,
-    [data-bs-theme="dark"] #editUserModal .input-group-text.bg-white {
-        background-color: #0f172a !important;
-        border-color: #334155;
-        color: #94a3b8;
-    }
-
-    /* Pagination */
-    [data-bs-theme="dark"] .pagination .page-link { background-color: #1e293b; color: #cbd5e1; border-color: #334155; }
-    [data-bs-theme="dark"] .pagination .page-link:hover { background-color: #263449; border-color: #5b8dc4; color: #93c5fd; }
-    [data-bs-theme="dark"] .pagination .page-item.disabled .page-link { background-color: #0f172a; color: #475569; }
-    [data-bs-theme="dark"] .pagination .page-item.active .page-link { background-color: #5b8dc4; border-color: #5b8dc4; color: #fff; }
-
-    /* ── Shared modal chrome: Export CSV / Create User / Edit User / Activity Logs ──
-       All four modals reuse the same visual pattern (light-gray modal body,
-       white form-section cards, blue section labels) with slightly different
-       class names per modal, so the overrides are grouped rather than repeated
-       four times. */
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body,
-    [data-bs-theme="dark"] #createUserModal .modal-body,
-    [data-bs-theme="dark"] #editUserModal .modal-body,
-    [data-bs-theme="dark"] #logsModal .modal-body {
-        background: #0f172a;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .form-section,
-    [data-bs-theme="dark"] #createUserModal .form-section,
-    [data-bs-theme="dark"] #editUserModal .form-section,
-    [data-bs-theme="dark"] #logsModal .form-section {
-        background: #1e293b;
-        border-color: #334155;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .form-section-title,
-    [data-bs-theme="dark"] #createUserModal .form-section-label,
-    [data-bs-theme="dark"] #editUserModal .form-section-label,
-    [data-bs-theme="dark"] #logsModal .form-section-title {
-        color: #93c5fd;
-        border-bottom-color: #334155;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .form-section-title i,
-    [data-bs-theme="dark"] #createUserModal .form-section-label i,
-    [data-bs-theme="dark"] #editUserModal .form-section-label i,
-    [data-bs-theme="dark"] #logsModal .form-section-title i {
-        color: #60a5fa;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-label,
-    [data-bs-theme="dark"] #createUserModal label.field-label,
-    [data-bs-theme="dark"] #editUserModal label.field-label {
-        color: #94a3b8;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control,
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-select,
-    [data-bs-theme="dark"] #createUserModal .form-control,
-    [data-bs-theme="dark"] #createUserModal .form-select,
-    [data-bs-theme="dark"] #editUserModal .form-control,
-    [data-bs-theme="dark"] #editUserModal .form-select,
-    [data-bs-theme="dark"] #userFilterForm .form-control,
-    [data-bs-theme="dark"] #userFilterForm .form-select {
-        background-color: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control:focus,
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-select:focus,
-    [data-bs-theme="dark"] #createUserModal .form-control:focus,
-    [data-bs-theme="dark"] #createUserModal .form-select:focus,
-    [data-bs-theme="dark"] #editUserModal .form-control:focus,
-    [data-bs-theme="dark"] #editUserModal .form-select:focus,
-    [data-bs-theme="dark"] #userFilterForm .form-control:focus,
-    [data-bs-theme="dark"] #userFilterForm .form-select:focus {
-        background-color: #1e293b;
-        border-color: #5b8dc4;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control::placeholder,
-    [data-bs-theme="dark"] #createUserModal .form-control::placeholder,
-    [data-bs-theme="dark"] #editUserModal .form-control::placeholder,
-    [data-bs-theme="dark"] #userFilterForm .form-control::placeholder {
-        color: #64748b;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control.is-invalid,
-    [data-bs-theme="dark"] #createUserModal .form-control.is-invalid,
-    [data-bs-theme="dark"] #editUserModal .form-control.is-invalid {
-        background-color: rgba(220, 53, 69, 0.1);
-    }
-    [data-bs-theme="dark"] #createUserModal .input-icon-group > i.field-icon,
-    [data-bs-theme="dark"] #editUserModal .input-icon-group > i.field-icon {
-        color: #64748b;
-    }
-    [data-bs-theme="dark"] #createUserModal .input-group .input-group-text,
-    [data-bs-theme="dark"] #editUserModal .input-group .input-group-text {
-        background: #0f172a;
-        border-color: #334155;
-        color: #94a3b8;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-footer,
-    [data-bs-theme="dark"] #createUserModal .modal-footer,
-    [data-bs-theme="dark"] #editUserModal .modal-footer,
-    [data-bs-theme="dark"] #logsModal .modal-footer {
-        background: #1e293b;
-        border-top-color: #334155;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-footer .btn-light,
-    [data-bs-theme="dark"] #createUserModal .modal-footer .btn-outline-secondary,
-    [data-bs-theme="dark"] #editUserModal .btn-edit-cancel,
-    [data-bs-theme="dark"] #userFilterForm .btn-filter-reset {
-        background: #0f172a;
-        border-color: #334155;
-        color: #cbd5e1;
-    }
-    [data-bs-theme="dark"] #exportVerifyModal .modal-footer .btn-light:hover,
-    [data-bs-theme="dark"] #createUserModal .modal-footer .btn-outline-secondary:hover,
-    [data-bs-theme="dark"] #editUserModal .btn-edit-cancel:hover,
-    [data-bs-theme="dark"] #userFilterForm .btn-filter-reset:hover {
-        background: #263449;
-        border-color: #475569;
-        color: #f1f5f9;
-    }
-
-    /* Activity Logs modal — stat boxes & applications table */
-    [data-bs-theme="dark"] #logsModal .stat-box {
-        background: #0f172a;
-        border-color: #334155;
-    }
-    [data-bs-theme="dark"] #logsModal .stat-box .stat-label { color: #94a3b8; }
-    [data-bs-theme="dark"] #logsModal .stat-box .stat-value { color: #f1f5f9; }
-    [data-bs-theme="dark"] #logsModal .table thead th {
-        color: #94a3b8;
-        background: #0f172a;
-        border-bottom-color: #334155;
-    }
-    [data-bs-theme="dark"] #logsModal .table td { border-color: #334155; }
 </style>
 
 <div class="modal fade" id="createUserModal" tabindex="-1">
@@ -2168,14 +1620,14 @@ include __DIR__ . '/header.php';
                             <label class="field-label"><?= t_users('label_first_name', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-person field-icon"></i>
-                                <input type="text" name="first_name" class="form-control" placeholder="<?= t_users('ph_first_name', $translations, $lang) ?>" required>
+                                <input type="text" name="first_name" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="field-label"><?= t_users('label_last_name', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-person field-icon"></i>
-                                <input type="text" name="last_name" class="form-control" placeholder="<?= t_users('ph_last_name', $translations, $lang) ?>" required>
+                                <input type="text" name="last_name" class="form-control" required>
                             </div>
                         </div>
                     </div>
@@ -2188,20 +1640,20 @@ include __DIR__ . '/header.php';
                             <label class="field-label"><?= t_users('label_username', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-at field-icon"></i>
-                                <input type="text" name="username" class="form-control" placeholder="<?= t_users('ph_username', $translations, $lang) ?>" required>
+                                <input type="text" name="username" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-12">
                             <label class="field-label"><?= t_users('label_email', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-envelope field-icon"></i>
-                                <input type="email" name="email" class="form-control" placeholder="<?= t_users('ph_email', $translations, $lang) ?>" required>
+                                <input type="email" name="email" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="field-label"><?= t_users('label_password', $translations, $lang) ?></label>
                             <div class="input-group">
-                                <input type="password" name="password" id="create_p" class="form-control" placeholder="<?= t_users('ph_password', $translations, $lang) ?>" onkeyup="checkStrength(this.value, 's_create')" required>
+                                <input type="password" name="password" id="create_p" class="form-control" onkeyup="checkStrength(this.value, 's_create')" required>
                                 <span class="input-group-text" style="cursor:pointer;" onclick="togglePasswordVisibility('create_p', 'create_eye')"><i class="bi bi-eye-slash" id="create_eye"></i></span>
                             </div>
                             <div class="strength-meter"><div id="s_create" class="strength-bar"></div></div>
@@ -2254,14 +1706,14 @@ include __DIR__ . '/header.php';
                             <label class="field-label"><?= t_users('label_first_name', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-person field-icon"></i>
-                                <input type="text" name="first_name" id="e_fname" class="form-control" placeholder="<?= t_users('ph_first_name', $translations, $lang) ?>" required>
+                                <input type="text" name="first_name" id="e_fname" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="field-label"><?= t_users('label_last_name', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-person field-icon"></i>
-                                <input type="text" name="last_name" id="e_lname" class="form-control" placeholder="<?= t_users('ph_last_name', $translations, $lang) ?>" required>
+                                <input type="text" name="last_name" id="e_lname" class="form-control" required>
                             </div>
                         </div>
                     </div>
@@ -2274,21 +1726,21 @@ include __DIR__ . '/header.php';
                             <label class="field-label"><?= t_users('label_username', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-at field-icon"></i>
-                                <input type="text" name="username" id="e_username" class="form-control" placeholder="<?= t_users('ph_username', $translations, $lang) ?>" required>
+                                <input type="text" name="username" id="e_username" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="field-label"><?= t_users('label_email', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-envelope field-icon"></i>
-                                <input type="email" name="email" id="e_email" class="form-control" placeholder="<?= t_users('ph_email', $translations, $lang) ?>" required>
+                                <input type="email" name="email" id="e_email" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="field-label"><?= t_users('label_phone', $translations, $lang) ?></label>
                             <div class="input-icon-group">
                                 <i class="bi bi-telephone field-icon"></i>
-                                <input type="text" name="phone" id="e_phone" class="form-control" placeholder="<?= t_users('ph_phone', $translations, $lang) ?>">
+                                <input type="text" name="phone" id="e_phone" class="form-control">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -2306,7 +1758,7 @@ include __DIR__ . '/header.php';
                         <div class="col-12">
                             <label class="field-label"><?= t_users('label_new_password', $translations, $lang) ?></label>
                             <div class="input-group">
-                                <input type="password" name="password" id="e_p" class="form-control" placeholder="<?= t_users('ph_new_password', $translations, $lang) ?>" onkeyup="checkStrength(this.value, 's_edit')">
+                                <input type="password" name="password" id="e_p" class="form-control" onkeyup="checkStrength(this.value, 's_edit')">
                                 <span class="input-group-text" style="cursor:pointer;" onclick="togglePasswordVisibility('e_p', 'edit_eye')"><i class="bi bi-eye-slash" id="edit_eye"></i></span>
                             </div>
                             <div class="strength-meter"><div id="s_edit" class="strength-bar"></div></div>
@@ -2374,7 +1826,7 @@ include __DIR__ . '/header.php';
                 <div class="form-section">
                     <div class="form-section-title" id="exportVerifySectionTitle"><i class="bi bi-file-earmark-arrow-down" id="exportVerifySectionIcon"></i> Export Details</div>
 
-                    <div class="export-warning-banner d-flex align-items-center gap-2 small mb-4">
+                    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
                         <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
                         <span id="exportWarningText"><?= t_users('export_warning', $translations, $lang) ?></span>
                     </div>
@@ -2509,13 +1961,13 @@ const CURRENT_FILE = window.location.pathname.split('/').pop() || 'users.php';
             </li>`;
 
         items.push(item('<i class="bi bi-chevron-double-left"></i>', 1, page <= 1, false));
-        items.push(item('<i class="bi bi-chevron-left"></i> <span class="pg-label">Prev</span>', page - 1, page <= 1, false));
+        items.push(item('Prev', page - 1, page <= 1, false));
         const start = Math.max(1, page - 2);
         const end = Math.min(totalPages, page + 2);
         for (let i = start; i <= end; i++) {
             items.push(item(i, i, false, page === i));
         }
-        items.push(item('<span class="pg-label">Next</span> <i class="bi bi-chevron-right"></i>', page + 1, page >= totalPages, false));
+        items.push(item('Next', page + 1, page >= totalPages, false));
         items.push(item('<i class="bi bi-chevron-double-right"></i>', totalPages, page >= totalPages, false));
 
         paginationNav.innerHTML = items.join('');

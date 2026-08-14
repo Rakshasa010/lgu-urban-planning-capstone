@@ -20,7 +20,7 @@ unset($_SESSION['show_preloader']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>UPAD - Admin Portal</title>
+    <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?>LGU Urban Planning System - Admin Portal</title>
     <link rel="icon" type="image/x-icon" href="/lgu-urban-planning/assets/upad-logo.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -239,12 +239,6 @@ unset($_SESSION['show_preloader']);
             position: sticky;
             top: 70px;
             overflow: hidden;
-            /* backdrop-filter + overflow:hidden alone isn't reliably clipped on
-               every mobile browser: a nav-link's hover/active box-shadow can
-               "leak" a few px past the sidebar's right edge. contain:paint
-               forces a hard clip of all descendant painting (shadows, blur,
-               transforms included) to this box, regardless of that bug. */
-            contain: paint;
             transition: all 0.3s ease;
             width: 250px;
             display: flex !important;
@@ -253,12 +247,6 @@ unset($_SESSION['show_preloader']);
         
         .sidebar.collapsed {
             width: 80px;
-        }
-
-        /* Close button inside the mobile drawer — hidden on desktop since
-           the drawer never covers the navbar's hamburger there. */
-        .sidebar-close-btn {
-            display: none;
         }
         
         .sidebar.collapsed .sidebar-text {
@@ -279,9 +267,7 @@ unset($_SESSION['show_preloader']);
         .sidebar-content {
             flex: 1;
             padding: 20px 0;
-            overflow-y: auto;
-            overflow-x: hidden;
-            contain: paint;
+            overflow-y: auto; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
         }
@@ -352,18 +338,6 @@ unset($_SESSION['show_preloader']);
             height: 40px;
         }
         
-        /* Bootstrap's base .nav sets flex-wrap:wrap. With flex-direction:column
-           (from .flex-column) inside a height-constrained, scrollable container
-           (.sidebar-content has overflow-y:auto, i.e. a definite height), once
-           expanding the Applications submenu makes the content taller than that
-           height, flexbox wraps the overflow into a SECOND COLUMN instead of
-           just letting it scroll — which is what breaks the active/highlighted
-           row's width and pushes it past the sidebar's edge. Force nowrap so
-           it always just grows vertically and scrolls instead. */
-        .sidebar ul.nav {
-            flex-wrap: nowrap;
-        }
-
         .sidebar .nav-link {
             color: #000000;
             padding: 14px 20px;
@@ -374,42 +348,19 @@ unset($_SESSION['show_preloader']);
             display: flex;
             align-items: center;
             gap: 12px;
-            min-width: 0;
         }
         
         .sidebar .nav-link i {
             font-size: 1.2rem;
             width: 24px;
             text-align: center;
-            flex-shrink: 0;
-        }
-
-        .sidebar .nav-link .sidebar-text {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* The "Applications" toggle link has an extra caret icon after the
-           text, so its text wrapper needs to be able to shrink inside the
-           flex row too, otherwise the caret gets pushed off/overlaps. */
-        .sidebar .nav-link-toggle > div {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-            overflow: hidden;
-        }
-        .sidebar .nav-link-toggle .toggle-caret {
-            flex-shrink: 0;
         }
         
         .sidebar .nav-link:hover {
             background: #97a4c2;
             color: #000;
-            transform: translateX(2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .sidebar .nav-link.active {
@@ -434,9 +385,6 @@ unset($_SESSION['show_preloader']);
             padding: 30px;
             transition: all 0.3s ease;
             flex: 1;
-            min-width: 0;
-            overflow-x: hidden;
-            box-sizing: border-box;
         }
         
         /* ---- RIGHT-SIDE NAVBAR ---- */
@@ -524,24 +472,6 @@ unset($_SESSION['show_preloader']);
         .nav-link-toggle {
             cursor: pointer;
         }
-        /* The icon+label live in their own div so the caret can sit apart
-           via justify-content-between. That div isn't a flex container by
-           default, so once the caret's width eats into the row, the icon
-           and label are just two inline "words" — the browser wraps at
-           the space between them, stranding the icon alone on the first
-           line and dropping the label to a second line (unlike the plain
-           nav-links, which have no caret competing for space). Make it a
-           flex row so icon+label move together as one unit. */
-        .nav-link-toggle > div:first-child {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-        }
-        .nav-link-toggle .toggle-caret {
-            flex-shrink: 0;
-            margin-left: 8px;
-        }
         .submenu .nav-link {
             padding-left: 30px;
         }
@@ -585,9 +515,6 @@ unset($_SESSION['show_preloader']);
             background: #eef2ff;
             border-left: 3px solid #3b82f6;
         }
-        .notif-item-subject {
-            color: #212529;
-        }
         .notif-msg-truncate {
             white-space: nowrap;
             overflow: hidden;
@@ -610,9 +537,6 @@ unset($_SESSION['show_preloader']);
         [data-bs-theme="dark"] .sidebar .nav-link, [data-bs-theme="dark"] .sidebar h4 { color: #ffffff !important; }
         [data-bs-theme="dark"] .sidebar .nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
         [data-bs-theme="dark"] .sidebar .nav-link.logout-btn { color: #ffbaba !important; }
-        [data-bs-theme="dark"] .sidebar-close-btn { background: rgba(255, 255, 255, 0.1); color: #f1f5f9; }
-        [data-bs-theme="dark"] .sidebar-close-btn:hover { background: rgba(255, 255, 255, 0.18); }
-        [data-bs-theme="dark"] .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, 0.1); }
         [data-bs-theme="dark"] .main-content { background: #0f172a !important; }
         [data-bs-theme="dark"] .top-navbar { background: #1e293b !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         [data-bs-theme="dark"] .card { background-color: #1e293b !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
@@ -621,11 +545,6 @@ unset($_SESSION['show_preloader']);
         [data-bs-theme="dark"] .overdue-alert .alert-text { color: #e2e8f0 !important; }
         [data-bs-theme="dark"] .overdue-alert strong { color: #ff8080 !important; }
         [data-bs-theme="dark"] .empty-placeholder { background-color: rgba(255, 255, 255, 0.05); color: #adb5bd !important; border: 1px solid rgba(255, 255, 255, 0.1); }
-        [data-bs-theme="dark"] .logout-card { background: #1e293b; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
-        [data-bs-theme="dark"] .logout-card-title { color: #f1f5f9; }
-        [data-bs-theme="dark"] .logout-card-subtext { color: #94a3b8; }
-        [data-bs-theme="dark"] .logout-progress-track { background: #334155; }
-        [data-bs-theme="dark"] #infra-preloader { background: rgba(15, 23, 42, 0.55); }
         [data-bs-theme="dark"] .fc {
         --fc-border-color: #444;
         --fc-page-bg-color: #2b3035;
@@ -783,6 +702,16 @@ unset($_SESSION['show_preloader']);
             padding: 0 4px;
         }
 
+        .avatar-menu-logout {
+            color: #dc2626 !important;
+        }
+        .avatar-menu-logout i {
+            color: #dc2626 !important;
+        }
+        .avatar-menu-logout:hover {
+            background: #fef2f2 !important;
+        }
+
         /* Dark mode overrides */
         [data-bs-theme="dark"] .avatar-menu {
             background-color: #1e293b;
@@ -794,80 +723,15 @@ unset($_SESSION['show_preloader']);
         [data-bs-theme="dark"] .avatar-menu-item i { color: #94a3b8; }
         [data-bs-theme="dark"] .avatar-menu-item:hover { background: #334155; color: #f1f5f9; }
         [data-bs-theme="dark"] .avatar-menu-item:hover i { color: #60a5fa; }
+        [data-bs-theme="dark"] .avatar-menu-logout { color: #f87171 !important; }
+        [data-bs-theme="dark"] .avatar-menu-logout i { color: #f87171 !important; }
+        [data-bs-theme="dark"] .avatar-menu-logout:hover { background: rgba(239,68,68,0.1) !important; }
         [data-bs-theme="dark"] .dropdown-divider { border-color: rgba(255,255,255,0.08); }
-
-        /* --- NOTIFICATION DROPDOWN DARK MODE --- */
-        [data-bs-theme="dark"] .notif-dropdown .dropdown-menu {
-            background-color: #1e293b;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-        [data-bs-theme="dark"] .notif-header {
-            background: #0f172a;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            color: #cbd5e1;
-        }
-        [data-bs-theme="dark"] .notif-item {
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            color: #cbd5e1;
-        }
-        [data-bs-theme="dark"] .notif-item-subject { color: #f1f5f9; }
-        [data-bs-theme="dark"] .notif-item:hover { background: #263449; }
-        [data-bs-theme="dark"] .notif-item.unread {
-            background: rgba(59, 130, 246, 0.12);
-            border-left: 3px solid #3b82f6;
-        }
-        [data-bs-theme="dark"] .notif-footer {
-            background: #0f172a;
-            border-top: 1px solid rgba(255,255,255,0.08);
-        }
 
         /* ================================================
            MOBILE RESPONSIVE
-           1024px (Laptop) | 768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+           768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
            ================================================ */
-
-        /* --- 1024px: Laptop ---
-           .main-content is flex:1 (see base rule above) — it already
-           fills whatever space the sidebar leaves behind automatically.
-           So we only need to narrow the sidebar itself here; adding an
-           explicit margin-left/width to .main-content on top of flex:1
-           would double-count the sidebar's width and squeeze content
-           more than intended. Only the EXPANDED sidebar needs shrinking
-           — collapsed (80px) already leaves plenty of room. */
-        @media (max-width: 1024px) {
-            .sidebar:not(.collapsed) {
-                width: 220px;
-            }
-            .sidebar:not(.collapsed) .nav-link {
-                padding: 12px 14px;
-                margin: 4px 8px;
-                gap: 10px;
-                font-size: 0.86rem;
-            }
-            .sidebar:not(.collapsed) .nav-link i {
-                font-size: 1.05rem;
-                width: 20px;
-            }
-            .sidebar:not(.collapsed) .sidebar-logo img {
-                max-width: 90px;
-            }
-
-            .top-navbar h5 {
-                max-width: 420px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .main-content {
-                padding: 22px;
-            }
-
-            /* Navbar right side gets tight once the sidebar takes up to
-               200px at this width — pull the icon/name/avatar cluster in
-               a bit instead of leaving it at the full desktop gap. */
-            .user-info { gap: 10px; }
-        }
 
         /* --- Sidebar overlay base (shared across all mobile breakpoints) --- */
         @media (max-width: 768px) {
@@ -898,30 +762,6 @@ unset($_SESSION['show_preloader']);
             .sidebar.mobile-open {
                 left: 0 !important;
             }
-
-            /* Close (X) button inside the drawer */
-            .sidebar-close-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: absolute;
-                top: 14px;
-                right: 14px;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                border: none;
-                background: rgba(0, 0, 0, 0.08);
-                color: #333;
-                font-size: 1rem;
-                cursor: pointer;
-                z-index: 5;
-                transition: background 0.2s ease;
-            }
-            .sidebar-close-btn:hover {
-                background: rgba(0, 0, 0, 0.16);
-            }
-
             /* Backdrop overlay when sidebar is open */
             .sidebar-backdrop {
                 display: none;
@@ -932,15 +772,6 @@ unset($_SESSION['show_preloader']);
             }
             .sidebar-backdrop.show {
                 display: block;
-            }
-
-            /* Prevent the page behind the drawer from scrolling while it's open
-               (mirrors user-header.php's body:has(#sidebar.show) rule) */
-            body:has(#sidebar.mobile-open) {
-                overflow: hidden;
-            }
-            body.sidebar-locked {
-                overflow: hidden;
             }
 
             /* Main content fills full width since sidebar is off-canvas */
@@ -966,8 +797,6 @@ unset($_SESSION['show_preloader']);
             /* Notification dropdown — keep usable width */
             .notif-dropdown .dropdown-menu { width: 290px; }
             .notif-msg-truncate { max-width: 230px; }
-
-            .sidebar-logo img { width: 84px; height: 84px; }
         }
 
         /* --- 480px: Large Mobile --- */
@@ -996,9 +825,6 @@ unset($_SESSION['show_preloader']);
 
             /* Avatar dropdown */
             .avatar-menu { width: 210px; }
-
-            .sidebar-logo img { width: 72px; height: 72px; }
-            .sidebar-toggle { padding: 6px 10px; font-size: 0.9rem; }
         }
 
         /* --- 320px: Small Mobile --- */
@@ -1036,10 +862,6 @@ unset($_SESSION['show_preloader']);
             .avatar-menu-item { font-size: 0.8rem; padding: 8px 12px; }
             .avatar-menu-name { font-size: 0.8rem; }
             .avatar-menu-role { font-size: 0.68rem; }
-
-            .sidebar-logo img { width: 64px; height: 64px; }
-            .sidebar-logo { padding: 12px 14px 6px; }
-            .sidebar-toggle { padding: 5px 8px; font-size: 0.82rem; }
         }
     </style>
     <script src="/lgu-urban-planning/assets/js/admin.js"></script>
@@ -1127,7 +949,7 @@ unset($_SESSION['show_preloader']);
                                         $preview = mb_strimwidth(strip_tags($n['message']), 0, 80, '…');
                                     ?>
                                         <a href="/lgu-urban-planning/admin/messages.php" class="notif-item <?php echo $n['is_read'] == 0 ? 'unread' : ''; ?>">
-                                            <div class="fw-bold small notif-item-subject"><?php echo htmlspecialchars($n['subject']); ?></div>
+                                            <div class="fw-bold small text-dark"><?php echo htmlspecialchars($n['subject']); ?></div>
                                             <div class="text-muted small notif-msg-truncate"><?php echo htmlspecialchars($preview); ?></div>
                                             <small class="text-primary" style="font-size: 0.7rem; font-weight: 500;">
                                                 <?php echo date('M d, h:i A', strtotime($n['created_at'])); ?>
@@ -1188,6 +1010,12 @@ unset($_SESSION['show_preloader']);
                                     <?php endif; ?>
                                 </a>
                             </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a class="dropdown-item avatar-menu-item avatar-menu-logout" href="/lgu-urban-planning/logout.php">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -1197,9 +1025,6 @@ unset($_SESSION['show_preloader']);
         
         <div class="d-flex">
             <nav class="sidebar" id="sidebar">
-                <button type="button" class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Close menu" title="Close menu">
-                    <i class="bi bi-x-lg"></i>
-                </button>
                 <div class="sidebar-content">
                     <div class="sidebar-logo mb-3">
                         <img src="/lgu-urban-planning/assets/upad-logo.png" alt="Logo">
@@ -1284,8 +1109,8 @@ unset($_SESSION['show_preloader']);
                 <div class="sidebar-footer">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link logout-btn" href="/lgu-urban-planning/logout.php" title="Logout">
-                                <i class="bi bi-box-arrow-right"></i> <span class="sidebar-text">Logout</span>
+                            <a class="nav-link logout-btn text-black" href="/lgu-urban-planning/logout.php" title="Logout">
+                                <i class="bi bi-box-arrow-right text-black"></i> <span class="sidebar-text">Logout</span>
                             </a>
                         </li>
                     </ul>
@@ -1301,7 +1126,6 @@ unset($_SESSION['show_preloader']);
         var b = document.getElementById('sidebarBackdrop');
         if (s) s.classList.remove('mobile-open');
         if (b) b.classList.remove('show');
-        document.body.classList.remove('sidebar-locked');
     }
 
     // Override toggleSidebar — runs after admin.js has already set its version
@@ -1312,8 +1136,6 @@ unset($_SESSION['show_preloader']);
         if (isMobile()) {
             sidebar.classList.toggle('mobile-open');
             if (backdrop) backdrop.classList.toggle('show');
-            // Fallback body-scroll lock for browsers without :has() support
-            document.body.classList.toggle('sidebar-locked', sidebar.classList.contains('mobile-open'));
         } else {
             // Desktop: original collapse behaviour
             sidebar.classList.toggle('collapsed');
@@ -1347,7 +1169,7 @@ unset($_SESSION['show_preloader']);
             if (!isMobile()) closeMobileSidebar();
         });
 
-        // Logout confirmation — intercept the sidebar logout link
+        // Logout confirmation — intercept both logout links (sidebar + avatar menu)
         var logoutLinks = document.querySelectorAll('a[href$="logout.php"]');
         var logoutOverlay = document.getElementById('logout-overlay');
 
