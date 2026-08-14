@@ -397,6 +397,20 @@ include __DIR__ . '/header.php';
     .text-device { font-size: 0.75rem; color: #95a5a6; }
     .badge { font-size: 0.65rem; letter-spacing: 0.5px; font-weight: 700; }
 
+    /* ── 1024px: Laptop ────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+
+        .p-4.page-container { padding: 1.5rem !important; }
+
+        .row.align-items-center.mb-4 h2 { font-size: 1.5rem; }
+        .btn-export-gradient { font-size: 0.85rem; }
+
+        .card-body.p-3 { padding: 0.85rem !important; }
+
+        .table-lgu { font-size: 0.85rem; }
+        .table-lgu th, .table-lgu td { padding: 0.6rem 0.5rem; }
+    }
+
     /* ── 768px: Tablet ─────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
 
@@ -412,13 +426,21 @@ include __DIR__ . '/header.php';
             gap: 8px;
         }
         .row.align-items-center.mb-4 h2 { font-size: 1.3rem; }
-        .btn-export-gradient { font-size: 0.78rem; padding: 7px 12px; }
+        .row.align-items-center.mb-4 .btn-export-gradient,
+        .row.align-items-center.mb-4 .btn-simulate-gradient { font-size: 0.78rem; padding: 7px 12px; }
 
-        /* Filter card: full-width fields */
+        /* Filter card: full-width fields
+           (col-md-4 — the Apply Filters/Reset button group — was missing
+           here, so at exactly 768px it still sat at Bootstrap's md-default
+           33.33% column width. The .btn-group.w-100 rule below only makes
+           the button group fill *that* narrow column, which is why "APPLY
+           FILTERS" was wrapping onto two lines while "RESET" stayed short.) */
         .card .row.g-2 .col-md-3,
         .card .row.g-2 .col-md-2,
+        .card .row.g-2 .col-md-4,
         .card .row.g-2 .col-md-5 { width: 100%; flex: 0 0 100%; }
         .btn-group.w-100 { width: 100% !important; }
+        .btn-group.w-100 .btn { white-space: nowrap; }
 
         /* Table: hide IP Address + Reference ID */
         .table-lgu thead th:nth-child(5),
@@ -429,10 +451,48 @@ include __DIR__ . '/header.php';
         .table-lgu { font-size: 0.78rem; }
         .table-lgu th, .table-lgu td { padding: 0.5rem 0.4rem; }
 
+        /* Guard against header/cell text (e.g. "Timestamp") breaking
+           mid-word once the row gets tight — let the table-responsive
+           wrapper's horizontal scroll take over instead. */
+        .table-lgu th, .table-lgu td { white-space: nowrap; }
+        .table-responsive .table-lgu { min-width: 480px; }
+
+        /* Bootstrap's .input-group wraps by default, which can push a
+           trailing icon/button (e.g. the export password eye toggle)
+           onto its own line once its column gets narrow. */
+        .input-group { flex-wrap: nowrap; }
+
         /* Pagination */
         .card-footer .row { flex-direction: column; gap: 10px; text-align: center; }
         .card-footer .col-md-6:last-child { text-align: center !important; }
         .pagination { justify-content: center !important; }
+    }
+
+    /* ── Flatpickr (Date range picker) — no responsive rules existed at all,
+       so the calendar rendered at its library-default fixed width (~307px)
+       regardless of viewport. On narrower phones that either overflows the
+       screen edge or leaves the popup oddly narrower/wider than the input
+       it belongs to. Make it fluid on tablet and below. ── */
+    @media (max-width: 768px) {
+        .flatpickr-calendar {
+            width: min(307px, calc(100vw - 1.5rem)) !important;
+            max-width: calc(100vw - 1.5rem);
+        }
+        .flatpickr-calendar.arrowTop,
+        .flatpickr-calendar.arrowBottom { left: 0.75rem !important; }
+        .flatpickr-days, .dayContainer { width: 100% !important; max-width: 100%; }
+        .flatpickr-day { max-width: none; }
+    }
+    @media (max-width: 480px) {
+        .flatpickr-calendar { width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem); font-size: 90%; }
+        .flatpickr-calendar.arrowTop,
+        .flatpickr-calendar.arrowBottom { left: 0.5rem !important; }
+        .flatpickr-current-month { font-size: 0.95rem; }
+        .flatpickr-day { line-height: 32px; height: 32px; }
+    }
+    @media (max-width: 320px) {
+        .flatpickr-calendar { width: calc(100vw - 0.6rem) !important; max-width: calc(100vw - 0.6rem); font-size: 82%; }
+        .flatpickr-day { line-height: 28px; height: 28px; }
     }
 
     /* ── 480px: Large Mobile ───────────────────────────────────────────────── */
@@ -443,7 +503,8 @@ include __DIR__ . '/header.php';
         /* Header */
         .row.align-items-center.mb-4 h2 { font-size: 1.1rem; }
         .row.align-items-center.mb-4 p { font-size: 0.75rem; }
-        .btn-export-gradient {
+        .row.align-items-center.mb-4 .btn-export-gradient,
+        .row.align-items-center.mb-4 .btn-simulate-gradient {
             font-size: 0.72rem;
             padding: 6px 10px;
             width: 100%;
@@ -466,7 +527,8 @@ include __DIR__ . '/header.php';
         .table-lgu tbody td:nth-child(6) { display: none; }
 
         .table-lgu { font-size: 0.72rem; }
-        .table-lgu th, .table-lgu td { padding: 0.4rem 0.3rem; }
+        .table-lgu th, .table-lgu td { padding: 0.4rem 0.3rem; white-space: nowrap; }
+        .table-responsive .table-lgu { min-width: 360px; }
         .table-lgu td .badge { font-size: 0.6rem; padding: 3px 6px; }
         .table-lgu td span.badge.bg-light {
             font-size: 0.65rem;
@@ -487,6 +549,23 @@ include __DIR__ . '/header.php';
         .modal-body { padding: 1rem; font-size: 0.82rem; }
         .modal-header { padding: 0.75rem 1rem; }
         .modal-footer .btn { font-size: 0.78rem; padding: 6px 12px; }
+
+        /* Export/print verification modal footer — Bootstrap's default
+           modal-footer just does flex-wrap: wrap, so once "Cancel" and
+           "Verify & Print" no longer both fit on one line, the first
+           button (Cancel) drops to its own short row and the second
+           (Verify & Print) wraps to a nearly-full-width row underneath —
+           an accidental, lopsided stack rather than a designed one. Make
+           both buttons stack as full-width, equal-width buttons instead,
+           with the primary action on top. */
+        #exportVerifyModal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+        #exportVerifyModal .modal-footer .btn {
+            width: 100%;
+            margin: 0;
+        }
     }
 
     /* ── 320px: Small Mobile ───────────────────────────────────────────────── */
@@ -497,7 +576,8 @@ include __DIR__ . '/header.php';
         /* Header */
         .row.align-items-center.mb-4 h2 { font-size: 0.95rem; }
         .row.align-items-center.mb-4 p { font-size: 0.68rem; }
-        .btn-export-gradient { font-size: 0.68rem; padding: 5px 8px; }
+        .row.align-items-center.mb-4 .btn-export-gradient,
+        .row.align-items-center.mb-4 .btn-simulate-gradient { font-size: 0.68rem; padding: 5px 8px; }
 
         /* Filter */
         .card.border-0.shadow-sm.mb-4 .card-body { padding: 0.5rem !important; }
@@ -513,7 +593,8 @@ include __DIR__ . '/header.php';
         .table-lgu tbody td:nth-child(6) { display: none; }
 
         .table-lgu { font-size: 0.65rem; }
-        .table-lgu th, .table-lgu td { padding: 0.3rem 0.2rem; }
+        .table-lgu th, .table-lgu td { padding: 0.3rem 0.2rem; white-space: nowrap; }
+        .table-responsive .table-lgu { min-width: 300px; }
         .table-lgu td .badge { font-size: 0.55rem; padding: 2px 5px; }
         .table-lgu td span.badge.bg-light {
             max-width: 80px;
@@ -600,6 +681,13 @@ include __DIR__ . '/header.php';
         font-size: 0.95rem;
         color: #0d6efd;
     }
+    #exportVerifyModal .export-warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        color: #664d03;
+    }
     #exportVerifyModal .modal-body .form-label {
         font-weight: 600;
         font-size: 0.76rem;
@@ -618,6 +706,32 @@ include __DIR__ . '/header.php';
         background-color: #fcfdfe;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
     }
+    /* The password placeholder ("Re-enter your account password") is longer
+       than the field is wide once the input-group's eye-toggle button takes
+       its share of a full-width mobile field. Without this, the browser just
+       hard-clips the text mid-word ("...your accou|"). Truncate with an
+       ellipsis instead, and shrink the font a bit on narrow screens so more
+       of the label is actually readable. */
+    #exportVerifyModal .modal-body .input-group .form-control::placeholder {
+        text-overflow: ellipsis;
+    }
+    #exportVerifyModal .modal-body .input-group .form-control {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    @media (max-width: 480px) {
+        #exportVerifyModal .modal-body .input-group .form-control {
+            font-size: 0.82rem;
+            padding-left: 0.65rem;
+        }
+    }
+    @media (max-width: 320px) {
+        #exportVerifyModal .modal-body .input-group .form-control {
+            font-size: 0.74rem;
+            padding-left: 0.55rem;
+        }
+    }
     #exportVerifyModal .modal-body .form-control:focus,
     #exportVerifyModal .modal-body .form-select:focus {
         border-color: #0d6efd;
@@ -625,6 +739,30 @@ include __DIR__ . '/header.php';
         background-color: #ffffff;
     }
     #exportVerifyModal .modal-body .form-control::placeholder { color: #a7b0bd; }
+    /* The generic form-control/form-select rule above (id-scoped) outranks
+       Bootstrap's own ":not(:first-child)/:not(:last-child)" input-group
+       selectors, so it was re-rounding every corner of the password field
+       and eye-toggle button, making them look like two separate, disconnected
+       pills instead of one joined control (most noticeable on narrow/mobile
+       widths where the input-group stretches full width). Restore the
+       joined look. */
+    #exportVerifyModal .modal-body .input-group .form-control:not(:last-child) {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+    }
+    #exportVerifyModal .modal-body .input-group .input-group-text {
+        border: 1.5px solid #e2e6ec;
+        border-left: none;
+        border-top-right-radius: 9px;
+        border-bottom-right-radius: 9px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        background-color: #fcfdfe;
+    }
+    #exportVerifyModal .modal-body .input-group:has(.form-control:focus) .input-group-text {
+        border-color: #0d6efd;
+    }
     #exportVerifyModal .modal-footer {
         background: #ffffff;
         border-top: 1px solid #eef0f3;
@@ -759,6 +897,18 @@ include __DIR__ . '/header.php';
         border: 1.5px solid #e2e6ec;
         border-radius: 9px;
         padding: 0.7rem 0.9rem;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    /* modalAgentRaw previously had a hardcoded inline font-size: 0.72rem,
+       which (being inline) beat the .modal-body mobile font-size overrides
+       below and left the raw user-agent string too small/hard to read on
+       phones, with no wrapping guard for long unbroken tokens. */
+    #logModal .device-box-raw {
+        font-size: 0.78rem;
+    }
+    @media (max-width: 480px) {
+        #logModal .device-box-raw { font-size: 0.74rem; }
     }
 
     #logModal .changes-box {
@@ -799,6 +949,97 @@ include __DIR__ . '/header.php';
         .d-print-none { display: none !important; }
         .card, .shadow-sm { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
         body { background: #fff !important; }
+    }
+
+    /* ================================================
+       DARK MODE — respects [data-bs-theme="dark"] set on <html>
+       by header.php. Overrides the hardcoded light-mode colors
+       above (this page predates the site-wide theme toggle).
+       ================================================ */
+    [data-bs-theme="dark"] h2.text-dark { color: #eef1f6 !important; }
+    [data-bs-theme="dark"] .info-text { color: #9aa4b5; }
+    [data-bs-theme="dark"] .text-device { color: #7d8798; }
+    [data-bs-theme="dark"] .breadcrumb-item a { color: #4caf7d; }
+
+    [data-bs-theme="dark"] .table-lgu thead { background-color: #1a2130; border-top-color: #2e8b52; }
+    [data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: rgba(76, 175, 125, 0.08) !important; }
+    [data-bs-theme="dark"] .badge.bg-light.text-dark {
+        background-color: #2a3242 !important;
+        color: #d6dbe4 !important;
+        border-color: #3a4356 !important;
+    }
+
+    [data-bs-theme="dark"] .pagination .page-link { color: #cdd5e0; background-color: #1e2530; border-color: #333d4d; }
+    [data-bs-theme="dark"] .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
+    [data-bs-theme="dark"] .pagination .page-link:hover { background-color: #26314a; border-color: #3a5b9c; color: #7fb2ff; }
+
+    /* Filter row's date-range calendar icon uses Bootstrap's .bg-white
+       utility (!important), which otherwise stays white in dark mode. */
+    [data-bs-theme="dark"] #auditDateRangeInput.form-control,
+    [data-bs-theme="dark"] .input-group .input-group-text.bg-white {
+        background-color: #232b3a !important;
+        border-color: #333d4d !important;
+        color: #9aa4b5 !important;
+    }
+    [data-bs-theme="dark"] .input-group .input-group-text.bg-white i { color: #9aa4b5 !important; }
+
+    /* Export verify modal */
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body { background: #151a24; }
+    [data-bs-theme="dark"] #exportVerifyModal .form-section { background: #1e2530; border-color: #2c3547; }
+    [data-bs-theme="dark"] #exportVerifyModal .form-section-title { color: #7fb2ff; border-bottom-color: #2c3547; }
+    [data-bs-theme="dark"] #exportVerifyModal .export-warning-box {
+        background: #4d3c0a;
+        border-color: #a17f0a;
+        color: #ffe69c;
+    }
+    [data-bs-theme="dark"] #exportVerifyModal .export-warning-box .text-warning { color: #ffd452 !important; }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-label { color: #a9b2c3; }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control,
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-select {
+        background-color: #232b3a;
+        border-color: #333d4d;
+        color: #e7eaf0;
+    }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control:focus,
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-select:focus {
+        background-color: #232b3a;
+        border-color: #0d6efd;
+    }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control::placeholder { color: #6b7787; }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .input-group-text {
+        background-color: #232b3a;
+        border-color: #333d4d;
+        color: #a9b2c3;
+    }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-control.is-invalid,
+    [data-bs-theme="dark"] #exportVerifyModal .modal-body .form-select.is-invalid { background-color: #232b3a; }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-footer { background: #1e2530; border-top-color: #2c3547; }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-footer .btn-light {
+        background: #232b3a;
+        border-color: #333d4d;
+        color: #cdd5e0;
+    }
+    [data-bs-theme="dark"] #exportVerifyModal .modal-footer .btn-light:hover {
+        background: #2a3242;
+        border-color: #3a4356;
+    }
+
+    /* Log detail modal */
+    [data-bs-theme="dark"] #logModal .modal-body { background: #151a24; }
+    [data-bs-theme="dark"] #logModal .form-section { background: #1e2530; border-color: #2c3547; }
+    [data-bs-theme="dark"] #logModal .form-section-label { color: #7fb2ff; border-bottom-color: #2c3547; }
+    [data-bs-theme="dark"] #logModal label.field-label { color: #a9b2c3; }
+    [data-bs-theme="dark"] #logModal .field-value { color: #e7eaf0; }
+    [data-bs-theme="dark"] #logModal .device-box { background: #1a2130; border-color: #2c3547; }
+    [data-bs-theme="dark"] #logModal .modal-footer { background: #1e2530; border-top-color: #2c3547; }
+    [data-bs-theme="dark"] #logModal .modal-footer .btn-outline-secondary {
+        background: #232b3a;
+        border-color: #333d4d;
+        color: #cdd5e0;
+    }
+    [data-bs-theme="dark"] #logModal .modal-footer .btn-outline-secondary:hover {
+        background: #2a3242;
+        border-color: #3a4356;
     }
 </style>
 
@@ -978,7 +1219,7 @@ include __DIR__ . '/header.php';
                     <div class="form-section-label"><i class="bi bi-display"></i> <?= t_audit('modal_log_device', $translations, $lang) ?></div>
                     <div class="device-box">
                         <span id="modalAgentDisplay" class="fw-bold d-block mb-1"></span>
-                        <span id="modalAgentRaw" class="text-muted small" style="font-size: 0.72rem;"></span>
+                        <span id="modalAgentRaw" class="text-muted small device-box-raw"></span>
                     </div>
                 </div>
 
@@ -1027,7 +1268,7 @@ include __DIR__ . '/header.php';
                 <div class="form-section">
                     <div class="form-section-title" id="exportVerifySectionTitle"><i class="bi bi-file-earmark-arrow-down" id="exportVerifySectionIcon"></i> Export Details</div>
 
-                    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.5rem 0.75rem;" class="d-flex align-items-center gap-2 small mb-4">
+                    <div class="export-warning-box d-flex align-items-center gap-2 small mb-4">
                         <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
                         <span id="exportWarningText"><?= t_audit('export_warning', $translations, $lang) ?></span>
                     </div>

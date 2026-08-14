@@ -1504,7 +1504,7 @@ include __DIR__ . '/header.php';
 [data-bs-theme="dark"] .settings-card-title { color: #f1f5f9; }
 [data-bs-theme="dark"] .settings-sidebar-sub,
 [data-bs-theme="dark"] .settings-card-subtitle { color: #94a3b8; }
-[data-bs-theme="dark"] .settings-sidebar-icon { background: #1e3a5f; }
+[data-bs-theme="dark"] .settings-sidebar-icon { background: #1e3a5f; color: #93c5fd; }
 [data-bs-theme="dark"] .settings-nav-item { color: #94a3b8; }
 [data-bs-theme="dark"] .settings-nav-item:hover { background: #1e3a5f; color: #93c5fd; }
 [data-bs-theme="dark"] .settings-nav-item.active { background: #1e3a5f; color: #93c5fd; }

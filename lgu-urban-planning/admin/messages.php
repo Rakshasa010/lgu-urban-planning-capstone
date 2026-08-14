@@ -405,6 +405,18 @@ include __DIR__ . '/../admin/header.php';
 .deletion-panel { background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.25rem;margin-top:1.25rem; }
 
 /* ── Action toast (approve/reject confirmation) ── */
+/* ── Action toast (approve/reject confirmation) ── */
+.toast-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.toast-icon-approve { background: #dcfce7; }
+.toast-icon-reject  { background: #fee2e2; }
+.action-toast-body  { background: #fff; }
+
+/* Search bar icon prefix needs to be overridable — bg-white doesn't adapt on its own */
+.input-group-text.bg-white { background-color: #fff; }
+
 #actionToastBackdrop {
     display: none;
     position: absolute;
@@ -508,6 +520,251 @@ include __DIR__ . '/../admin/header.php';
     padding: 0.6rem 0.75rem; font-size: 0.82rem;
     color: var(--bs-secondary-color); text-align: center;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   1024px (Laptop) | 768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
+═══════════════════════════════════════════════════════════════ */
+
+/* --- 1024px: Laptop --- */
+@media (max-width: 1024px) {
+    .p-4 { padding: 1.25rem !important; }
+
+    /* Guard: this page's grid must never fight the docked sidebar for
+       space. col-md-8 (message list) and col-md-4 (compose card) are
+       still side-by-side here — Bootstrap doesn't stack them until
+       768px — so anything below that can't shrink small enough will
+       otherwise borrow width from the sidebar instead of the page
+       just scrolling, crushing the sidebar down to a sliver. */
+    #sidebar { flex-shrink: 0 !important; }
+
+    /* Filter bar: col-md-8 is only ~450-490px wide at this breakpoint
+       (minus the sidebar), which isn't enough room for 4 tab buttons
+       ("All", "Unread", "Read", "Deletion Requests") AND the search
+       box on one row without either overflowing or shrinking past
+       legibility. Stack the tabs above the search box inside the card
+       instead — the columns themselves stay side-by-side, only this
+       inner row adapts. */
+    .card-body form.row.g-2 {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .card-body form.row.g-2 > .col-auto,
+    .card-body form.row.g-2 > .col {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    /* Even on its own row, all 4 tab buttons can be tight — let them
+       scroll horizontally rather than wrap (wrapping breaks the
+       joined-pill border-radius styling of a Bootstrap btn-group). */
+    .btn-group.btn-group-sm[role="group"] {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .btn-group.btn-group-sm[role="group"]::-webkit-scrollbar { display: none; }
+    .btn-group.btn-group-sm[role="group"] .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 0.82rem;
+    }
+
+    /* Message rows */
+    .msg-row { padding: 0.75rem; }
+    .msg-sender { font-size: 0.85rem; }
+    .msg-subject { font-size: 0.9rem; }
+    .msg-preview { font-size: 0.82rem; }
+
+    /* Compose card: same "shrink before it breaks" treatment as the
+       filter bar — col-md-4 is only ~230-250px wide here. */
+    .compose-card .card-header h5 { font-size: 0.95rem; }
+    .compose-card .card-body { padding: 0.875rem; }
+    .compose-card .form-label { font-size: 0.78rem; }
+    .compose-card .form-control,
+    .compose-card .form-select { font-size: 0.85rem; }
+
+    #actionToast { width: 380px; }
+}
+
+/* --- 768px: Tablet ---
+   This is also Bootstrap's own col-md breakpoint, so col-md-8/col-md-4
+   stack to full width below here on their own — the message list and
+   compose card no longer share a row, which is what gives the filter
+   bar and compose form the room the 1024px rules above were working
+   around. We only need to tune what Bootstrap doesn't handle: card
+   spacing, the modal, and the fixed result toast. */
+@media (max-width: 768px) {
+    .p-4 { padding: 1rem !important; }
+
+    h2 { font-size: 1.5rem; }
+
+    .msg-row { padding: 0.7rem; }
+    .msg-sender { font-size: 0.82rem; }
+    .msg-subject { font-size: 0.88rem; }
+    .msg-preview { font-size: 0.8rem; }
+
+    .compose-card .card-body { padding: 0.8rem; }
+    .compose-card .card-header { padding: 0.75rem 1rem !important; }
+
+    #messageModal .modal-header { padding: 0.85rem 1rem; }
+    #messageModal .modal-body { padding: 1rem; }
+    #messageModal .modal-footer {
+        padding: 0.6rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    #modalFooterLeft { flex-wrap: wrap; }
+
+    .result-toast {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        min-width: unset;
+        width: auto;
+    }
+}
+
+/* --- 480px: Large Mobile --- */
+@media (max-width: 480px) {
+    .p-4 { padding: 0.75rem !important; }
+
+    h2 { font-size: 1.3rem; }
+    .text-muted.mb-0 { font-size: 0.85rem; }
+
+    /* Filter tab buttons: same horizontal-scroll treatment as 1024px,
+       just tighter so more of the row is visible at once. */
+    .btn-group.btn-group-sm[role="group"] .btn {
+        font-size: 0.78rem;
+        padding: 0.35rem 0.55rem;
+    }
+
+    .input-group-sm .form-control,
+    .input-group-sm .input-group-text,
+    .input-group-sm .btn { font-size: 0.82rem; }
+
+    .msg-row { padding: 0.65rem; margin-bottom: 0.65rem; }
+    .msg-meta small { font-size: 0.7rem; }
+    .msg-sender { font-size: 0.78rem; }
+    .msg-subject { font-size: 0.85rem; margin-top: 0.35rem; }
+    .msg-preview { font-size: 0.78rem; }
+    .msg-preview .click-hint { display: none; } /* reclaim space on narrow rows */
+
+    .compose-card .card-header h5 { font-size: 0.9rem; }
+    .compose-card .card-body { padding: 0.75rem; }
+    .compose-card .form-control,
+    .compose-card .form-select { font-size: 0.82rem; }
+
+    .searchable-select-trigger { font-size: 0.82rem; padding: 0.4rem 0.55rem; }
+    .searchable-select-option { font-size: 0.82rem; }
+
+    #actionToast { width: calc(100% - 1.5rem); }
+    #actionToast .toast-body { padding: 1rem; }
+
+    /* Pagination: Prev/Next + up to 9 numbered pages don't fit on one
+       row below ~480px. Let the strip scroll horizontally instead of
+       wrapping (wrapping breaks the pill border-radius styling) or
+       overflowing past the card edge. Centered when it fits; if it's
+       still too wide, the container scrolls horizontally starting
+       from the centered content's left edge. */
+    #msgPagination .pagination {
+        flex-wrap: nowrap;
+        justify-content: center !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding-bottom: 2px;
+    }
+    #msgPagination .pagination::-webkit-scrollbar { display: none; }
+    #msgPagination .page-item { flex: 0 0 auto; }
+
+    .pagination-sm .page-link { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
+
+    /* Drop the "Prev"/"Next" words below 480px (covers 375px, 425px,
+       and 320px too) and keep just the chevrons — the icons alone,
+       plus disabled/active styling, are enough to read, and it frees
+       up room to help the strip actually center instead of overflow. */
+    #msgPagination .pg-label { display: none; }
+}
+
+/* --- 320px: Small Mobile --- */
+@media (max-width: 320px) {
+    .p-4 { padding: 0.5rem !important; }
+
+    h2 { font-size: 1.15rem; }
+    .text-muted.mb-0 { font-size: 0.8rem; }
+
+    .btn-group.btn-group-sm[role="group"] .btn {
+        font-size: 0.72rem;
+        padding: 0.3rem 0.45rem;
+    }
+
+    .msg-row { padding: 0.55rem; margin-bottom: 0.55rem; }
+
+    /* Sender + date no longer fit on one row at this width — stack them
+       instead of letting them wrap mid-line. */
+    .msg-meta {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    .msg-meta small { margin-top: 2px; }
+    .msg-subject { font-size: 0.82rem; }
+    .msg-preview { font-size: 0.74rem; }
+
+    .compose-card .btn-send { font-size: 0.82rem; padding: 0.5rem; }
+    .compose-card .form-label { font-size: 0.76rem; }
+
+    #messageModal .modal-header { padding: 0.7rem 0.85rem; }
+    #messageModal .modal-body { padding: 0.85rem; }
+    #messageModal .modal-footer { padding: 0.5rem 0.85rem; }
+    .modal-title { font-size: 0.92rem !important; }
+
+    .result-toast { left: 0.5rem; right: 0.5rem; bottom: 0.5rem; font-size: 0.82rem; }
+
+    /* Pagination: pg-label is already hidden from the 480px breakpoint
+       down (see above), so just tighten padding/size further here. */
+    #msgPagination .page-link { padding: 0.25rem 0.4rem; font-size: 0.74rem; }
+    #msgPagination .page-link i { font-size: 0.7rem; }
+}
+/* =============================================
+   DARK MODE
+   ============================================= */
+[data-bs-theme="dark"] .msg-row.unread {
+    background: rgba(13, 110, 253, 0.08);
+    border-color: #334155;
+}
+[data-bs-theme="dark"] .msg-row.read {
+    background: #1e293b;
+    border-color: #334155;
+}
+[data-bs-theme="dark"] .msg-row.deletion-unread {
+    background: rgba(220, 53, 69, 0.10);
+    border-color: rgba(220, 53, 69, 0.35);
+}
+[data-bs-theme="dark"] .msg-row.unread       .msg-sender  { color: #f1f5f9; }
+[data-bs-theme="dark"] .msg-row.read         .msg-sender  { color: #94a3b8; }
+[data-bs-theme="dark"] .msg-row.deletion-unread .msg-sender { color: #fca5a5; }
+[data-bs-theme="dark"] .msg-row.unread       .msg-subject { color: #f1f5f9; }
+[data-bs-theme="dark"] .msg-row.read         .msg-subject { color: #94a3b8; }
+[data-bs-theme="dark"] .msg-row.deletion-unread .msg-subject { color: #fca5a5; }
+[data-bs-theme="dark"] .msg-preview { color: #94a3b8; }
+
+[data-bs-theme="dark"] #messageModal .modal-header { border-color: #334155; }
+[data-bs-theme="dark"] #messageModal .modal-footer { border-color: #334155; background: #0f172a; }
+[data-bs-theme="dark"] .msg-body-text { color: #cbd5e1; }
+[data-bs-theme="dark"] .deletion-panel { background: rgba(220, 53, 69, 0.10); border-color: rgba(220, 53, 69, 0.35); }
+
+[data-bs-theme="dark"] .toast-icon-approve { background: rgba(34, 197, 94, 0.18); }
+[data-bs-theme="dark"] .toast-icon-reject  { background: rgba(239, 68, 68, 0.18); }
+[data-bs-theme="dark"] .action-toast-body  { background: #1e293b; }
+
+[data-bs-theme="dark"] .input-group-text.bg-white { background-color: #0f172a !important; border-color: #334155; color: #94a3b8; }
 </style>
 
 <div class="p-4">
@@ -672,7 +929,7 @@ include __DIR__ . '/../admin/header.php';
                 <ul class="pagination pagination-sm justify-content-center mb-0">
                     <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
                         <a class="page-link" href="<?php echo $paginationBase; ?>&page=<?php echo $page - 1; ?>" aria-label="Previous">
-                            <i class="bi bi-chevron-left"></i> Prev
+                            <i class="bi bi-chevron-left"></i> <span class="pg-label">Prev</span>
                         </a>
                     </li>
                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
@@ -682,7 +939,7 @@ include __DIR__ . '/../admin/header.php';
                     <?php endfor; ?>
                     <li class="page-item <?php echo $page >= $totalPages ? 'disabled' : ''; ?>">
                         <a class="page-link" href="<?php echo $paginationBase; ?>&page=<?php echo $page + 1; ?>" aria-label="Next">
-                            Next <i class="bi bi-chevron-right"></i>
+                            <span class="pg-label">Next</span> <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>
                 </ul>
@@ -795,13 +1052,12 @@ include __DIR__ . '/../admin/header.php';
             <!-- ── Confirmation overlay (lives inside modal to stay in focus trap) ── -->
             <div id="actionToastBackdrop"></div>
             <div id="actionToast">
-    <div class="toast-body bg-white rounded-3">
+    <div class="toast-body action-toast-body rounded-3">
 
         <!-- APPROVE view -->
         <div id="toastApproveView">
             <div class="d-flex align-items-center gap-2 mb-2">
-                <span style="width:36px;height:36px;background:#dcfce7;border-radius:8px;
-                             display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span class="toast-icon toast-icon-approve">
                     <i class="bi bi-check-circle-fill text-success fs-5"></i>
                 </span>
                 <div>
@@ -820,8 +1076,7 @@ include __DIR__ . '/../admin/header.php';
         <!-- REJECT view -->
         <div id="toastRejectView" class="d-none">
             <div class="d-flex align-items-center gap-2 mb-2">
-                <span style="width:36px;height:36px;background:#fee2e2;border-radius:8px;
-                             display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span class="toast-icon toast-icon-reject">
                     <i class="bi bi-x-circle-fill text-danger fs-5"></i>
                 </span>
                 <div>

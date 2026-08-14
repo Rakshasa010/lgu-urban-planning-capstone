@@ -936,6 +936,23 @@ include __DIR__ . '/../user/header.php';
 }
 .settings-toggle { width: 2.5em; height: 1.3em; cursor: pointer; }
 
+/* Password-reveal input-groups (Reason for Deletion / Confirm with
+   Password, and the export-account one): Bootstrap's .input-group wraps
+   by default, and .settings-textarea's width:100% above fights with the
+   flex sizing Bootstrap needs for the input to shrink alongside the eye
+   toggle button — pushing the button onto its own line below the field.
+   Force the row to stay on one line and let the input take the
+   remaining space instead of a hardcoded 100%. */
+.settings-page .input-group,
+.modal .input-group {
+    flex-wrap: nowrap;
+}
+.settings-main .input-group .settings-textarea {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 /* ── Login activity table ── */
 .settings-activity-table { font-size: 0.85rem; }
 .settings-activity-table thead th {
