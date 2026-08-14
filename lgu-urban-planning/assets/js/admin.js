@@ -145,9 +145,9 @@ function updateNotifications() {
                 if (!data.messages || data.messages.length === 0) {
                     listContainer.innerHTML = `
                         <div class="p-4 text-center">
-                            <i class="bi bi-chat-dots text-dark" style="font-size: 2rem; opacity: 0.3;"></i>
-                            <div class="text-dark fw-bold mt-2">No notifications yet.</div>
-                            <small class="text-dark" style="opacity: 0.6;">You're all caught up!</small>
+                            <i class="bi bi-chat-dots text-muted" style="font-size: 2rem; opacity: 0.4;"></i>
+                            <div class="fw-bold mt-2 small text-muted">No notifications yet.</div>
+                            <small class="text-muted">You're all caught up!</small>
                         </div>`;
                 } else {
                     let html = '';
@@ -160,8 +160,8 @@ function updateNotifications() {
                             + ((n.message || '').replace(/<[^>]*>/g, '').length > 80 ? '…' : '');
                         html += `
                             <a href="/lgu-urban-planning/admin/messages.php" class="notif-item ${unreadClass}">
-                                <div class="fw-bold small text-dark">${n.subject}</div>
-                                <div class="text-dark truncate-text small">${preview}</div>
+                                <div class="fw-bold small notif-item-subject">${n.subject}</div>
+                                <div class="text-muted small notif-msg-truncate">${preview}</div>
                                 <small class="text-primary" style="font-size: 0.7rem; font-weight: 500;">
                                     ${n.formatted_date}
                                 </small>
@@ -204,23 +204,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let countdownInterval = null;
 
-    document.body.insertAdjacentHTML('beforeend', `
-        <div id="sessionTimeoutModal" style="
-            display:none; position:fixed; inset:0; z-index:99999;
-            background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
-            <div style="
+    // Self-contained styles for this modal — injected once so it looks right
+    // regardless of what stylesheet the current page happens to load, and so
+    // it responds to the same [data-bs-theme="dark"] attribute as everything else.
+    if (!document.getElementById('session-timeout-styles')) {
+        const styleTag = document.createElement('style');
+        styleTag.id = 'session-timeout-styles';
+        styleTag.textContent = `
+            .session-timeout-overlay {
+                display:none; position:fixed; inset:0; z-index:99999;
+                background:rgba(0,0,0,.5); align-items:center; justify-content:center;
+            }
+            .session-timeout-card {
                 background:#fff; border-radius:12px; padding:32px 28px;
                 max-width:380px; width:90%; text-align:center;
-                box-shadow:0 8px 32px rgba(0,0,0,.2);">
-                <div id="sessionModalIcon" style="font-size:2rem; margin-bottom:8px;">⚠️</div>
-                <h5 id="sessionModalTitle" style="margin:0 0 8px; font-weight:700; color:#111;">Session Expiring</h5>
-                <p id="sessionModalText" style="margin:0 0 20px; color:#555; font-size:.95rem;">
+                box-shadow:0 8px 32px rgba(0,0,0,.2);
+            }
+            .session-timeout-icon { font-size:2rem; margin-bottom:8px; }
+            .session-timeout-title { margin:0 0 8px; font-weight:700; color:#111; }
+            .session-timeout-text { margin:0 0 20px; color:#555; font-size:.95rem; }
+            .session-timeout-btn {
+                background:#6366f1; color:#fff; border:none; border-radius:8px;
+                padding:8px 24px; font-weight:600; cursor:pointer;
+            }
+            [data-bs-theme="dark"] .session-timeout-card { background:#1e293b; box-shadow:0 8px 32px rgba(0,0,0,.5); }
+            [data-bs-theme="dark"] .session-timeout-title { color:#f1f5f9; }
+            [data-bs-theme="dark"] .session-timeout-text { color:#94a3b8; }
+        `;
+        document.head.appendChild(styleTag);
+    }
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="sessionTimeoutModal" class="session-timeout-overlay">
+            <div class="session-timeout-card">
+                <div id="sessionModalIcon" class="session-timeout-icon">⚠️</div>
+                <h5 id="sessionModalTitle" class="session-timeout-title">Session Expiring</h5>
+                <p id="sessionModalText" class="session-timeout-text">
                     Your session will expire in <span id="sessionCountdownNum">30</span> seconds due to inactivity.
                     Click OK to stay logged in.
                 </p>
-                <button id="sessionModalBtn" onclick="window.dismissTimeoutWarning()"
-                    style="background:#6366f1;color:#fff;border:none;border-radius:8px;
-                           padding:8px 24px;font-weight:600;cursor:pointer;">OK</button>
+                <button id="sessionModalBtn" class="session-timeout-btn" onclick="window.dismissTimeoutWarning()">OK</button>
             </div>
         </div>`);
 

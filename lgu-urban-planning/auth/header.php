@@ -119,7 +119,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
 
 <header class="main-header">
 <div class="header-brand">
-        <a href="index.php" class="header-brand-link d-flex align-items-center">
+        <a href="landingpage.php" class="header-brand-link d-flex align-items-center">
             <img src="assets/favicon.png" alt="Logo" class="brand-icon me-2">
             <h6 class="mb-0 fw-normal">Urban Planning and Development</h6>
         </a>
