@@ -1,15 +1,4 @@
 <?php
-/**
- * Quezon City congressional district -> barangay lookup, used only to fill
- * the `district` field IPMS requires on an inspection request — our own
- * `applications` table has no district column.
- *
- * Ported from IPMS's citizen/includes/qc-locations.php (their canonical
- * source of truth for the same data, used for their citizen dashboard's
- * district/barangay selects). Keep in sync with that file if QC boundaries
- * or barangay names ever change; this is a read-only copy for lookup, not
- * an independent source.
- */
 
 function qcDistrictBarangays(): array
 {
@@ -77,7 +66,7 @@ function qcNormalizeBarangayKey(string $value): string
 
 /**
  * @return string|null e.g. "District 3", or null if $barangay doesn't match
- *                     any canonical QC barangay name (case/punctuation-insensitive).
+ *                     
  */
 function resolveDistrictForBarangay(?string $barangay): ?string
 {

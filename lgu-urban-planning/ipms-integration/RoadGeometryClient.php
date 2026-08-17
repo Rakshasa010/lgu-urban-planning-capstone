@@ -1,23 +1,4 @@
 <?php
-/**
- * RoadGeometryClient
- *
- * Read-only client for IPMS's road alignment feed — the road geometry
- * drawn during their Project Registration for the "Roads and Bridges"
- * category. Meant to power the Urban Planning tab that shows road data on
- * the map (this project already uses Leaflet elsewhere, e.g. gis/map.php —
- * polyline_coordinates below is already [lat, lng] pairs Leaflet's
- * L.polyline() can consume directly).
- *
- * GET {IPMS_BASE_URL}/integrations/urban-planning/road-geometry-feed.php
- * Header: X-API-Key: {URBAN_PLANNING_API_KEY}
- *
- * Not a consume-once queue like the inspection results feed — this always
- * returns the current live state of every Roads and Bridges project that
- * has a drawn alignment, so callers should just re-pull and replace their
- * view on each poll. No sync-marking, and no write path exists on this
- * endpoint at all — fetch-and-remap only.
- */
 
 require_once __DIR__ . '/roads_integration.php';
 

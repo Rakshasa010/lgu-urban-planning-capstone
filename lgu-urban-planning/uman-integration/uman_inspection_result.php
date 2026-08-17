@@ -1,34 +1,4 @@
 <?php
-/**
- * Inbound webhook — UMAN posts the grid/electrical load inspection result
- * here once their inspector has been out to the site.
- *
- * Give this URL to the UMAN team:
- *   https://upad.infragovservices.com/api/webhooks/uman_inspection_result.php
- *
- * Expected JSON payload below is confirmed against UMAN's own
- * api/v1/inspection-callback.php:
- * {
- *   "application_id": 789,              // echoed back from our request
- *   "grid_id": "EG-2026-014",           // their own generated id
- *   "inspection_date": "2026-07-19",
- *   "engineer_assigned": "Maria Santos",
- *   "grid_capacity_condition": "Good",  // Excellent | Good | Fair | Poor | Critical
- *   "transformer_condition": "Fair",
- *   "line_condition": "Good",
- *   "load_forecast_condition": "Good",
- *   "overall_condition": "Good",        // Excellent | Good | Fair | Poor | Critical
- *   "severity": "Low",                  // placeholder scale — confirm values with UMAN
- *   "recommendation": "No action needed", // placeholder — confirm their dropdown options
- *   "gps_latitude": 14.6760,
- *   "gps_longitude": 121.0437,
- *   "remarks": "Observations for the record...",
- *   "photo_urls": ["https://uman.infragovservices.com/uploads/xyz.jpg"]
- * }
- *
- * Auth: expects an X-UMAN-Signature header containing an HMAC-SHA256 of the
- * raw request body, signed with the shared UMAN_WEBHOOK_SECRET.
- */
 
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/utilities_integration.php';
@@ -56,8 +26,8 @@ if (!$data) {
 $applicationId    = (int) ($data['application_id'] ?? 0);
 $externalRefId    = $data['grid_id']              ?? null;
 $overallCondition = $data['overall_condition']    ?? null;  // Excellent|Good|Fair|Poor|Critical
-$severity         = $data['severity']             ?? null;  // Low|Medium|High
-$recommendation   = $data['recommendation']        ?? null;  // free text, entered by the UMAN inspector
+$severity         = $data['severity']             ?? null;  // ⚠️ scale not yet confirmed with UMAN
+$recommendation   = $data['recommendation']        ?? null;  // ⚠️ dropdown options not yet confirmed
 $remarks          = $data['remarks']              ?? '';
 $inspectedAt      = $data['inspection_date']       ?? null;
 $engineerAssigned = $data['engineer_assigned']     ?? null;
@@ -68,9 +38,6 @@ if (!$applicationId || !$overallCondition) {
     exit;
 }
 
-// ⚠️ PLACEHOLDER mapping — mirrored off the Roads/IPMS decision table.
-// Confirm this logic with the Energy/Utilities team, or ask them to just
-// send an explicit "status" field instead, which would be more reliable.
 $needsAction = in_array($overallCondition, ['Poor', 'Critical'], true)
     || in_array($recommendation, ['Immediate Upgrade', 'Escalate to District Engineer'], true);
 $status = $needsAction ? 'rejected' : 'approved';
@@ -123,7 +90,7 @@ try {
 
     $db->prepare(
         "INSERT INTO application_status_history (application_id, status, remarks, changed_by)
-         VALUES (?, ?, ?, NULL)"
+         VALUES (?, ?, ?, 0)"
     )->execute([
         $applicationId,
         $currentStatus,

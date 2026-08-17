@@ -473,12 +473,6 @@ function lp_status_badge(string $status): array {
 
   /* =======================================================================
      RESPONSIVE BREAKPOINTS
-     1024px → Laptop / small desktop
-     768px  → Tablets
-     480px  → Large mobile
-     320px  → Small mobile
-     Each tier is cumulative — mobile-first overrides stack on top of the
-     wider tier's rules as the viewport shrinks.
      ======================================================================= */
 
   /* ---------- 1024px : LAPTOP ---------- */
@@ -683,7 +677,7 @@ function lp_status_badge(string $status): array {
   <div class="container-xl hero-inner">
     <div>
       <div class="hero-badge"><i class="bi bi-patch-check-fill"></i>Quezon City — Digital Permitting Platform</div>
-      <h1>Permits, inspections, and zoning — in one system, not six binders.</h1>
+      <h1>Permits, inspections, and zoning in one system.</h1>
       <p class="lede">Replace manual walk-in applications and paper trails with a single portal for development permits, GIS-based zoning checks, field inspections, and full audit trails.</p>
       <div class="hero-ctas">
         <a href="login.php" class="btn-hero-primary"><i class="bi bi-box-arrow-in-right"></i> Log In to Portal</a>
@@ -774,7 +768,7 @@ function lp_status_badge(string $status): array {
     <div class="section-head reveal">
       <div class="eyebrow">Platform</div>
       <h2 class="section-title">Everything the office and the field team need.</h2>
-      <p class="section-sub">Built around the actual permit lifecycle — from a resident's application to a signed-off inspection report.</p>
+      <p class="section-sub">Built around the actual permit lifecycle from a resident's application to a signed-off inspection report.</p>
     </div>
     <div class="row g-4">
       <div class="col-md-6 col-lg-4 reveal">
@@ -802,7 +796,7 @@ function lp_status_badge(string $status): array {
         <div class="feature-card" style="--card-bg:#fffbeb; --card-border:#fef3c7; --card-accent:#f59e0b;">
           <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><i class="bi bi-clock-history"></i></div>
           <h3>Real-Time Status Tracking</h3>
-          <p>Applicants and staff see exactly where a permit sits — submitted, under review, approved, or rejected — at all times.</p>
+          <p>Applicants and staff see exactly where a permit sits submitted, under review, approved, or rejected at all times.</p>
         </div>
       </div>
       <div class="col-md-6 col-lg-4 reveal">
@@ -869,7 +863,7 @@ function lp_status_badge(string $status): array {
         <div class="role-card">
           <div class="role-icon"><i class="bi bi-person-badge"></i></div>
           <h4>Administrators</h4>
-          <p>Full oversight — user management, audit logs, and reports across all applications.</p>
+          <p>Full oversight user management, audit logs, and reports across all applications.</p>
         </div>
       </div>
       <div class="col-md-6 col-lg-3 reveal">
@@ -903,7 +897,7 @@ function lp_status_badge(string $status): array {
     <div class="row g-4">
       <div class="col-md-4">
         <h5>Urban Planning and Development</h5>
-        <p style="color:rgba(255,255,255,0.6); font-size:0.86rem;">Development Permit Management System for local government units — permitting, zoning, and inspections in one place.</p>
+        <p style="color:rgba(255,255,255,0.6); font-size:0.86rem;">Development Permit Management System for local government units permitting, zoning, and inspections in one place.</p>
       </div>
       <div class="col-6 col-md-2">
         <h5>Platform</h5>
@@ -1095,122 +1089,7 @@ function lp_status_badge(string $status): array {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-(function(){
-  // Fix: Bootstrap sets aria-hidden="true" on a modal while its close button
-  // (or another focused descendant) still has focus, which browsers correctly
-  // flag as an accessibility violation. Blur focus out of the modal first,
-  // returning it to the element that triggered the modal, before Bootstrap
-  // applies aria-hidden.
-  document.querySelectorAll('.modal').forEach(function(modalEl){
-    modalEl.addEventListener('hide.bs.modal', function(){
-      var focused = document.activeElement;
-      if (focused && modalEl.contains(focused)){
-        focused.blur();
-      }
-    });
-  });
-
-  // Navbar shrink on scroll + back-to-top visibility
-  var navbar = document.getElementById('topNavbar');
-  var backToTop = document.getElementById('backToTop');
-  function onScroll(){
-    var y = window.scrollY || document.documentElement.scrollTop;
-    if (navbar) navbar.classList.toggle('is-scrolled', y > 24);
-    if (backToTop) backToTop.classList.toggle('is-visible', y > 480);
-  }
-  document.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-
-  if (backToTop){
-    backToTop.addEventListener('click', function(){
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  // Mobile nav toggle
-  var toggleBtn = document.getElementById('navToggleBtn');
-  var mobileNav = document.getElementById('mobileNav');
-  if (toggleBtn && mobileNav){
-    toggleBtn.addEventListener('click', function(){
-      var open = mobileNav.classList.toggle('is-open');
-      toggleBtn.classList.toggle('is-open', open);
-      toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    mobileNav.querySelectorAll('a').forEach(function(link){
-      link.addEventListener('click', function(){
-        mobileNav.classList.remove('is-open');
-        toggleBtn.classList.remove('is-open');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
-
-  // Scroll-triggered reveal animations
-  var revealEls = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window){
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(entry, i){
-        if (entry.isIntersecting){
-          var el = entry.target;
-          setTimeout(function(){ el.classList.add('is-visible'); }, (i % 6) * 70);
-          io.unobserve(el);
-        }
-      });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    revealEls.forEach(function(el){ io.observe(el); });
-  } else {
-    revealEls.forEach(function(el){ el.classList.add('is-visible'); });
-  }
-
-  // Animated counters for the trust strip
-  var counters = document.querySelectorAll('.num[data-count]');
-  function animateCounter(el){
-    var target = parseFloat(el.getAttribute('data-count')) || 0;
-    var suffix = el.getAttribute('data-suffix') || '';
-    var duration = 1400;
-    var start = null;
-    function step(ts){
-      if (!start) start = ts;
-      var progress = Math.min((ts - start) / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var value = Math.round(target * eased);
-      el.textContent = value.toLocaleString() + suffix;
-      if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-  if (counters.length){
-    if ('IntersectionObserver' in window){
-      var counterIo = new IntersectionObserver(function(entries){
-        entries.forEach(function(entry){
-          if (entry.isIntersecting){
-            animateCounter(entry.target);
-            counterIo.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.5 });
-      counters.forEach(function(el){ counterIo.observe(el); });
-    } else {
-      counters.forEach(animateCounter);
-    }
-  }
-
-  // Subtle cursor-tilt on the hero mock dashboard card
-  var mockCard = document.querySelector('.mock-card');
-  if (mockCard && window.matchMedia('(hover: hover)').matches){
-    mockCard.addEventListener('mousemove', function(e){
-      var rect = mockCard.getBoundingClientRect();
-      var relX = (e.clientX - rect.left) / rect.width - 0.5;
-      var relY = (e.clientY - rect.top) / rect.height - 0.5;
-      mockCard.style.transform = 'rotate(1deg) translateY(-4px) rotateX(' + (relY * -6) + 'deg) rotateY(' + (relX * 8) + 'deg)';
-    });
-    mockCard.addEventListener('mouseleave', function(){
-      mockCard.style.transform = '';
-    });
-  }
-})();
-</script>
+<script src="assets/js/landingpage.js"></script>
 
 </body>
 </html>

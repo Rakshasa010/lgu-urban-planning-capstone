@@ -1018,23 +1018,7 @@ unset($_SESSION['show_preloader']);
 
     </style>
     <script src="/lgu-urban-planning/assets/js/user.js?v=<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . '/lgu-urban-planning/assets/js/user.js'); ?>"></script>
-    <script>
-        /* Mobile sidebar overlay toggle — patches whatever toggleSidebar user.js defines */
-        (function () {
-            const _original = window.toggleSidebar;
-            window.toggleSidebar = function () {
-                if (_original) _original();
-                const sidebar  = document.getElementById('sidebar');
-                const overlay  = document.getElementById('sidebarOverlay');
-                if (!sidebar || !overlay) return;
-                /* On mobile (<= 768px) use .show; on desktop keep original collapse logic */
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.toggle('show');
-                    overlay.classList.toggle('active');
-                }
-            };
-        })();
-    </script>
+    <script src="/lgu-urban-planning/assets/js/user-header.js?v=<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . '/lgu-urban-planning/assets/js/user-header.js'); ?>"></script>
 </head>
 <body <?php if (!empty($isAuthPage)) echo 'data-auth-page="true"'; ?>>
 
@@ -1047,20 +1031,6 @@ unset($_SESSION['show_preloader']);
             <img src="/lgu-urban-planning/assets/upad-logo.png" alt="UPAD Logo" class="preloader-logo">
         </div>
     </div>
-    <script>
-        (function () {
-            var MIN_DISPLAY_MS = 2800;
-            var start = Date.now();
-            window.addEventListener('load', function () {
-                var elapsed = Date.now() - start;
-                var wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
-                setTimeout(function () {
-                    var el = document.getElementById('infra-preloader');
-                    if (el) el.classList.add('is-hidden');
-                }, wait);
-            });
-        })();
-    </script>
     <?php endif; ?>
 
     <!-- Logging out overlay -->
@@ -1247,31 +1217,5 @@ unset($_SESSION['show_preloader']);
                 </a>
             </div>
         </nav>
-
-        <script>
-            (function () {
-                // Logout confirmation — intercept logout link and show branded overlay
-                var logoutLinks = document.querySelectorAll('a[href$="logout.php"]');
-                var logoutOverlay = document.getElementById('logout-overlay');
-
-                logoutLinks.forEach(function (link) {
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        var href = link.getAttribute('href');
-
-                        if (logoutOverlay) {
-                            logoutOverlay.classList.add('show');
-                            // Force a reflow so the opacity transition actually plays
-                            void logoutOverlay.offsetWidth;
-                            logoutOverlay.classList.add('visible');
-                        }
-
-                        setTimeout(function () {
-                            window.location.href = href;
-                        }, 1200);
-                    });
-                });
-            })();
-        </script>
 
         <main class="main-content">

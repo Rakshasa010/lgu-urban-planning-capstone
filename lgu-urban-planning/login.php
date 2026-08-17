@@ -719,50 +719,6 @@ include __DIR__ . '/auth/header.php';
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-(function () {
-    var form = document.getElementById('loginForm');
-    if (!form) return;
-
-    var lang = document.documentElement.getAttribute('lang') === 'tl' ? 'tl' : 'en';
-
-    function markField(field, invalid) {
-        var wrapper = field.closest('.mb-3, .mb-4');
-        var error = wrapper ? wrapper.querySelector('.field-error') : null;
-        field.classList.toggle('is-invalid', invalid);
-        if (error) {
-            error.textContent = error.getAttribute('data-' + lang) || error.getAttribute('data-en');
-            error.classList.toggle('show', invalid);
-        }
-    }
-
-    form.addEventListener('submit', function (e) {
-        var fields = form.querySelectorAll('[required]');
-        var firstInvalid = null;
-        var hasInvalid = false;
-
-        fields.forEach(function (field) {
-            var invalid = field.value.trim() === '';
-            markField(field, invalid);
-            if (invalid) {
-                hasInvalid = true;
-                if (!firstInvalid) firstInvalid = field;
-            }
-        });
-
-        if (hasInvalid) {
-            e.preventDefault();
-            firstInvalid.focus();
-        }
-    });
-
-    // Clear the red state as soon as the user starts typing in that field
-    form.querySelectorAll('[required]').forEach(function (field) {
-        field.addEventListener('input', function () {
-            if (field.value.trim() !== '') markField(field, false);
-        });
-    });
-})();
-</script>
+<script src="assets/js/main.js"></script>
 
 <?php include __DIR__ . '/auth/footer.php'; ?>

@@ -1,39 +1,6 @@
 <?php
 /**
  * receipt_helper.php
- *
- * Shared logic for generating and emailing the payment (Official Receipt)
- * PDF once a permit fee payment succeeds. Lives alongside pay.php,
- * issue_permit.php, and generate_permit_pdf.php so it can be called from:
- *
- *   1. modules/PermitProcessing/pay.php — right after a mock payment
- *      succeeds, to generate + email the receipt.
- *   2. modules/PermitProcessing/receipt.php — the applicant-facing
- *      view/download controller.
- *
- * Uses the same PDF library detection as generate_permit_pdf.php (TCPDF
- * preferred, FPDF fallback) and the same PHPMailer/Gmail SMTP setup as
- * issue_permit.php, so no new dependencies are introduced.
- *
- * Unlike generate_permit_pdf.php, these are plain functions — no top-level
- * script execution, no output-buffer/_save_only include trick. Callers
- * just call buildReceiptPdf() directly.
- */
-
-/**
- * Builds (or reuses) the receipt PDF for a paid payment.
- * Receipts are treated as immutable once issued — if the file already
- * exists on disk, it's reused rather than regenerated.
- *
- * @param array $payment     Row from `payments`. Must include:
- *                            reference_number, amount, transaction_id,
- *                            paid_at (or will default to now). May
- *                            optionally include payment_method.
- * @param array $application Must include: application_number, project_name,
- *                            barangay, district (optional),
- *                            applicant_first_name, applicant_last_name.
- *
- * @return array{path: string, filename: string, newly_generated: bool}
  */
 function buildReceiptPdf(array $payment, array $application): array
 {
@@ -80,20 +47,6 @@ function buildReceiptPdf(array $payment, array $application): array
     return ['path' => $savePath, 'filename' => $filename, 'newly_generated' => true];
 }
 
-/**
- * Emails the given receipt PDF to the applicant via PHPMailer/Gmail SMTP —
- * same credentials/setup as issuePermitAndNotifyApplicant() in
- * issue_permit.php, so both emails come from the same sender.
- *
- * @param array  $application Must include applicant_email,
- *                             applicant_first_name, applicant_last_name,
- *                             application_number.
- * @param array  $payment     Row used to populate the summary in the email.
- * @param string $pdfPath     Absolute path to the generated receipt PDF.
- * @param string $pdfFilename Filename to use for the attachment.
- *
- * @return array{success: bool, message: string}
- */
 function sendPaymentReceiptEmail(array $application, array $payment, string $pdfPath, string $pdfFilename): array
 {
     $applicantEmail = $application['applicant_email'] ?? '';

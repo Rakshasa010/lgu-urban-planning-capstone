@@ -605,25 +605,10 @@ if ($_SESSION['role'] === 'inspector') {
             <span id="dashTime"></span>
         </div>
         <script>
-        (function () {
-            const use12h    = <?php echo $dashTimeFormat === '12h' ? 'true' : 'false'; ?>;
-            const timezone  = <?php echo json_encode($dashTimezone); ?>;
-
-            function tick() {
-                const now = new Date();
-                const opts = {
-                    timeZone: timezone,
-                    hour:     '2-digit',
-                    minute:   '2-digit',
-                    second:   '2-digit',
-                    hour12:   use12h,
-                };
-                document.getElementById('dashTime').textContent =
-                    new Intl.DateTimeFormat('en-PH', opts).format(now);
-            }
-            tick();
-            setInterval(tick, 1000);
-        })();
+        window.DASH_CLOCK_CONFIG = {
+            use12h:   <?php echo $dashTimeFormat === '12h' ? 'true' : 'false'; ?>,
+            timezone: <?php echo json_encode($dashTimezone); ?>
+        };
         </script>
     </div>
 
@@ -872,46 +857,19 @@ if ($_SESSION['role'] === 'inspector') {
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
-
-// Status Pie
-new Chart(document.getElementById('statusPieChart'), {
-    type: 'doughnut',
-    data: {
-        labels: <?php echo json_encode($statusLabels); ?>,
-        datasets: [{ data: <?php echo json_encode($statusCounts); ?>, backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444'] }]
-    },
-    options: commonOptions
-});
-
-// Project Pie
-new Chart(document.getElementById('landUsePieChart'), {
-    type: 'pie',
-    data: {
-        labels: <?php echo json_encode(!empty($landLabels) ? $landLabels : ['No Data']); ?>,
-        datasets: [{ data: <?php echo json_encode(!empty($landCounts) ? $landCounts : [1]); ?>, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'] }]
-    },
-    options: commonOptions
-});
-
-// Barangay Bar
-new Chart(document.getElementById('barangayChart'), {
-    type: 'bar',
-    data: {
-        labels: <?php echo json_encode($brgyLabels); ?>,
-        datasets: [{ label: '<?php echo dt('chart_total', $dashTranslations, $dashLang); ?>', data: <?php echo json_encode($brgyCounts); ?>, backgroundColor: '#3b82f6', borderRadius: 5 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-});
-
-// Trend Line
-new Chart(document.getElementById('trendChart'), {
-    type: 'line',
-    data: {
-        labels: <?php echo json_encode($monthLabels); ?>,
-        datasets: [{ label: '<?php echo dt('chart_applications', $dashTranslations, $dashLang); ?>', data: <?php echo json_encode($monthCounts); ?>, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-});
+window.DASH_CHART_DATA = {
+    statusLabels:  <?php echo json_encode($statusLabels); ?>,
+    statusCounts:  <?php echo json_encode($statusCounts); ?>,
+    landLabels:    <?php echo json_encode(!empty($landLabels) ? $landLabels : ['No Data']); ?>,
+    landCounts:    <?php echo json_encode(!empty($landCounts) ? $landCounts : [1]); ?>,
+    brgyLabels:    <?php echo json_encode($brgyLabels); ?>,
+    brgyCounts:    <?php echo json_encode($brgyCounts); ?>,
+    brgyLabel:     <?php echo json_encode(dt('chart_total', $dashTranslations, $dashLang)); ?>,
+    monthLabels:   <?php echo json_encode($monthLabels); ?>,
+    monthCounts:   <?php echo json_encode($monthCounts); ?>,
+    monthLabel:    <?php echo json_encode(dt('chart_applications', $dashTranslations, $dashLang)); ?>
+};
+</script>
+<script src="assets/js/admin-dashboard.js"></script>
 
 </script>

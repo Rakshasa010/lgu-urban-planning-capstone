@@ -1,15 +1,6 @@
 <?php
 /**
- * receipt.php — Applicant-facing payment receipt (view / download)
- *
- * Usage:
- *   GET /lgu-urban-planning/modules/PermitProcessing/receipt.php?id=<application_id>
- *   GET ...&download=1   → forces a "Save As" download instead of inline view
- *
- * Only the applicant who owns the application can view their own receipt,
- * and only once the associated payment is actually 'paid'. The PDF itself
- * is built (once) by buildReceiptPdf() in receipt_helper.php and reused on
- * subsequent requests — receipts are immutable once issued.
+ * receipt.php
  */
 
 require_once __DIR__ . '/../../core/Database.php';
@@ -46,9 +37,7 @@ if (!$row || $row['status'] !== 'paid') {
     die('Receipt not available. This application does not have a completed payment.');
 }
 
-// $row already carries both payments.* and the joined applicant/application
-// fields, which is exactly what buildReceiptPdf() expects from $payment /
-// $application respectively — pass it as both.
+
 $payment     = $row;
 $application = $row;
 

@@ -1,19 +1,6 @@
 <?php
 /**
  * UtilitiesIntegrationService
- *
- * Handles the OUTBOUND side of the Energy/Utilities integration: sending a
- * grid capacity / electrical load inspection request to UMAN when staff
- * clicks "Request New Inspection".
- *
- * This replaces the old dummy simulation that used to write fake
- * "AUTOMATED SIMULATION" text straight into impact_assessments.
- * Now it only marks the request as 'pending' — the real energy_flag/
- * energy_notes only get filled in later, by the webhook, once UMAN
- * actually responds.
- *
- * Field names below match UMAN's inbound contract exactly — confirmed
- * against uman_/api/v1/inspection-requests.php on the UMAN side.
  */
 
 require_once __DIR__ . '/utilities_integration.php';
@@ -26,50 +13,21 @@ class UtilitiesIntegrationService
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
-
-        // Self-healing: create the tracking table on first use if it's
-        // missing yet, same idiom used by sso_consume.php elsewhere in
-        // this codebase.
-        $this->db->exec(
-            "CREATE TABLE IF NOT EXISTS energy_inspection_requests (
-                id int(11) NOT NULL AUTO_INCREMENT,
-                application_id int(11) NOT NULL,
-                status enum('pending','sent','failed','completed') NOT NULL DEFAULT 'pending',
-                request_payload text DEFAULT NULL,
-                requested_by int(11) DEFAULT NULL,
-                requested_at datetime DEFAULT NULL,
-                external_ref_id varchar(64) DEFAULT NULL,
-                response_payload text DEFAULT NULL,
-                responded_at datetime DEFAULT NULL,
-                overall_condition enum('Excellent','Good','Fair','Poor','Critical') DEFAULT NULL,
-                severity enum('Low','Medium','High') DEFAULT NULL,
-                recommendation varchar(255) DEFAULT NULL,
-                engineer_assigned varchar(150) DEFAULT NULL,
-                inspection_date date DEFAULT NULL,
-                PRIMARY KEY (id),
-                KEY idx_application_id (application_id),
-                KEY requested_by (requested_by),
-                CONSTRAINT energy_inspection_requests_ibfk_1 FOREIGN KEY (application_id) REFERENCES applications (id) ON DELETE CASCADE,
-                CONSTRAINT energy_inspection_requests_ibfk_2 FOREIGN KEY (requested_by) REFERENCES users (id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
-        );
     }
 
     /**
      * @param int   $applicationId
-     * @param array $applicationData  Accepted keys: project_name, barangay,
-     *                                 district, category, estimated_load_kva,
-     *                                 priority, address, lat, lng, description,
-     *                                 requested_by.
+     * @param array $applicationData  ⚠️ Placeholder UMAN fields — confirm real
+     *                                 form fields with the Energy/Utilities
+     *                                 team: project_name, barangay, district,
+     *                                 category, estimated_load_kva, priority,
+     *                                 address, lat, lng, description, requested_by.
      * @param int   $requestedBy       user_id of the staff member triggering this
      * @return array{request_id:int, sent:bool, external_ref_id:?string, error:?string}
      */
     public function requestInspection(int $applicationId, array $applicationData, int $requestedBy): array
     {
-        // ⚠️ PLACEHOLDER field names — mirrored from the Roads/IPMS request
-        // shape until UMAN confirms their actual request form fields.
-        // We do NOT send an engineer — that's presumably filled in on their
-        // side later, same as Roads.
+
         $payload = [
             'source_system'   => 'UPAD',
             'application_id'  => $applicationId,   // our correlation id — must be echoed back in their webhook
@@ -136,13 +94,16 @@ class UtilitiesIntegrationService
     }
 
     /**
-     * POST /api/v1/inspection-requests.php on UMAN.
+     * ⚠️ PLACEHOLDER — swap in the real endpoint path, auth header format,
+     * and response field names once the Energy/Utilities team shares their
+     * API contract.
      *
      * @return array{0: bool, 1: ?string, 2: ?string}  [sent, externalRefId, error]
      */
     private function sendToUman(int $requestId, array $payload): array
     {
-        $ch = curl_init(rtrim(UMAN_API_URL, '/') . '/api/v1/inspection-requests.php');
+
+        $ch = curl_init(rtrim(UMAN_API_URL, '/') . '/api/v1/inspection-requests');
 
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
