@@ -807,6 +807,6 @@ include __DIR__ . '/../admin/header.php';
     </div>
 </div>
 
-<script src="../assets/js/admin-reports.js"></script>
+<script src="assets/js/admin-reports.js"></script>
 
 <?php include __DIR__ . '/../admin/footer.php'; ?>

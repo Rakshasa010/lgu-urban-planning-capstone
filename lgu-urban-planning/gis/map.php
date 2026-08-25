@@ -143,78 +143,15 @@ include __DIR__ . '/../admin/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 
 <style>
-    :root {
-        --lgu-blue: #1e88e5;
-        --lgu-accent: #ffd600;
-        --bg-light: #f8f9fc;
-
-        /* Theme-aware tokens (light defaults) — everything below keys off these
-           so dark mode is one override block instead of scattered !importants. */
-        --lgu-card-bg: #fff;
-        --lgu-page-heading: #1e293b;
-        --lgu-border: #dee2e6;
-        --lgu-input-bg: var(--bg-light);
-        --lgu-input-bg-focus: #fff;
-        --lgu-input-border: #ced4da;
-        --lgu-input-text: #212529;
-        --lgu-text-muted: #6c757d;
-        --lgu-text-secondary: #495057;
-        --lgu-table-border: #eef0f7;
-        --lgu-analysis-bg: var(--bg-light);
-        --lgu-placeholder-bg: #f8f9fa;
-        --lgu-badge-bg: #f8f9fa;
-
-        --lgu-fab-bg: #fff;
-        --lgu-fab-color: #1a237e;
-        --lgu-fab-hover-bg: #f0f4ff;
-        --lgu-popup-bg: #fff;
-        --lgu-popup-border: rgba(26,35,126,0.09);
-        --lgu-opt-color: #374151;
-        --lgu-opt-border: #f0f2fa;
-        --lgu-opt-hover-bg: #f0f4ff;
-        --lgu-opt-active-bg: linear-gradient(90deg,#e8ecff 0%,#f5f7ff 100%);
-        --lgu-opt-icon-bg: #f0f2fa;
-        --lgu-opt-icon-color: #5c6bc0;
-        --lgu-opt-radio-border: #c7cbdc;
-    }
-
-    [data-bs-theme="dark"] {
-        --lgu-card-bg: #1e2130;
-        --lgu-page-heading: #e9ecef;
-        --lgu-border: #3a3f52;
-        --lgu-input-bg: #262a3b;
-        --lgu-input-bg-focus: #2e3346;
-        --lgu-input-border: #3f455c;
-        --lgu-input-text: #e9ecef;
-        --lgu-text-muted: #9aa0b4;
-        --lgu-text-secondary: #b8bdd0;
-        --lgu-table-border: #333850;
-        --lgu-analysis-bg: #262a3b;
-        --lgu-placeholder-bg: #262a3b;
-        --lgu-badge-bg: #262a3b;
-
-        --lgu-fab-bg: #262a3b;
-        --lgu-fab-color: #b7c0ff;
-        --lgu-fab-hover-bg: #323858;
-        --lgu-popup-bg: #262a3b;
-        --lgu-popup-border: rgba(183,192,255,0.15);
-        --lgu-opt-color: #cdd2e6;
-        --lgu-opt-border: #333850;
-        --lgu-opt-hover-bg: #323858;
-        --lgu-opt-active-bg: linear-gradient(90deg,#323858 0%,#2a2e44 100%);
-        --lgu-opt-icon-bg: #323858;
-        --lgu-opt-icon-color: #b7c0ff;
-        --lgu-opt-radio-border: #4b5170;
-    }
+    :root { --lgu-blue: #1e88e5; --lgu-accent: #ffd600; --bg-light: #f8f9fc; }
 
     /* ── BASE ── */
-    #map { height: 750px !important; width: 100%; border-radius: 0 0 15px 15px; z-index: 1; border: 1px solid var(--lgu-border); }
-    .search-panel { border-radius: 12px; border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1); background: var(--lgu-card-bg); overflow: hidden; }
-    .search-header { background: var(--bs-primary, var(--lgu-blue)); color: white; padding: 15px; }
+    #map { height: 750px !important; width: 100%; border-radius: 0 0 15px 15px; z-index: 1; border: 1px solid #dee2e6; }
+    .search-panel { border-radius: 12px; border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1); background: #fff; overflow: hidden; }
+    .search-header { background: var(--lgu-blue); color: white; padding: 15px; }
     .section-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #5c6bc0; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
-    .form-control-lgu { border: 1px solid var(--lgu-input-border); border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; background-color: var(--lgu-input-bg); color: var(--lgu-input-text); }
-    .form-control-lgu:focus { background-color: var(--lgu-input-bg-focus); border-color: var(--lgu-blue); box-shadow: none; color: var(--lgu-input-text); }
-    .form-control-lgu::placeholder { color: var(--lgu-text-muted); opacity: 0.75; }
+    .form-control-lgu { border: 1px solid #ced4da; border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; background-color: var(--bg-light); }
+    .form-control-lgu:focus { background-color: #fff; border-color: var(--lgu-blue); box-shadow: none; }
     .btn-lgu-search {
         background: linear-gradient(135deg, #1c4e9e 0%, #4a7dfc 100%);
         color: white;
@@ -266,56 +203,45 @@ include __DIR__ . '/../admin/header.php';
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
     }
-    .analysis-inner { background: var(--lgu-analysis-bg); border-radius: 10px; border-left: 4px solid #4e73df; padding: 15px; }
-    .table-analysis td { padding: 8px 0; font-size: 0.85rem; border-bottom: 1px solid var(--lgu-table-border); color: var(--lgu-input-text); }
+    .analysis-inner { background: var(--bg-light); border-radius: 10px; border-left: 4px solid #4e73df; padding: 15px; }
+    .table-analysis td { padding: 8px 0; font-size: 0.85rem; border-bottom: 1px solid #eef0f7; }
     .table-analysis tr:last-child td { border-bottom: none; }
     #zoningComplianceCard { display: none; margin-top: 20px; }
-
-    /* Leaflet.Draw's built-in cursor tooltip ("Click to start drawing
-       shape.", "Click to continue drawing shape.", etc.) — hidden at
-       every width, not just mobile, since it just repeats what the
-       toolbar buttons already make clear and gets in the way on touch
-       screens where there's no cursor to follow anyway. */
-    .leaflet-draw-tooltip,
-    .leaflet-draw-tooltip-single,
-    .leaflet-draw-tooltip-subtext {
-        display: none !important;
-    }
 
     /* ── LAYER PICKER (collapsed toggle, Google Maps style) ── */
     .lgu-layer-fab {
         width: 42px; height: 42px;
-        background: var(--lgu-fab-bg);
+        background: #fff;
         border: none;
         border-radius: 10px;
         box-shadow: 0 2px 12px rgba(26,35,126,0.18), 0 1px 4px rgba(0,0,0,0.10);
         cursor: pointer;
         display: flex; align-items: center; justify-content: center;
-        color: var(--lgu-fab-color);
+        color: #1a237e;
         font-size: 1.1rem;
         transition: background 0.15s, box-shadow 0.15s;
         position: relative;
         z-index: 2;
     }
-    .lgu-layer-fab:hover { background: var(--lgu-fab-hover-bg); box-shadow: 0 4px 18px rgba(26,35,126,0.22); }
+    .lgu-layer-fab:hover { background: #f0f4ff; box-shadow: 0 4px 18px rgba(26,35,126,0.22); }
     .lgu-layer-fab.open { background: #1a237e; color: #fff; }
 
     .lgu-layer-popup {
-        position: fixed;
-        background: var(--lgu-popup-bg);
+        position: absolute;
+        top: 52px;
+        right: 0;
+        background: #fff;
         border-radius: 12px;
         box-shadow: 0 6px 28px rgba(26,35,126,0.16), 0 2px 8px rgba(0,0,0,0.09);
-        border: 1px solid var(--lgu-popup-border);
+        border: 1px solid rgba(26,35,126,0.09);
+        overflow: hidden;
         min-width: 170px;
         transform-origin: top right;
         transform: scale(0.85);
         opacity: 0;
         pointer-events: none;
         transition: transform 0.18s cubic-bezier(.4,0,.2,1), opacity 0.15s ease;
-        z-index: 10000;
-        max-height: min(280px, calc(100vh - 24px));
-        overflow-y: auto;
-        overflow-x: hidden;
+        z-index: 10;
     }
     .lgu-layer-popup.open {
         transform: scale(1);
@@ -339,34 +265,34 @@ include __DIR__ . '/../admin/header.php';
         padding: 9px 13px;
         cursor: pointer;
         font-size: 0.8rem; font-weight: 500;
-        color: var(--lgu-opt-color);
+        color: #374151;
         transition: background 0.13s, color 0.13s;
         position: relative; text-align: left;
     }
-    .lgu-layer-opt:not(:last-child) { border-bottom: 1px solid var(--lgu-opt-border); }
-    .lgu-layer-opt:hover { background: var(--lgu-opt-hover-bg); color: var(--lgu-fab-color); }
+    .lgu-layer-opt:not(:last-child) { border-bottom: 1px solid #f0f2fa; }
+    .lgu-layer-opt:hover { background: #f0f4ff; color: #1a237e; }
     .lgu-layer-opt.active {
-        background: var(--lgu-opt-active-bg);
-        color: var(--lgu-fab-color); font-weight: 700;
+        background: linear-gradient(90deg,#e8ecff 0%,#f5f7ff 100%);
+        color: #1a237e; font-weight: 700;
     }
     .lgu-layer-opt.active::before {
         content:''; position:absolute; left:0; top:0; bottom:0;
-        width:3px; background: var(--lgu-fab-color); border-radius:0 2px 2px 0;
+        width:3px; background:#1a237e; border-radius:0 2px 2px 0;
     }
     .lgu-opt-icon {
         width: 28px; height: 28px; border-radius: 7px;
         display: flex; align-items: center; justify-content: center;
         font-size: 0.9rem; flex-shrink: 0;
     }
-    .lgu-layer-opt.active .lgu-opt-icon { background: var(--lgu-fab-color); color: #fff; }
-    .lgu-layer-opt:not(.active) .lgu-opt-icon { background: var(--lgu-opt-icon-bg); color: var(--lgu-opt-icon-color); }
+    .lgu-layer-opt.active .lgu-opt-icon { background: #1a237e; color: #fff; }
+    .lgu-layer-opt:not(.active) .lgu-opt-icon { background: #f0f2fa; color: #5c6bc0; }
     .lgu-opt-radio {
         width: 13px; height: 13px; border-radius: 50%;
-        border: 2px solid var(--lgu-opt-radio-border); margin-left: auto; flex-shrink: 0;
+        border: 2px solid #c7cbdc; margin-left: auto; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
     }
     .lgu-layer-opt.active .lgu-opt-radio {
-        border-color: var(--lgu-fab-color); background: var(--lgu-fab-color);
+        border-color: #1a237e; background: #1a237e;
         box-shadow: 0 0 0 3px rgba(26,35,126,0.12);
     }
     .lgu-layer-opt.active .lgu-opt-radio::after {
@@ -374,55 +300,9 @@ include __DIR__ . '/../admin/header.php';
     }
 
 
-    /* ── DARK MODE: markup-level Bootstrap utility overrides ──
-       Bootstrap's .bg-white / .text-dark / .bg-light utilities are fixed
-       colors, not theme-aware, so this page's cards/headers/badges need
-       explicit dark overrides on top of the token swap above. */
-    [data-bs-theme="dark"] .search-panel .card-header.bg-white,
-    [data-bs-theme="dark"] .card-header.bg-white {
-        background-color: var(--lgu-card-bg) !important;
-        border-color: var(--lgu-border) !important;
-    }
-    [data-bs-theme="dark"] .text-dark { color: var(--lgu-page-heading) !important; }
-    [data-bs-theme="dark"] h2[style*="color"] { color: var(--lgu-page-heading) !important; }
-    [data-bs-theme="dark"] .text-muted { color: var(--lgu-text-muted) !important; }
-    [data-bs-theme="dark"] .text-secondary { color: var(--lgu-text-secondary) !important; }
-
-    [data-bs-theme="dark"] #analysisResults .border.rounded-3.bg-light,
-    [data-bs-theme="dark"] .bg-light {
-        background-color: var(--lgu-placeholder-bg) !important;
-        border-color: var(--lgu-border) !important;
-    }
-
-    [data-bs-theme="dark"] .badge.bg-light {
-        background-color: var(--lgu-badge-bg) !important;
-        border-color: var(--lgu-border) !important;
-    }
-
-    [data-bs-theme="dark"] #zoningComplianceCard,
-    [data-bs-theme="dark"] #zoningComplianceCard .bg-white {
-        background-color: var(--lgu-card-bg) !important;
-    }
-
-    [data-bs-theme="dark"] .hover-bg:hover,
-    [data-bs-theme="dark"] .overlay-item:hover {
-        background-color: var(--lgu-opt-hover-bg) !important;
-    }
-
-    /* Zoning legend swatch labels + Leaflet layer controls */
-    [data-bs-theme="dark"] .lgu-layer-popup-header { background: #14183a; }
-    [data-bs-theme="dark"] .leaflet-control-layers,
-    [data-bs-theme="dark"] .leaflet-bar a {
-        background-color: var(--lgu-card-bg) !important;
-        color: var(--lgu-input-text) !important;
-        border-color: var(--lgu-border) !important;
-    }
-    [data-bs-theme="dark"] .leaflet-bar a:hover { background-color: var(--lgu-opt-hover-bg) !important; }
-
     /* ================================================
        MOBILE RESPONSIVE
-       1024px (Laptop) | 768px (Tablet) |
-       425px (Mobile) | 320px (Small Mobile)
+       1024px (Laptop) | 768px (Tablet) | 480px (Large Mobile) | 320px (Small Mobile)
        ================================================ */
 
     /* --- 1024px: Laptop ---
@@ -457,17 +337,6 @@ include __DIR__ . '/../admin/header.php';
 
         /* Legend row: tighten gap so swatches don't wrap awkwardly */
         .search-panel .d-flex.flex-wrap.justify-content-center { gap: 12px !important; }
-
-        /* Leaflet native controls: plenty of room at this width, just
-           tuck the corners in a touch so they don't sit flush against
-           the rounded card edge. */
-        .leaflet-top.leaflet-left,
-        .leaflet-top.leaflet-right { top: 8px !important; }
-        .leaflet-top.leaflet-left { left: 8px !important; }
-        .leaflet-top.leaflet-right { right: 8px !important; }
-
-        /* Layer picker FAB + popup */
-        .lgu-layer-popup { min-width: 165px; }
     }
 
     /* --- 768px: Tablet --- */
@@ -515,112 +384,80 @@ include __DIR__ . '/../admin/header.php';
 
         /* Gap between legend and map card */
         .search-panel.mt-3 { margin-bottom: 1rem !important; }
-
-        /* Leaflet native controls */
-        .leaflet-top.leaflet-left,
-        .leaflet-top.leaflet-right { top: 8px !important; }
-        .leaflet-top.leaflet-left { left: 8px !important; }
-        .leaflet-top.leaflet-right { right: 8px !important; }
-        .leaflet-control-zoom a { width: 30px !important; height: 30px !important; line-height: 30px !important; }
-        .leaflet-draw-toolbar { margin-left: 6px !important; margin-top: 0 !important; }
-        .leaflet-draw-actions a { font-size: 0.8rem !important; }
-
-        /* Layer picker FAB + popup */
-        .lgu-layer-fab { width: 40px; height: 40px; }
-        .lgu-layer-popup { min-width: 160px; }
-
-        /* Map card header: title/badge can start crowding once the
-           card goes full-width but the map itself is still short */
-        .col-md-8 .card-header span.fw-bold { font-size: 0.85rem; }
-        .col-md-8 .card-header .badge { font-size: 0.68rem; }
     }
 
-    /* --- 425px: Mobile --- */
-    @media (max-width: 425px) {
+    /* --- 480px: Large Mobile --- */
+    @media (max-width: 480px) {
 
-        .p-4 { padding: 0.65rem !important; }
+        .p-4 { padding: 0.75rem !important; }
 
         /* Page header */
-        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.02rem; }
-        .d-flex.justify-content-between.align-items-center.mb-4 h2 span { width: 30px !important; height: 30px !important; }
-        .d-flex.justify-content-between.align-items-center.mb-4 h2 i { font-size: 0.92rem !important; }
-        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.7rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 { font-size: 1.1rem; }
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 span { width: 32px !important; height: 32px !important; }
+        .d-flex.justify-content-between.align-items-center.mb-4 h2 i { font-size: 1rem !important; }
+        .d-flex.justify-content-between.align-items-center.mb-4 p { font-size: 0.75rem; }
 
-        /* Map */
-        #map { height: 280px !important; border-radius: 7px !important; }
+        /* Map: compact height */
+        #map { height: 320px !important; border-radius: 8px !important; }
 
         /* Search header */
-        .search-header { padding: 9px 11px; }
-        .search-header h6 { font-size: 0.78rem; }
-        .search-header small { font-size: 0.58rem !important; }
+        .search-header { padding: 10px 12px; }
+        .search-header h6 { font-size: 0.82rem; }
+        .search-header small { font-size: 0.6rem !important; }
 
         /* Form inputs */
-        .card-body.p-4 { padding: 0.65rem !important; }
-        .form-control-lgu { font-size: 0.75rem; padding: 6px 8px; border-radius: 5px; }
-        .section-label { font-size: 0.6rem; margin-bottom: 3px; }
-        .mb-2 { margin-bottom: 0.3rem !important; }
-        .mb-3 { margin-bottom: 0.45rem !important; }
-        .row.g-2 { --bs-gutter-x: 0.3rem; --bs-gutter-y: 0.3rem; }
+        .card-body.p-4 { padding: 0.75rem !important; }
+        .form-control-lgu { font-size: 0.78rem; padding: 6px 9px; border-radius: 5px; }
+        .section-label { font-size: 0.63rem; margin-bottom: 3px; }
+        .mb-2 { margin-bottom: 0.35rem !important; }
+        .mb-3 { margin-bottom: 0.5rem !important; }
+
+        /* Lat/Lng + Block/Lot row: keep 2-col */
+        .row.g-2 { --bs-gutter-x: 0.35rem; --bs-gutter-y: 0.35rem; }
 
         /* Search button */
-        .btn-lgu-search { padding: 7px; font-size: 0.78rem; }
+        .btn-lgu-search { padding: 8px; font-size: 0.82rem; }
 
         /* Analysis card */
-        .analysis-inner { padding: 9px; }
-        .table-analysis td { font-size: 0.72rem; padding: 4px 0; }
-        #analysisResults .text-center.py-4 { padding: 0.6rem !important; }
-        #analysisResults .text-center.py-4 p { font-size: 0.72rem; }
-        #analysisResults .fs-3 { font-size: 1.1rem !important; }
+        .analysis-inner { padding: 10px; }
+        .table-analysis td { font-size: 0.75rem; padding: 5px 0; }
+        #analysisResults .text-center.py-4 { padding: 0.75rem !important; }
+        #analysisResults .text-center.py-4 p { font-size: 0.75rem; }
+        #analysisResults .fs-3 { font-size: 1.25rem !important; }
 
         /* Zoning overlay */
-        .form-select.form-control-lgu { font-size: 0.75rem; padding: 5px 7px; }
-        .form-check-label.small { font-size: 0.72rem; }
-        .overlay-item { padding: 0.3rem 0.45rem !important; }
+        .form-select.form-control-lgu { font-size: 0.78rem; padding: 5px 8px; }
+        .form-check-label.small { font-size: 0.75rem; }
+        .overlay-item { padding: 0.35rem 0.5rem !important; }
 
         /* Compliance card */
-        #zoningComplianceCard { margin-top: 10px; }
-        #zoningComplianceCard .card-body { padding: 0.65rem !important; }
-        #zoningComplianceCard h6 { font-size: 0.75rem; }
-        #zoningComplianceCard .btn { font-size: 0.75rem; padding: 6px 12px; }
-        #zoningComplianceCard .badge { font-size: 0.62rem; }
+        #zoningComplianceCard { margin-top: 12px; }
+        #zoningComplianceCard .card-body { padding: 0.75rem !important; }
+        #zoningComplianceCard h6 { font-size: 0.78rem; }
+        #zoningComplianceCard .btn { font-size: 0.78rem; padding: 7px 14px; }
+        #zoningComplianceCard .badge { font-size: 0.65rem; }
 
         /* Search panels: reduce spacing */
-        .search-panel.mb-4 { margin-bottom: 0.65rem !important; }
-        .search-panel.mt-3 { margin-bottom: 0.65rem !important; }
+        .search-panel.mb-4 { margin-bottom: 0.75rem !important; }
+        .search-panel.mt-3 { margin-bottom: 0.75rem !important; }
 
         /* Legend */
-        .search-panel .card-body.py-3 { padding: 0.4rem 0.55rem !important; }
-        .search-panel .d-flex.flex-wrap.justify-content-center { gap: 6px !important; }
-        .search-panel .d-flex.align-items-center > div { width: 19px !important; height: 8px !important; margin-right: 4px !important; }
-        .search-panel .d-flex.align-items-center span { font-size: 0.62rem !important; }
+        .search-panel .card-body.py-3 { padding: 0.4rem 0.6rem !important; }
+        .search-panel .d-flex.flex-wrap.justify-content-center { gap: 8px !important; }
+        .search-panel .d-flex.align-items-center > div { width: 22px !important; height: 9px !important; margin-right: 5px !important; }
+        .search-panel .d-flex.align-items-center span { font-size: 0.65rem !important; }
 
         /* Map card header */
         .col-md-8 .card-header {
             flex-direction: row !important;
             align-items: center !important;
             justify-content: space-between !important;
-            padding: 8px 9px !important;
-            gap: 5px;
+            padding: 8px 10px !important;
+            gap: 6px;
         }
-        .col-md-8 .card-header span.fw-bold { font-size: 0.7rem; white-space: nowrap; }
+        .col-md-8 .card-header span.fw-bold { font-size: 0.72rem; white-space: nowrap; flex-shrink: 1; }
         .col-md-8 .card-header span.fw-bold i { margin-left: 0 !important; }
-        .col-md-8 .card-header .badge { font-size: 0.6rem !important; padding: 3px 6px !important; margin-right: 0 !important; white-space: nowrap; }
-
-        /* Leaflet native controls */
-        .leaflet-top.leaflet-left,
-        .leaflet-top.leaflet-right { top: 5px !important; }
-        .leaflet-top.leaflet-left { left: 5px !important; }
-        .leaflet-top.leaflet-right { right: 5px !important; }
-        .leaflet-control-zoom a { width: 26px !important; height: 26px !important; line-height: 26px !important; font-size: 15px !important; }
-        .leaflet-draw-toolbar { margin-left: 3px !important; margin-top: 0 !important; }
-        .leaflet-draw-actions a { font-size: 0.72rem !important; }
-
-        /* Layer picker FAB + popup */
-        .lgu-layer-fab { width: 34px; height: 34px; font-size: 0.95rem; border-radius: 8px; }
-        .lgu-layer-popup { min-width: 145px; max-width: calc(100vw - 24px); }
-        .lgu-layer-popup-header { padding: 6px 10px 5px; font-size: 0.58rem; }
-        .lgu-layer-opt { padding: 7px 10px; font-size: 0.72rem; gap: 7px; }
-        .lgu-opt-icon { width: 22px; height: 22px; font-size: 0.75rem; }
+        .col-md-8 .card-header .badge { font-size: 0.62rem !important; padding: 3px 7px !important; margin-right: 0 !important; flex-shrink: 0; white-space: nowrap; }
     }
 
     /* --- 320px: Small Mobile --- */
@@ -693,31 +530,6 @@ include __DIR__ . '/../admin/header.php';
         /* Search panels */
         .search-panel.mb-4 { margin-bottom: 0.6rem !important; }
         .search-panel.mt-3 { margin-top: 0.6rem !important; margin-bottom: 0.75rem !important; }
-
-        /* Leaflet native controls: at 320px the map is only 240px tall,
-           so zoom + draw toolbar + layer FAB must all shrink further
-           to avoid stacking on top of one another */
-        .leaflet-top.leaflet-left,
-        .leaflet-top.leaflet-right { top: 4px !important; }
-        .leaflet-top.leaflet-left { left: 4px !important; }
-        .leaflet-top.leaflet-right { right: 4px !important; }
-        .leaflet-control-zoom a { width: 24px !important; height: 24px !important; line-height: 24px !important; font-size: 14px !important; }
-        /* Native (touch-optimized) size kept for the same reason noted
-           in the 425px block above — scaling breaks Leaflet.Draw's own
-           action-pill positioning math. */
-        .leaflet-draw-toolbar { margin-left: 2px !important; margin-top: 0 !important; }
-        .leaflet-draw-toolbar:not(:first-child) { margin-top: 3px !important; }
-        .leaflet-draw-actions a { font-size: 0.7rem !important; }
-        .leaflet-bar a { line-height: 24px !important; }
-
-        /* Layer picker FAB + popup: keep the popup on-screen and
-           readable inside a 320px viewport */
-        .lgu-layer-fab { width: 32px; height: 32px; font-size: 0.9rem; border-radius: 8px; }
-        .lgu-layer-popup { min-width: 135px; max-width: calc(100vw - 16px); }
-        .lgu-layer-popup-header { padding: 6px 9px 5px; font-size: 0.55rem; letter-spacing: 0.8px; }
-        .lgu-layer-opt { padding: 7px 9px; font-size: 0.68rem; gap: 7px; }
-        .lgu-opt-icon { width: 20px; height: 20px; font-size: 0.7rem; border-radius: 5px; }
-        .lgu-opt-radio { width: 10px; height: 10px; margin-left: 6px; }
     }
 </style>
 

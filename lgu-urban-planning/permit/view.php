@@ -407,48 +407,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     fputcsv($output, ['Project Name', $application['project_name'] ?? '']);
     fputcsv($output, ['Barangay', $application['barangay'] ?? '']);
     fputcsv($output, ['District', $application['district'] ?? '']);
-
-    // ── Roads & Traffic (IPMS) ───────────────────────────────────────────
-    fputcsv($output, ['', '']);
     fputcsv($output, ['Roads & Traffic Status', $impactAssessment['traffic_flag'] ?? 'Awaiting Inspection']);
-
-    $trafficPairsCsv = parse_assessment_notes($impactAssessment['traffic_notes'] ?? null);
-    if ($trafficPairsCsv) {
-        foreach ($trafficPairsCsv as $label => $value) {
-            fputcsv($output, ['Roads & Traffic - ' . $label, $value]);
-        }
-    } else {
-        fputcsv($output, ['Roads & Traffic Assessment Data', $impactAssessment['traffic_notes'] ?? '']);
-    }
-
-    $trafficPhotosCsv = [];
-    if (!empty($impactAssessment['traffic_photos'])) {
-        $decoded = json_decode($impactAssessment['traffic_photos'], true);
-        if (is_array($decoded)) $trafficPhotosCsv = $decoded;
-    }
-    fputcsv($output, ['Roads & Traffic Photos', $trafficPhotosCsv ? implode(' | ', $trafficPhotosCsv) : 'None']);
-
-    // ── Utilities / Grid (UMAN) ──────────────────────────────────────────
-    fputcsv($output, ['', '']);
+    fputcsv($output, ['Roads & Traffic Assessment Data', $impactAssessment['traffic_notes'] ?? '']);
     fputcsv($output, ['Utilities / Grid Status', $impactAssessment['energy_flag'] ?? 'Awaiting Inspection']);
-
-    $energyPairsCsv = parse_assessment_notes($impactAssessment['energy_notes'] ?? null);
-    if ($energyPairsCsv) {
-        foreach ($energyPairsCsv as $label => $value) {
-            fputcsv($output, ['Utilities / Grid - ' . $label, $value]);
-        }
-    } else {
-        fputcsv($output, ['Utilities / Grid Assessment Data', $impactAssessment['energy_notes'] ?? '']);
-    }
-
-    $energyPhotosCsv = [];
-    if (!empty($impactAssessment['energy_photos'])) {
-        $decoded = json_decode($impactAssessment['energy_photos'], true);
-        if (is_array($decoded)) $energyPhotosCsv = $decoded;
-    }
-    fputcsv($output, ['Utilities / Grid Photos', $energyPhotosCsv ? implode(' | ', $energyPhotosCsv) : 'None']);
-
-    fputcsv($output, ['', '']);
+    fputcsv($output, ['Utilities / Grid Assessment Data', $impactAssessment['energy_notes'] ?? '']);
     fputcsv($output, ['Last Checked At', $impactAssessment['checked_at'] ?? 'N/A']);
     fclose($output);
 
@@ -1574,31 +1536,6 @@ include __DIR__ . '/../admin/header.php';
                                     <div class="small text-dark"><?php echo htmlspecialchars($trafficRemarks); ?></div>
                                 </div>
                             <?php endif; ?>
-                            <?php
-                                $trafficPhotos = [];
-                                if (!empty($impactAssessment['traffic_photos'])) {
-                                    $decodedPhotos = json_decode($impactAssessment['traffic_photos'], true);
-                                    if (is_array($decodedPhotos)) {
-                                        $trafficPhotos = $decodedPhotos;
-                                    }
-                                }
-                            ?>
-                            <?php if ($trafficPhotos): ?>
-                                <div class="pt-2 border-top mt-2">
-                                    <div class="text-muted mb-2" style="font-size:.72rem;">
-                                        <?php echo count($trafficPhotos); ?> photo(s)
-                                    </div>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <?php foreach ($trafficPhotos as $photoUrl): ?>
-                                            <a href="<?php echo htmlspecialchars($photoUrl); ?>" target="_blank" rel="noopener">
-                                                <img src="<?php echo htmlspecialchars($photoUrl); ?>"
-                                                     alt="Inspection photo"
-                                                     style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
                         <?php else: ?>
                             <p class="small mb-0 text-dark">
                                 <?php echo htmlspecialchars($impactAssessment['traffic_notes'] ?? $_t('no_roads_data')); ?>
@@ -1647,31 +1584,6 @@ include __DIR__ . '/../admin/header.php';
                                 <div class="pt-2 border-top">
                                     <div class="text-muted" style="font-size:.72rem;">Remarks</div>
                                     <div class="small text-dark"><?php echo htmlspecialchars($energyRemarks); ?></div>
-                                </div>
-                            <?php endif; ?>
-                            <?php
-                                $energyPhotos = [];
-                                if (!empty($impactAssessment['energy_photos'])) {
-                                    $decodedEnergyPhotos = json_decode($impactAssessment['energy_photos'], true);
-                                    if (is_array($decodedEnergyPhotos)) {
-                                        $energyPhotos = $decodedEnergyPhotos;
-                                    }
-                                }
-                            ?>
-                            <?php if ($energyPhotos): ?>
-                                <div class="pt-2 border-top mt-2">
-                                    <div class="text-muted mb-2" style="font-size:.72rem;">
-                                        <?php echo count($energyPhotos); ?> photo(s)
-                                    </div>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <?php foreach ($energyPhotos as $photoUrl): ?>
-                                            <a href="<?php echo htmlspecialchars($photoUrl); ?>" target="_blank" rel="noopener">
-                                                <img src="<?php echo htmlspecialchars($photoUrl); ?>"
-                                                     alt="Inspection photo"
-                                                     style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </div>
                                 </div>
                             <?php endif; ?>
                         <?php else: ?>
@@ -2373,6 +2285,6 @@ include __DIR__ . '/../admin/header.php';
 <?php endif; ?>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="../assets/js/admin-view.js"></script>
+<script src="assets/js/admin-view.js"></script>
 
 <?php include __DIR__ . '/../admin/footer.php'; ?>

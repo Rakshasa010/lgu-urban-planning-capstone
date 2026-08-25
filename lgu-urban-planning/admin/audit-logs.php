@@ -1331,6 +1331,6 @@ const AUDIT_T = <?php echo json_encode([
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="../assets/js/admin-audit-logs.js"></script>
+<script src="admin-audit-logs.js"></script>
 
 <?php include __DIR__ . '/footer.php'; ?>

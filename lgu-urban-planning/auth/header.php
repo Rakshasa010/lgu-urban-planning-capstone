@@ -31,7 +31,7 @@ unset($_annRows, $_annMap, $_r, $_rawType);
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="icon" type="image/x-icon" href="assets/upad-logo.png" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.png" />
         
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
@@ -39,7 +39,7 @@ unset($_annRows, $_annMap, $_r, $_rawType);
         * { font-family: 'Poppins', sans-serif; }
         
 html, body { height: 100%; margin: 0; padding: 0; }
-body { background-color: #000; min-height: 100vh; display: flex; flex-direction: column; background: url("assets/img/cityhall.webp") no-repeat center center fixed; background-size: cover; position: relative; }
+body { background-color: #000; min-height: 100vh; display: flex; flex-direction: column; background: url("assets/img/cityhall.jpeg") no-repeat center center fixed; background-size: cover; position: relative; }
 body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(0, 0, 0, 0.4); z-index: 0; pointer-events: none; }
 
 /* ANNOUNCEMENT */
@@ -55,8 +55,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
 .header-brand-link:hover { opacity: 1; }
 
 /* Brand Icon Styling */
-.brand-icon-wrap { width: 32px; height: 32px; background: #ffffff; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); flex-shrink: 0; }
-.brand-icon { width: 100%; height: 100%; object-fit: contain; }
+.brand-icon { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
 
 .password-wrapper { position: relative; }
 .password-toggle { position: absolute; top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer; color: #6b7280; z-index: 10; }
@@ -81,7 +80,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
     .main-header { padding: 10px 20px; }
     .header-brand h6 { font-size: 0.85rem; white-space: nowrap; }
     .header-accessibility { gap: 8px !important; }
-    .brand-icon-wrap { width: 28px; height: 28px; border-radius: 7px; padding: 3px; }
+    .brand-icon { width: 20px; height: 20px; }
 }
 
 @media (max-width: 425px) {
@@ -92,7 +91,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
     .header-accessibility .bi-house-door,
     .header-accessibility .bi-moon-stars { font-size: 1rem !important; }
     .announcement-banner { font-size: 0.72rem; padding: 8px 30px; }
-    .brand-icon-wrap { width: 24px; height: 24px; border-radius: 6px; padding: 3px; }
+    .brand-icon { width: 18px; height: 18px; }
 }
 
 @media (max-width: 320px) {
@@ -121,9 +120,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; heigh
 <header class="main-header">
 <div class="header-brand">
         <a href="index.php" class="header-brand-link d-flex align-items-center">
-            <div class="brand-icon-wrap me-2">
-                <img src="assets/upad-logo.png" alt="Logo" class="brand-icon">
-            </div>
+            <img src="assets/favicon.png" alt="Logo" class="brand-icon me-2">
             <h6 class="mb-0 fw-normal">Urban Planning and Development</h6>
         </a>
     </div>
