@@ -870,6 +870,6 @@ window.DASH_CHART_DATA = {
     monthLabel:    <?php echo json_encode(dt('chart_applications', $dashTranslations, $dashLang)); ?>
 };
 </script>
-<script src="assets/js/admin-dashboard.js"></script>
+<script src="../assets/js/admin-dashboard.js"></script>
 
 </script>

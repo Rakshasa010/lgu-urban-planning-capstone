@@ -31,6 +31,31 @@ $remarks          = $data['remarks']              ?? '';
 $inspectedAt      = $data['inspection_date']       ?? null;
 $engineerAssigned = $data['engineer_assigned']     ?? null;
 
+// ── Photos ───────────────────────────────────────────────────────────────
+// NOTE: the exact key IPMS uses hasn't been confirmed against their API docs
+// yet. We check a few plausible names so we don't silently drop photos if
+// it's one of the common alternates. Once confirmed, this can be trimmed
+// down to just the real key.
+$rawPhotos = $data['photos']
+    ?? $data['photo_urls']
+    ?? $data['images']
+    ?? $data['attachments']
+    ?? [];
+
+// Normalize to a flat array of URL strings, in case IPMS sends objects
+// like {"url": "...", "caption": "..."} instead of plain strings.
+$photoUrls = [];
+if (is_array($rawPhotos)) {
+    foreach ($rawPhotos as $photo) {
+        if (is_string($photo)) {
+            $photoUrls[] = $photo;
+        } elseif (is_array($photo) && !empty($photo['url'])) {
+            $photoUrls[] = $photo['url'];
+        }
+    }
+}
+$photosJson = $photoUrls ? json_encode($photoUrls) : null;
+
 if (!$applicationId || !$overallCondition) {
     http_response_code(422);
     echo json_encode(['error' => 'Missing application_id or overall_condition']);
@@ -74,13 +99,14 @@ try {
     // ── 3. Update what shows up in the Technical Assessment tab ─────────────
     $flag = $status === 'approved' ? 'ok' : 'violation';
     $db->prepare(
-        "INSERT INTO impact_assessments (application_id, traffic_flag, traffic_notes, checked_at)
-         VALUES (?, ?, ?, NOW())
+        "INSERT INTO impact_assessments (application_id, traffic_flag, traffic_notes, traffic_photos, checked_at)
+         VALUES (?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE
-            traffic_flag  = ?,
-            traffic_notes = ?,
-            checked_at    = NOW()"
-    )->execute([$applicationId, $flag, $notes, $flag, $notes]);
+            traffic_flag   = ?,
+            traffic_notes  = ?,
+            traffic_photos = ?,
+            checked_at     = NOW()"
+    )->execute([$applicationId, $flag, $notes, $photosJson, $flag, $notes, $photosJson]);
 
     // ── 4. Log it to the application's history / audit trail ────────────────
     $currentStatusStmt = $db->prepare("SELECT status FROM applications WHERE id = ?");

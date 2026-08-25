@@ -75,9 +75,18 @@
             L.DomEvent.disableClickPropagation(wrap);
             L.DomEvent.disableScrollPropagation(wrap);
 
-            // Popup panel
-            const popup = L.DomUtil.create('div', 'lgu-layer-popup', wrap);
+            // Popup panel — appended to <body>, NOT to wrap/the map control.
+            // Leaflet's map container has overflow:hidden (needed for tile
+            // panning), so a popup nested inside it gets silently clipped
+            // once it runs past the map's edge (e.g. on short mobile maps).
+            // Rendering it as a fixed-position element on <body> means it's
+            // never subject to that clipping, and the map keeps its rounded
+            // corners since we no longer need to force overflow:visible on it.
+            const popup = L.DomUtil.create('div', 'lgu-layer-popup');
             popup.innerHTML = `<div class="lgu-layer-popup-header"><i class="bi bi-stack"></i> Base Layer</div>`;
+            document.body.appendChild(popup);
+            L.DomEvent.disableClickPropagation(popup);
+            L.DomEvent.disableScrollPropagation(popup);
 
             let activeKey = 'road';
 
@@ -109,21 +118,50 @@
             fab.title = 'Switch base layer';
             fab.innerHTML = '<i class="bi bi-map"></i>';
 
+            // Position the popup against the FAB's current on-screen spot.
+            // Run this every time we open it (and on resize while open)
+            // since the FAB's position can shift with the viewport.
+            function positionPopup() {
+                const rect = fab.getBoundingClientRect();
+                const gap = 8;
+                let top = rect.bottom + gap;
+                // Keep it fully on-screen vertically: if there isn't room
+                // below the FAB, open it upward instead.
+                const estHeight = Math.min(popup.scrollHeight || 240, window.innerHeight - 24);
+                if (top + estHeight > window.innerHeight - 12) {
+                    top = Math.max(12, rect.top - gap - estHeight);
+                }
+                popup.style.top = top + 'px';
+                popup.style.right = (window.innerWidth - rect.right) + 'px';
+                popup.style.left = 'auto';
+            }
+
             let isOpen = false;
             L.DomEvent.on(fab, 'click', function () {
                 isOpen = !isOpen;
+                if (isOpen) positionPopup();
                 popup.classList.toggle('open', isOpen);
                 fab.classList.toggle('open', isOpen);
             });
 
-            // Close when clicking elsewhere on the map
-            map.on('click', function () {
+            function closePopup() {
                 if (isOpen) {
                     isOpen = false;
                     popup.classList.remove('open');
                     fab.classList.remove('open');
                 }
+            }
+
+            // Close when clicking elsewhere on the map
+            map.on('click', closePopup);
+            // Keep it correctly placed (or close it) if the viewport
+            // changes while it's open — orientation change, resize, etc.
+            window.addEventListener('resize', function () {
+                if (isOpen) positionPopup();
             });
+            window.addEventListener('scroll', function () {
+                if (isOpen) closePopup();
+            }, true);
 
             return wrap;
         }

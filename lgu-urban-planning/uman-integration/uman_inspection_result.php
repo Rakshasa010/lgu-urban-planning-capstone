@@ -32,6 +32,29 @@ $remarks          = $data['remarks']              ?? '';
 $inspectedAt      = $data['inspection_date']       ?? null;
 $engineerAssigned = $data['engineer_assigned']     ?? null;
 
+// ── Photos ───────────────────────────────────────────────────────────────
+// ⚠️ Same caveat as the IPMS webhook: the exact key UMAN uses for photos
+// hasn't been confirmed with the Energy/Utilities team yet. Checking a few
+// plausible names so photos aren't silently dropped if it's a common
+// alternate. Confirm the real key and trim this down once you have it.
+$rawPhotos = $data['photos']
+    ?? $data['photo_urls']
+    ?? $data['images']
+    ?? $data['attachments']
+    ?? [];
+
+$photoUrls = [];
+if (is_array($rawPhotos)) {
+    foreach ($rawPhotos as $photo) {
+        if (is_string($photo)) {
+            $photoUrls[] = $photo;
+        } elseif (is_array($photo) && !empty($photo['url'])) {
+            $photoUrls[] = $photo['url'];
+        }
+    }
+}
+$photosJson = $photoUrls ? json_encode($photoUrls) : null;
+
 if (!$applicationId || !$overallCondition) {
     http_response_code(422);
     echo json_encode(['error' => 'Missing application_id or overall_condition']);
@@ -75,13 +98,14 @@ try {
     // ── 3. Update what shows up in the Technical Assessment tab ─────────────
     $flag = $status === 'approved' ? 'ok' : 'violation';
     $db->prepare(
-        "INSERT INTO impact_assessments (application_id, energy_flag, energy_notes, checked_at)
-         VALUES (?, ?, ?, NOW())
+        "INSERT INTO impact_assessments (application_id, energy_flag, energy_notes, energy_photos, checked_at)
+         VALUES (?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE
-            energy_flag  = ?,
-            energy_notes = ?,
-            checked_at   = NOW()"
-    )->execute([$applicationId, $flag, $notes, $flag, $notes]);
+            energy_flag   = ?,
+            energy_notes  = ?,
+            energy_photos = ?,
+            checked_at    = NOW()"
+    )->execute([$applicationId, $flag, $notes, $photosJson, $flag, $notes, $photosJson]);
 
     // ── 4. Log it to the application's history / audit trail ────────────────
     $currentStatusStmt = $db->prepare("SELECT status FROM applications WHERE id = ?");
