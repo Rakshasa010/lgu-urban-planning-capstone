@@ -187,7 +187,7 @@ function lp_status_badge(string $status): array {
     position:relative;
     background:
       linear-gradient(100deg, rgba(23,37,84,0.88) 0%, rgba(30,41,82,0.6) 42%, rgba(30,41,82,0.28) 70%, rgba(30,41,82,0.15) 100%),
-      url('assets/img/hero-section.jpg') center/cover no-repeat;
+      url('assets/img/hero-section.webp') center/cover no-repeat;
     overflow:hidden;
     padding:96px 0 0;
   }
@@ -357,7 +357,7 @@ function lp_status_badge(string $status): array {
   #roles{
     background:
       linear-gradient(100deg, rgba(23,37,84,0.88) 0%, rgba(30,41,82,0.6) 42%, rgba(30,41,82,0.28) 70%, rgba(30,41,82,0.15) 100%),
-      url('assets/img/set.jpg') center/cover no-repeat;
+      url('assets/img/set.webp') center/cover no-repeat;
   }
   #roles .eyebrow{color:#93c5fd;}
   #roles .section-title{color:#fff;}

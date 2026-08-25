@@ -687,11 +687,6 @@ include __DIR__ . '/auth/header.php';
                     const btn   = document.getElementById('resendBtn');
                     const timer = document.getElementById('resendTimer');
 
-                    // Server tells us exactly when the OTP that's currently
-                    // active actually expires (set the moment it was mailed,
-                    // whether that was the initial send or a resend). This
-                    // means the countdown is always in sync with reality and
-                    // resets correctly on every fresh OTP, not just once.
                     const expiryTs = <?php echo isset($_SESSION['otp_expiry_ts']) ? (int)$_SESSION['otp_expiry_ts'] * 1000 : 'Date.now()'; ?>;
 
                     function tick() {
