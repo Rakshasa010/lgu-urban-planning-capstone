@@ -140,12 +140,67 @@ function viewInspectionDetails(data) {
         ? parsedDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         : 'TBD / No Schedule';
     document.getElementById('view_notes').innerText = data.notes || 'No notes recorded for this schedule.';
-    
+
     if(document.getElementById('checklist_ins_id')) {
         document.getElementById('checklist_ins_id').value = data.id;
     }
-    document.getElementById('viol_ins_id').value = data.id;
-    document.getElementById('viol_app_id').value = data.application_id;
+
+    // --- CHECKLIST: editable for inspector, read-only result for other staff/officers ---
+    const isEditableChecklist = !!document.getElementById('checklistForm')
+        && document.getElementById('checklistForm').querySelector('button[onclick="saveChecklist()"]');
+
+    if (isEditableChecklist) {
+        // Inspector view: reset the form for a fresh entry (unchecked, empty remarks)
+        const form = document.getElementById('checklistForm');
+        form.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        const notesField = form.querySelector('textarea[name="inspection_notes"]');
+        if (notesField) notesField.value = '';
+    } else {
+        // Staff/officer view: show the inspector's already-submitted result
+        const checkLand = document.getElementById('check_land');
+        const checkPlan = document.getElementById('check_plan');
+        const checkExpansion = document.getElementById('check_expansion');
+        if (checkLand) checkLand.checked = !!(data.land_use_check == 1 || data.land_use_check === true);
+        if (checkPlan) checkPlan.checked = !!(data.plan_consistency == 1 || data.plan_consistency === true);
+        if (checkExpansion) checkExpansion.checked = !!(data.expansion_check == 1 || data.expansion_check === true);
+
+        const resultNotes = document.getElementById('result_inspection_notes');
+        const pendingMsg = document.getElementById('checklist_pending_msg');
+        const checklistDone = data.checklist_status === 'completed' || data.inspection_notes;
+        if (resultNotes) resultNotes.innerText = data.inspection_notes || 'No remarks recorded yet.';
+        if (pendingMsg) pendingMsg.classList.toggle('d-none', !!checklistDone);
+    }
+
+    // --- VIOLATION REPORT: editable for inspector, read-only result for other staff/officers ---
+    if (document.getElementById('violationForm')) {
+        // Inspector view: reset the form for a fresh report
+        document.getElementById('viol_ins_id').value = data.id;
+        document.getElementById('viol_app_id').value = data.application_id;
+        document.getElementById('violationForm').reset();
+    } else if (document.getElementById('violationResultView')) {
+        // Staff/officer view: show the violation already filed by the inspector, if any
+        const hasViolation = !!data.violation_type;
+
+        const typeEl = document.getElementById('result_violation_type');
+        if (typeEl) typeEl.innerText = data.violation_type || 'No violation reported.';
+
+        const notesEl = document.getElementById('result_violation_notes');
+        if (notesEl) notesEl.innerText = data.violation_notes || 'No findings recorded.';
+
+        const photoBtn = document.getElementById('result_violation_photo');
+        if (photoBtn) {
+            if (hasViolation && data.violation_photo) {
+                photoBtn.href = data.violation_photo;
+                photoBtn.classList.remove('disabled');
+            } else {
+                photoBtn.href = '#';
+                photoBtn.classList.add('disabled');
+            }
+        }
+
+        const pendingMsg = document.getElementById('violation_pending_msg');
+        if (pendingMsg) pendingMsg.classList.toggle('d-none', hasViolation);
+    }
 
     const myModal = new bootstrap.Modal(document.getElementById('viewModal'));
     myModal.show();
@@ -295,4 +350,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
