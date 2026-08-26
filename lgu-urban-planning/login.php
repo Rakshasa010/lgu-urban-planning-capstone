@@ -686,11 +686,18 @@ include __DIR__ . '/auth/header.php';
                     const btn   = document.getElementById('resendBtn');
                     const timer = document.getElementById('resendTimer');
 
-                    const expiryTs = <?php echo isset($_SESSION['otp_expiry_ts']) ? (int)$_SESSION['otp_expiry_ts'] * 1000 : 'Date.now()'; ?>;
+                    // Server computes how many seconds are ACTUALLY left (clamped 0-60)
+                    // and hands over a plain integer. The browser then counts that
+                    // down using its own clock, so it no longer matters whether the
+                    // server's wall clock and the visitor's wall clock agree.
+                    let remaining = <?php
+                        $remaining = isset($_SESSION['otp_expiry_ts'])
+                            ? ($_SESSION['otp_expiry_ts'] - time())
+                            : 0;
+                        echo max(0, min(60, $remaining));
+                    ?>;
 
-                    function tick() {
-                        const remaining = Math.ceil((expiryTs - Date.now()) / 1000);
-
+                    function render() {
                         if (remaining <= 0) {
                             timer.textContent = '';
                             btn.style.pointerEvents = 'auto';
@@ -699,11 +706,16 @@ include __DIR__ . '/auth/header.php';
                             timer.textContent       = '(' + remaining + 's)';
                             btn.style.pointerEvents = 'none';
                             btn.style.opacity       = '0.45';
-                            setTimeout(tick, 1000);
                         }
                     }
 
-                    tick();
+                    render();
+
+                    const intervalId = setInterval(() => {
+                        remaining -= 1;
+                        render();
+                        if (remaining <= 0) clearInterval(intervalId);
+                    }, 1000);
                 })();
                 </script>
             <?php endif; ?>

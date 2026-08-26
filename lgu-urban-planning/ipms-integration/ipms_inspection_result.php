@@ -148,14 +148,33 @@ foreach ($results as $result) {
 
     // Normalize to a flat array of URL strings, in case IPMS sends objects
     // like {"url": "...", "caption": "..."} instead of plain strings.
+    //
+    // IPMS returns photo paths as root-relative (e.g. "/uploads/urban-
+    // planning-inspections/2026/xyz.png") — relative to *their* domain,
+    // not ours. We render these later on our own pages (view.php), so a
+    // root-relative path resolves against OUR domain in the browser and
+    // 404s. Resolve every non-absolute path against IPMS_BASE_URL here,
+    // once, at ingest time, so everything we store is a fully-qualified
+    // URL that works wherever it's rendered.
     $photoUrls = [];
     if (is_array($rawPhotos)) {
         foreach ($rawPhotos as $photo) {
+            $u = null;
             if (is_string($photo)) {
-                $photoUrls[] = $photo;
+                $u = $photo;
             } elseif (is_array($photo) && !empty($photo['url'])) {
-                $photoUrls[] = $photo['url'];
+                $u = $photo['url'];
             }
+
+            if ($u === null || $u === '') {
+                continue;
+            }
+
+            if (!preg_match('#^https?://#i', $u)) {
+                $u = rtrim(IPMS_BASE_URL, '/') . '/' . ltrim($u, '/');
+            }
+
+            $photoUrls[] = $u;
         }
     }
     $photosJson = $photoUrls ? json_encode($photoUrls) : null;
