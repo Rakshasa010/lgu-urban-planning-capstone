@@ -366,11 +366,12 @@ unset($_SESSION['show_preloader']);
 
         .sidebar .nav-link {
             color: #000000;
-            padding: 14px 20px;
+            padding: 11px 18px;
             margin: 4px 12px;
             border-radius: 12px;
             transition: all 0.3s ease;
             font-weight: 500;
+            font-size: 0.92rem;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -378,8 +379,8 @@ unset($_SESSION['show_preloader']);
         }
         
         .sidebar .nav-link i {
-            font-size: 1.2rem;
-            width: 24px;
+            font-size: 1.05rem;
+            width: 22px;
             text-align: center;
             flex-shrink: 0;
         }

