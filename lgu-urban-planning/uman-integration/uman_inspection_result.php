@@ -77,6 +77,19 @@ $notes = trim(sprintf(
 
 $db = Database::getInstance()->getConnection();
 
+// Verify the application actually exists before writing anything. A
+// nonexistent application_id — e.g. UMAN's "Create Test Request" seeds a
+// random id with no real UPAD record — trips the FK constraints on
+// impact_assessments/application_status_history further down and previously
+// surfaced as a raw, unhelpful SQLSTATE exception instead of a clear error.
+$existsStmt = $db->prepare("SELECT 1 FROM applications WHERE id = ?");
+$existsStmt->execute([$applicationId]);
+if (!$existsStmt->fetchColumn()) {
+    http_response_code(404);
+    echo json_encode(['error' => "application_id $applicationId does not exist in the Urban Planning system"]);
+    exit;
+}
+
 try {
     $db->beginTransaction();
 
@@ -112,9 +125,13 @@ try {
     $currentStatusStmt->execute([$applicationId]);
     $currentStatus = $currentStatusStmt->fetchColumn() ?: 'unknown';
 
+    // changed_by has an FK to users(id) with ON DELETE SET NULL — there is no
+    // system/automation user with id 0, so the literal 0 here always tripped
+    // that constraint. NULL is the correct "no human did this" value,
+    // matching ipms_inspection_result.php's equivalent insert.
     $db->prepare(
         "INSERT INTO application_status_history (application_id, status, remarks, changed_by)
-         VALUES (?, ?, ?, 0)"
+         VALUES (?, ?, ?, NULL)"
     )->execute([
         $applicationId,
         $currentStatus,

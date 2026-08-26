@@ -121,6 +121,17 @@ foreach ($results as $result) {
         continue;
     }
 
+    // A nonexistent application_id trips the FK constraints on
+    // impact_assessments/application_status_history further down and would
+    // otherwise surface only as a raw SQLSTATE exception in $errors.
+    $existsStmt = $db->prepare("SELECT 1 FROM applications WHERE id = ?");
+    $existsStmt->execute([$applicationId]);
+    if (!$existsStmt->fetchColumn()) {
+        $skipped++;
+        $errors[] = "application_id $applicationId does not exist in the Urban Planning system — skipped";
+        continue;
+    }
+
     $severity             = $result['severity']              ?? null; // low|medium|high|critical
     $recommendation       = $result['recommendation']        ?? null; // one of 6 fixed values
     $remarks              = $result['remarks']                ?? '';
