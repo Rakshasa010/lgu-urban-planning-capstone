@@ -145,16 +145,44 @@ function viewInspectionDetails(data) {
         document.getElementById('checklist_ins_id').value = data.id;
     }
 
-    // --- CHECKLIST: editable for inspector, read-only result for other staff/officers ---
-    const isEditableChecklist = !!document.getElementById('checklistForm')
-        && document.getElementById('checklistForm').querySelector('button[onclick="saveChecklist()"]');
+    // --- CHECKLIST: editable ONLY for the inspector actually ASSIGNED to this
+    // application. Role alone ('inspector') is not enough — the modal is shared
+    // across every row, so we must re-check assignment per record here. ---
+    const checklistFormEl = document.getElementById('checklistForm');
+    const checklistSaveBtn = checklistFormEl ? checklistFormEl.querySelector('button[onclick="saveChecklist()"]') : null;
+    const isInspectorRole = !!checklistSaveBtn; // PHP rendered the editable (inspector) markup
+    const isAssignedToMe = isInspectorRole
+        && !!data.inspector_id
+        && Number(data.inspector_id) === Number(CURRENT_USER_ID);
 
-    if (isEditableChecklist) {
-        // Inspector view: reset the form for a fresh entry (unchecked, empty remarks)
-        const form = document.getElementById('checklistForm');
-        form.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    if (isInspectorRole) {
+        const form = checklistFormEl;
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
         const notesField = form.querySelector('textarea[name="inspection_notes"]');
-        if (notesField) notesField.value = '';
+        let lockMsg = form.querySelector('.not-assigned-lock');
+
+        if (isAssignedToMe) {
+            // This inspection IS assigned to me: reset for a fresh entry
+            checkboxes.forEach(cb => { cb.disabled = false; cb.checked = false; });
+            if (notesField) { notesField.disabled = false; notesField.value = ''; }
+            checklistSaveBtn.disabled = false;
+            checklistSaveBtn.classList.remove('d-none');
+            if (lockMsg) lockMsg.remove();
+        } else {
+            // Not assigned to me (or no inspector assigned yet): view-only, locked
+            checkboxes.forEach(cb => { cb.disabled = true; cb.checked = false; });
+            if (notesField) { notesField.disabled = true; notesField.value = ''; }
+            checklistSaveBtn.disabled = true;
+            checklistSaveBtn.classList.add('d-none');
+            if (!lockMsg) {
+                lockMsg = document.createElement('div');
+                lockMsg.className = 'alert alert-secondary py-2 small mb-0 text-muted not-assigned-lock mt-2';
+                lockMsg.innerHTML = '<i class="bi bi-lock-fill me-1"></i> ' + (data.inspector_id
+                    ? "This inspection is assigned to another inspector."
+                    : "No inspector has been assigned to this application yet.");
+                checklistSaveBtn.insertAdjacentElement('beforebegin', lockMsg);
+            }
+        }
     } else {
         // Staff/officer view: show the inspector's already-submitted result
         const checkLand = document.getElementById('check_land');
@@ -171,12 +199,34 @@ function viewInspectionDetails(data) {
         if (pendingMsg) pendingMsg.classList.toggle('d-none', !!checklistDone);
     }
 
-    // --- VIOLATION REPORT: editable for inspector, read-only result for other staff/officers ---
-    if (document.getElementById('violationForm')) {
-        // Inspector view: reset the form for a fresh report
+    // --- VIOLATION REPORT: editable ONLY for the ASSIGNED inspector; locked
+    // (view-only) for other inspectors, same rule as the checklist above. ---
+    const violationFormEl = document.getElementById('violationForm');
+    if (violationFormEl) {
         document.getElementById('viol_ins_id').value = data.id;
         document.getElementById('viol_app_id').value = data.application_id;
-        document.getElementById('violationForm').reset();
+        violationFormEl.reset();
+
+        const violSubmitBtn = violationFormEl.querySelector('button[type="submit"]');
+        const violFields = violationFormEl.querySelectorAll('select, input:not([type="hidden"]), textarea');
+        let violLockMsg = violationFormEl.querySelector('.not-assigned-lock');
+
+        if (isAssignedToMe) {
+            violFields.forEach(f => f.disabled = false);
+            if (violSubmitBtn) violSubmitBtn.classList.remove('d-none');
+            if (violLockMsg) violLockMsg.remove();
+        } else {
+            violFields.forEach(f => f.disabled = true);
+            if (violSubmitBtn) violSubmitBtn.classList.add('d-none');
+            if (!violLockMsg) {
+                violLockMsg = document.createElement('div');
+                violLockMsg.className = 'alert alert-warning py-2 px-3 small mt-1 mb-0 not-assigned-lock';
+                violLockMsg.innerHTML = '<i class="bi bi-lock me-1"></i> ' + (data.inspector_id
+                    ? "Only the assigned Inspector can file a violation report."
+                    : "No inspector has been assigned to this application yet.");
+                violationFormEl.appendChild(violLockMsg);
+            }
+        }
     } else if (document.getElementById('violationResultView')) {
         // Staff/officer view: show the violation already filed by the inspector, if any
         const hasViolation = !!data.violation_type;

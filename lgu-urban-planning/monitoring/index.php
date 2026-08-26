@@ -1147,5 +1147,9 @@ include __DIR__ . '/../admin/header.php';
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+
+    const CURRENT_USER_ID = <?= (int) ($_SESSION['user_id'] ?? 0) ?>;
+</script>
 <script src="/lgu-urban-planning/assets/js/admin-monitoring.js"></script>
 <?php include __DIR__ . '/../admin/footer.php'; ?>

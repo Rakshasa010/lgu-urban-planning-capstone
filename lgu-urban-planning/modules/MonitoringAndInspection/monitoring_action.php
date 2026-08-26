@@ -3,10 +3,45 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0); 
 require_once __DIR__ . '/MonitoringController.php';
 require_once __DIR__ . '/../../core/Database.php'; 
+require_once __DIR__ . '/../../core/Auth.php';
+
+header('Content-Type: application/json');
+
+// --- AUTH GATE ---
+// This endpoint previously had NO login/role check at all - anyone who could
+// reach the URL (logged in or not) could call save_checklist, report_violation,
+// delete_event, approve_occupancy, etc. Bootstrap the session via Auth and
+// require a logged-in user before doing anything else.
+$auth = new Auth();
+if (empty($_SESSION['user_id']) || empty($_SESSION['role'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'You must be logged in to do this.']);
+    exit;
+}
+
+$currentUserId = (int) $_SESSION['user_id'];
+$currentRole   = $_SESSION['role'];
+
+// Roles allowed to schedule/cancel/approve inspections (i.e. everything that
+// is NOT the inspector's own checklist/violation submission).
+$schedulingRoles = ['admin', 'super_admin', 'zoning_officer', 'building_official'];
+
+/**
+ * Confirms $currentUserId is the inspector actually ASSIGNED to $inspectionId.
+ * Prevents an inspector from submitting a checklist/violation for an
+ * inspection assigned to someone else (or left unassigned).
+ */
+function assertAssignedInspector(Database $db, int $inspectionId, int $currentUserId): void {
+    $row = $db->fetch("SELECT inspector_id FROM inspections WHERE id = ?", [$inspectionId]);
+    if (!$row || (int)$row['inspector_id'] !== $currentUserId) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You are not the assigned inspector for this inspection.']);
+        exit;
+    }
+}
 
 $controller = new MonitoringController();
 $db = Database::getInstance(); 
-header('Content-Type: application/json');
 
 $action = $_REQUEST['action'] ?? '';
 
@@ -15,6 +50,11 @@ try {
         echo json_encode($controller->getAllInspections());
     } 
     elseif ($action === 'save_schedule') {
+        if (!in_array($currentRole, $schedulingRoles, true)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You are not authorized to schedule inspections.']);
+            exit;
+        }
         $result = $controller->scheduleInspection($_POST);
 
         if ($result) {
@@ -40,6 +80,14 @@ try {
     }
 elseif ($action === 'save_checklist') {
         $inspection_id = (int)($_POST['inspection_id'] ?? 0);
+
+        if ($currentRole !== 'inspector') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Only inspectors can submit an inspection checklist.']);
+            exit;
+        }
+        assertAssignedInspector($db, $inspection_id, $currentUserId);
+
         $notes = $_POST['notes'] ?? 'Compliant with all requirements.';
         
         // A. I-save ang checklist result
@@ -72,6 +120,13 @@ elseif ($action === 'save_checklist') {
     }
 elseif ($action === 'send_approval_message') {
     $inspection_id = (int)($_POST['inspection_id'] ?? 0);
+
+    if ($currentRole !== 'inspector') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Not authorized.']);
+        exit;
+    }
+    assertAssignedInspector($db, $inspection_id, $currentUserId);
 
     // Kunin ang application_id at applicant_id (receiver)
     $info = $db->fetch(
@@ -128,6 +183,13 @@ elseif ($action === 'report_violation') {
     $app_id = (int)$_POST['application_id'];
     $viol_type = $_POST['violation_type'];
     $notes = $_POST['notes'];
+
+    if ($currentRole !== 'inspector') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Only inspectors can file a violation report.']);
+        exit;
+    }
+    assertAssignedInspector($db, $ins_id, $currentUserId);
     
     // 1. Photo Upload (Evidence Gathering)
     $photo_name = null;
@@ -173,12 +235,22 @@ elseif ($action === 'report_violation') {
     exit;
 }
     elseif ($action === 'delete_event') {
+        if (!in_array($currentRole, $schedulingRoles, true)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You are not authorized to cancel inspections.']);
+            exit;
+        }
         $id = $_POST['id'] ?? null;
         $db->query("DELETE FROM messages WHERE application_id = (SELECT application_id FROM inspections WHERE id = ?) AND subject LIKE 'OFFICIAL NOTICE%'", [$id]);
         $success = $db->query("DELETE FROM inspections WHERE id = ?", [$id]);
         echo json_encode(['success' => $success]);
     }
     elseif ($action === 'approve_occupancy') {
+        if (!in_array($currentRole, $schedulingRoles, true)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You are not authorized to approve occupancy.']);
+            exit;
+        }
         $app_id = $_POST['application_id'] ?? null;
         $res1 = $controller->approveOccupancy($app_id);
         $res2 = $db->query("UPDATE inspections SET status = 'completed' WHERE application_id = ?", [$app_id]);
