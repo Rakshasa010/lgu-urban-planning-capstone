@@ -29,8 +29,11 @@ define('UMAN_API_KEY', uman_env('UMAN_API_KEY', 'UPAD_UMAN_INTEGRATION_KEY_2026'
 define('UMAN_WEBHOOK_SECRET', uman_env('UMAN_WEBHOOK_SECRET', 'UPAD_UMAN_WEBHOOK_SECRET_2026'));
 
 // The URL we give UMAN so it knows where to POST results back to us —
-// this project's own webhook receiver, at its real deployed path.
+// this project's own webhook receiver, at its real deployed path. The
+// production docroot is the repo root (lgu-urban-planning-capstone), so
+// every web-facing path needs the /lgu-urban-planning prefix — omitting it
+// here previously made UMAN's callback 404.
 define('UMAN_WEBHOOK_CALLBACK_URL', uman_env(
     'UMAN_WEBHOOK_CALLBACK_URL',
-    'https://upad.infragovservices.com/uman-integration/uman_inspection_result.php'
+    'https://upad.infragovservices.com/lgu-urban-planning/uman-integration/uman_inspection_result.php'
 ));
