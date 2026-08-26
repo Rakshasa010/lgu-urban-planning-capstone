@@ -1,6 +1,15 @@
 <?php
 /**
  * RoadsIntegrationService
+ *
+ * Handles the OUTBOUND side of the integration: sending a road inspection
+ * request to IPMS when staff clicks "Request Road Inspection".
+ *
+ * This replaces the old dummy simulation that used to write fake
+ * "AUTOMATED SIMULATION" text straight into impact_assessments.
+ * Now it only marks the request as 'pending' — the real traffic_flag/
+ * traffic_notes only get filled in later, once the poller in
+ * ipms_inspection_result.php picks up the result from IPMS.
  */
 
 require_once __DIR__ . '/roads_integration.php';
@@ -17,33 +26,47 @@ class RoadsIntegrationService
 
     /**
      * @param int   $applicationId
-     * @param array $applicationData  Confirmed IPMS fields: road_name, barangay,
-     *                                 district, category, length_km, priority,
-     *                                 address, lat, lng, description, requested_by.
+     * @param array $applicationData Accepted keys (all optional except where noted):
+     *                                 road_id       (defaults to $applicationId)
+     *                                 road_name     required on IPMS's side — falls
+     *                                               back to 'address' if not given
+     *                                 barangay      required on IPMS's side
+     *                                 district      required on IPMS's side
+     *                                 road_type     falls back to legacy 'category'
+     *                                 road_length   km, falls back to legacy 'length_km'
+     *                                 priority      low|medium|high|urgent (default medium)
+     *                                 requested_by
+     *                                 road_latitude  falls back to legacy 'lat'
+     *                                 road_longitude falls back to legacy 'lng'
      * @param int   $requestedBy       user_id of the staff member triggering this
      * @return array{request_id:int, sent:bool, external_ref_id:?string, error:?string}
      */
     public function requestInspection(int $applicationId, array $applicationData, int $requestedBy): array
     {
+        // road_id is our own record id — IPMS just stores it and echoes it
+        // back later (as external_reference) on the results feed so we can
+        // correlate. We reuse the same value for both fields since we don't
+        // track a separate "road id" of our own.
+        $roadId = (string) ($applicationData['road_id'] ?? $applicationId);
+
+        $roadType   = $applicationData['road_type']   ?? $applicationData['category']  ?? null;
+        $roadLength = $applicationData['road_length'] ?? $applicationData['length_km'] ?? null;
+        $latitude   = $applicationData['road_latitude']  ?? $applicationData['lat'] ?? null;
+        $longitude  = $applicationData['road_longitude'] ?? $applicationData['lng'] ?? null;
 
         $payload = [
-            'source_system'   => 'UPAD',
-            'application_id'  => $applicationId,   // our correlation id — must be echoed back in their webhook
-            'road_name'       => $applicationData['road_name']  ?? $applicationData['address'] ?? null,
-            'barangay'        => $applicationData['barangay']   ?? null,
-            'district'        => $applicationData['district']  ?? null,
-            'category'        => $applicationData['category']  ?? null,  // e.g. Collector Road, Barangay Road, Arterial Road
-            'length_km'       => $applicationData['length_km'] ?? null,
-            'priority'        => $applicationData['priority']  ?? 'Medium', // Urgent | Medium | Low
-            'map_location'    => [
-                'address'   => $applicationData['address'] ?? null,
-                'latitude'  => $applicationData['lat']      ?? null,
-                'longitude' => $applicationData['lng']      ?? null,
-            ],
-            'description'     => $applicationData['description'] ?? null, // reason/context for the request
-            'requested_by'    => $applicationData['requested_by'] ?? 'Urban Planning Office',
-            'callback_url'    => IPMS_WEBHOOK_CALLBACK_URL,
-            'requested_at'    => date('c'),
+            'road_id'             => mb_substr($roadId, 0, 40),
+            'road_name'           => mb_substr((string) ($applicationData['road_name'] ?? $applicationData['address'] ?? ''), 0, 200),
+            'barangay'            => mb_substr((string) ($applicationData['barangay'] ?? ''), 0, 100),
+            'district'            => mb_substr((string) ($applicationData['district'] ?? ''), 0, 20),
+            'road_type'           => $roadType !== null ? mb_substr((string) $roadType, 0, 80) : null,
+            'road_length'         => $roadLength !== null && $roadLength !== '' ? (float) $roadLength : null,
+            'priority'            => $this->normalizePriority($applicationData['priority'] ?? 'medium'),
+            'requested_by'        => mb_substr((string) ($applicationData['requested_by'] ?? 'Urban Planning Office'), 0, 150),
+            'request_date'        => date('Y-m-d'),
+            'road_latitude'       => $latitude !== null && $latitude !== '' ? (float) $latitude : null,
+            'road_longitude'      => $longitude !== null && $longitude !== '' ? (float) $longitude : null,
+            'external_reference'  => mb_substr($roadId, 0, 64),
         ];
 
         // 1. Save the request as 'pending' FIRST, so we never lose track of
@@ -68,9 +91,8 @@ class RoadsIntegrationService
                 checked_at    = NOW()"
         )->execute([$applicationId]);
 
-        // 3. Call out to IPMS. This part is a placeholder until you have
-        //    their real endpoint path and auth method.
-        [$sent, $externalRefId, $error] = $this->sendToIpms($requestId, $payload);
+        // 3. Call out to IPMS.
+        [$sent, $externalRefId, $error] = $this->sendToIpms($payload);
 
         $this->db->prepare(
             "UPDATE road_inspection_requests
@@ -91,10 +113,24 @@ class RoadsIntegrationService
         ];
     }
 
-    private function sendToIpms(int $requestId, array $payload): array
+    private function normalizePriority($priority): string
     {
+        $priority = strtolower(trim((string) $priority));
+        return in_array($priority, ['low', 'medium', 'high', 'urgent'], true) ? $priority : 'medium';
+    }
 
-        $ch = curl_init(rtrim(IPMS_API_URL, '/') . '/api/v1/inspection-requests');
+    /**
+     * POST /integrations/urban-planning/inspection-requests.php on IPMS.
+     *
+     * @return array{0: bool, 1: ?string, 2: ?string}  [sent, externalRefId, error]
+     */
+    private function sendToIpms(array $payload): array
+    {
+        if (URBAN_PLANNING_API_KEY === '' || URBAN_PLANNING_API_KEY === null) {
+            return [false, null, 'URBAN_PLANNING_API_KEY is not configured (see ipms-integration/.env.example)'];
+        }
+
+        $ch = curl_init(rtrim(IPMS_BASE_URL, '/') . '/integrations/urban-planning/inspection-requests.php');
 
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -102,8 +138,7 @@ class RoadsIntegrationService
             CURLOPT_POSTFIELDS     => json_encode($payload),
             CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
-                'Authorization: Bearer ' . IPMS_API_KEY,
-                'X-UPAD-Request-Id: ' . $requestId,
+                'X-API-Key: ' . URBAN_PLANNING_API_KEY,
             ],
             CURLOPT_TIMEOUT        => 10,
         ]);
@@ -117,17 +152,32 @@ class RoadsIntegrationService
             return [false, null, "cURL error: $curlError"];
         }
 
-        if ($httpCode >= 200 && $httpCode < 300) {
-            $decoded       = json_decode($responseBody, true);
-            $externalRefId = $decoded['reference_id'] ?? $decoded['id'] ?? null;
-            return [true, $externalRefId, null];
+        $decoded = json_decode($responseBody ?: '', true);
+
+        if ($httpCode === 200 && !empty($decoded['success'])) {
+            $externalRefId = $decoded['inspection_request_id'] ?? null;
+            return [true, $externalRefId !== null ? (string) $externalRefId : null, null];
         }
 
+        // IPMS's own error shape isn't consistent: 401/405 send {success:false,
+        // message:...}, but 422 validation failures go through a shared
+        // responder that sends {error:..., errors:{...}} with no "message" or
+        // "success" key at all — check both.
+        $message = $decoded['message'] ?? $decoded['error'] ?? null;
+        if ($httpCode === 422 && !empty($decoded['errors'])) {
+            $message = 'Validation failed: ' . json_encode($decoded['errors']);
+        } elseif ($httpCode === 401) {
+            $message = $message ?? 'Invalid or missing X-API-Key';
+        } elseif ($httpCode === 405) {
+            $message = $message ?? 'Wrong HTTP method';
+        }
 
-        $cleanBody = trim(strip_tags($responseBody ?: ''));
-        $cleanBody = preg_replace('/\s+/', ' ', $cleanBody);
-        $cleanBody = mb_substr($cleanBody, 0, 200);
+        if (!$message) {
+            $cleanBody = trim(strip_tags($responseBody ?: ''));
+            $cleanBody = preg_replace('/\s+/', ' ', $cleanBody);
+            $message   = mb_substr($cleanBody, 0, 200);
+        }
 
-        return [false, null, "IPMS responded with HTTP $httpCode: $cleanBody"];
+        return [false, null, "IPMS responded with HTTP $httpCode: $message"];
     }
 }

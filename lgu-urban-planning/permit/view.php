@@ -514,7 +514,20 @@ if ($_POST['action'] === 'request_inspection') {
     $officerId = $_SESSION['user_id'] ?? 0;
 
     require_once __DIR__ . '/../ipms-integration/RoadsIntegrationService.php'; // ⚠️ adjust to wherever you place the ipms-integration folder
+    require_once __DIR__ . '/../ipms-integration/qc-barangay-districts.php';
     require_once __DIR__ . '/../uman-integration/UtilitiesIntegrationService.php'; // ⚠️ adjust to wherever you place the uman-integration folder
+
+    // Column names here must match the `applications` table exactly — it has
+    // latitude/longitude/lot_number (NOT lat/lng/lot) and no district column
+    // at all, so district is derived from the barangay. Sending the wrong key
+    // silently ships nulls, and IPMS rejects those as 422 validation errors.
+    $barangay = $application['barangay'] ?? null;
+    $district = resolveDistrictForBarangay($barangay);
+    $latitude  = $application['latitude']  ?? $application['verified_latitude']  ?? null;
+    $longitude = $application['longitude'] ?? $application['verified_longitude'] ?? null;
+    // IPMS requires a non-empty road_name; fall back so a blank street can't
+    // fail validation on their side.
+    $siteName = $application['street'] ?: ($application['project_name'] ?: "Application #{$applicationId}");
 
     try {
         $roadsService = new RoadsIntegrationService();
@@ -523,13 +536,14 @@ if ($_POST['action'] === 'request_inspection') {
             [
                 'applicant_name' => $application['applicant_name'] ?? null,
                 'project_type'   => $application['project_type']   ?? null,
-                'address'        => $application['street']         ?? null,
-                'lot'            => $application['lot']            ?? null,
+                'road_name'      => $siteName,
+                'address'        => $siteName,
+                'lot'            => $application['lot_number']     ?? null,
                 'block'          => $application['block']          ?? null,
-                'barangay'       => $application['barangay']       ?? null,
-                'district'       => $application['district']       ?? null,
-                'lat'            => $application['lat']            ?? null,
-                'lng'            => $application['lng']            ?? null,
+                'barangay'       => $barangay,
+                'district'       => $district,
+                'lat'            => $latitude,
+                'lng'            => $longitude,
             ],
             (int) $officerId
         );
@@ -553,12 +567,14 @@ if ($_POST['action'] === 'request_inspection') {
         $energyResult = $utilitiesService->requestInspection(
             $applicationId,
             [
-                'project_name' => $application['project_type']   ?? null,
-                'address'      => $application['street']         ?? null,
-                'barangay'     => $application['barangay']       ?? null,
-                'district'     => $application['district']       ?? null,
-                'lat'          => $application['lat']            ?? null,
-                'lng'          => $application['lng']            ?? null,
+                'project_name' => $application['project_name']   ?: $siteName,
+                'category'     => $application['project_type']   ?? null,
+                'address'      => $siteName,
+                'barangay'     => $barangay,
+                'district'     => $district,
+                'lat'          => $latitude,
+                'lng'          => $longitude,
+                'description'  => $application['project_description'] ?? null,
             ],
             (int) $officerId
         );
