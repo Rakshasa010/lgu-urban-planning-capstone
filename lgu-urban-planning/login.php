@@ -177,12 +177,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $mail->send();
                 $_SESSION['otp_expiry_ts'] = strtotime($expiry);
+                $showOtpForm = true;
             } catch (Exception $e) {
                 $error = "Could not send OTP. Mailer Error: {$mail->ErrorInfo}";
                 $showOtpForm = false;
             }
-            
-            $showOtpForm = true;
 
         } else {
             $error = 'Invalid username or password';
